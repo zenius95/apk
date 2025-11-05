@@ -14,12 +14,10 @@ const App = sequelize.define('App', {
     allowNull: false,
     comment: 'Ten app de hien thi, query cho nhanh'
   },
-  // +++ (MOI) THEM COT "LOAI" +++
   appType: {
     type: DataTypes.STRING(20), // GAME hoac APP
     allowNull: true
   },
-  // +++ HET MOI +++
   fullData: {
     type: DataTypes.JSON,
     allowNull: true,
@@ -29,10 +27,14 @@ const App = sequelize.define('App', {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW
   }
+  // Khong can them cot deletedAt, paranoid se tu lo
 }, {
   tableName: 'apps',
   timestamps: true,
-  updatedAt: 'lastScrapedAt'
+  updatedAt: 'lastScrapedAt',
+  
+  // +++ MOI: THEM THUNG RAC (SOFT DELETE) +++
+  paranoid: true 
 });
 
 module.exports = App;

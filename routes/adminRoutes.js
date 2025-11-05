@@ -13,7 +13,13 @@ router.use(adminAuth);
  */
 router.get('/', adminController.renderScrapePage);
 
-// Bro co the them cac route GET cho cac trang admin khac o day
-// Vi du: router.get('/settings', adminController.renderSettingsPage);
+/**
+ * @route GET /app-list
+ * @desc Hien thi trang danh sach App (bao gom ca thung rac)
+ * @access Private (Da qua Basic Auth)
+ */
+router.get('/app-list', adminController.renderAppListPage); 
+
+// --- KHONG CON ROUTE /trash O DAY ---
 
 module.exports = router;

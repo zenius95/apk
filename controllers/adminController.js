@@ -1,17 +1,38 @@
 const App = require('../models/app'); // Goi Model App
 const { default: gplay } = require('google-play-scraper'); // Goi thu vien gplay
-const { Op } = require('sequelize'); // +++ THEM Op DE TIM KIEM
+const { Op } = require('sequelize'); // Goi Op
 
 /**
- * Controller nay chi de render (hien thi) cac trang admin
+ * Hien thi trang Scrape chinh (/)
  */
-
-// Hien thi trang Scrape chinh
 const renderScrapePage = async (req, res) => {
   try {
-    // +++ CAU HINH PHAN TRANG VA TIM KIEM +++
+    const categories = gplay.category;
+    const collections = gplay.collection;
+    
+    res.render('pages/scrape', {
+      data: {
+        title: 'Bảng điều khiển - Lấy dữ liệu App',
+        page: 'scrape' 
+      },
+      categories: categories,     
+      collections: collections
+    });
+  } catch (err) {
+    console.error("Loi render trang scrape:", err);
+    res.status(500).send("Loi server roi Bro oi.");
+  }
+};
+
+/**
+ * Hien thi trang Danh Sach App / Thung Rac
+ */
+const renderAppListPage = async (req, res) => {
+  try {
+    const isTrashView = req.query.view === 'trash';
+    
     const page = parseInt(req.query.page, 10) || 1;
-    const limit = 15; // 15 app moi trang
+    const limit = 15;
     const offset = (page - 1) * limit;
     const search = req.query.search || '';
 
@@ -25,20 +46,22 @@ const renderScrapePage = async (req, res) => {
       };
     }
 
-    // 1. LAY APP (CO PHAN TRANG/TIM KIEM) TU DB
-    // Su dung findAndCountAll de lay ca 'count' (tong so) va 'rows' (du lieu trang)
-    const { count, rows: savedApps } = await App.findAndCountAll({
+    const queryOptions = {
       where: whereClause,
-      order: [['lastScrapedAt', 'DESC']], // Sap xep theo ngay moi nhat
       limit: limit,
       offset: offset
-    });
+    };
 
-    // 2. LAY DANH SACH CATEGORY & COLLECTION TU THU VIEN
-    const categories = gplay.category;
-    const collections = gplay.collection;
+    if (isTrashView) {
+      whereClause.deletedAt = { [Op.not]: null }; 
+      queryOptions.paranoid = false; 
+      queryOptions.order = [['deletedAt', 'DESC']];
+    } else {
+      queryOptions.order = [['lastScrapedAt', 'DESC']];
+    }
+
+    const { count, rows: savedApps } = await App.findAndCountAll(queryOptions);
     
-    // 3. TINH TOAN THONG TIN PHAN TRANG
     const totalPages = Math.ceil(count / limit);
     const pagination = {
       totalItems: count,
@@ -47,23 +70,135 @@ const renderScrapePage = async (req, res) => {
       limit: limit
     };
 
-    // Render file views/pages/scrape.ejs
-    res.render('pages/scrape', {
+    // +++ (MOI) Lay so luong app trong thung rac +++
+    // Query nay luon chay de hien thi len nut, bat ke dang o view nao
+    const trashCount = await App.count({
+        where: { deletedAt: { [Op.not]: null } },
+        paranoid: false // Bat buoc de "nhin" vao thung rac
+    });
+
+    res.render('pages/appList', {
       data: {
-        title: 'Bảng điều khiển - Lấy dữ liệu App'
+        title: isTrashView ? 'Thùng rác - App đã xoá' : 'Danh sách APP đã lưu',
+        page: 'appList'
       },
-      savedApps: savedApps,       // +++ Danh sach app cua trang hien tai
-      categories: categories,     
-      collections: collections,   
-      pagination: pagination,     // +++ Truyen thong tin phan trang
-      search: search              // +++ Truyen lai tu khoa tim kiem
+      savedApps: savedApps,
+      pagination: pagination,
+      search: search,
+      isTrashView: isTrashView,
+      trashCount: trashCount // +++ Truyen so dem cho view +++
     });
   } catch (err) {
-    console.error("Loi render trang scrape:", err);
+    console.error("Loi render trang App List/Trash:", err);
     res.status(500).send("Loi server roi Bro oi.");
   }
 };
 
+// --- (Cac ham API (handleDeleteApps, handleRestoreApps, handleForceDeleteApps) giu nguyen) ---
+
+const handleDeleteApps = async (req, res) => {
+  const { appIds, deleteAll } = req.body;
+  try {
+    let numDeleted = 0;
+    let whereClause = {};
+    if (deleteAll) {
+      const search = req.body.search || '';
+      if (search) {
+        whereClause = {
+          [Op.or]: [
+            { appId: { [Op.like]: `%${search}%` } },
+            { title: { [Op.like]: `%${search}%` } }
+          ]
+        };
+      }
+      numDeleted = await App.destroy({ where: whereClause });
+    } else if (appIds && Array.isArray(appIds) && appIds.length > 0) {
+      whereClause = { appId: appIds };
+      numDeleted = await App.destroy({ where: whereClause });
+    } else {
+      return res.status(400).json({ success: false, message: 'Chưa chọn app nào để xoá, Bro.' });
+    }
+    return res.status(200).json({ 
+      success: true, 
+      message: `Đã vứt ${numDeleted} app${numDeleted > 1 ? 's' : ''} vào thùng rác.`,
+      deletedCount: numDeleted
+    });
+  } catch (err) {
+    console.error("Loi xoa mem app:", err);
+    return res.status(500).json({ success: false, message: 'Lỗi server khi vứt app vào rác.' });
+  }
+};
+
+const handleRestoreApps = async (req, res) => {
+  const { appIds, restoreAll } = req.body;
+  try {
+    let numRestored = 0;
+    let whereClause = {};
+    if (restoreAll) {
+      const search = req.body.search || '';
+      if (search) {
+        whereClause = {
+          [Op.or]: [
+            { appId: { [Op.like]: `%${search}%` } },
+            { title: { [Op.like]: `%${search}%` } }
+          ]
+        };
+      }
+      numRestored = await App.restore({ where: whereClause, paranoid: false });
+    } else if (appIds && Array.isArray(appIds) && appIds.length > 0) {
+      whereClause = { appId: appIds };
+      numRestored = await App.restore({ where: whereClause, paranoid: false });
+    } else {
+      return res.status(400).json({ success: false, message: 'Chưa chọn app nào để khôi phục.' });
+    }
+    return res.status(200).json({ 
+      success: true, 
+      message: `Đã khôi phục ${numRestored} app${numRestored > 1 ? 's' : ''}.`,
+      restoredCount: numRestored
+    });
+  } catch (err) {
+    console.error("Loi khoi phuc app:", err);
+    return res.status(500).json({ success: false, message: 'Lỗi server khi khôi phục app.' });
+  }
+};
+
+const handleForceDeleteApps = async (req, res) => {
+  const { appIds, deleteAll } = req.body;
+  try {
+    let numDeleted = 0;
+    let whereClause = {};
+    if (deleteAll) {
+      const search = req.body.search || '';
+      if (search) {
+        whereClause = {
+          [Op.or]: [
+            { appId: { [Op.like]: `%${search}%` } },
+            { title: { [Op.like]: `%${search}%` } }
+          ]
+        };
+      }
+      numDeleted = await App.destroy({ where: whereClause, force: true, paranoid: false });
+    } else if (appIds && Array.isArray(appIds) && appIds.length > 0) {
+      whereClause = { appId: appIds };
+      numDeleted = await App.destroy({ where: whereClause, force: true, paranoid: false });
+    } else {
+      return res.status(400).json({ success: false, message: 'Chưa chọn app nào để xoá vĩnh viễn.' });
+    }
+    return res.status(200).json({ 
+      success: true, 
+      message: `Đã xoá vĩnh viễn ${numDeleted} app${numDeleted > 1 ? 's' : ''}.`,
+      deletedCount: numDeleted
+    });
+  } catch (err) {
+    console.error("Loi xoa vinh vien app:", err);
+    return res.status(500).json({ success: false, message: 'Lỗi server khi xoá vĩnh viễn.' });
+  }
+};
+
 module.exports = {
-  renderScrapePage
+  renderScrapePage,
+  renderAppListPage,
+  handleDeleteApps,
+  handleRestoreApps,
+  handleForceDeleteApps
 };
