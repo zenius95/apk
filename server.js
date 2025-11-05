@@ -10,6 +10,7 @@ const { Server } = require("socket.io"); // +++ GOI SOCKET.IO
 
 const sequelize = require('./config/database'); // Ket noi DB
 const App = require('./models/app'); // Import Model de sync
+const WpSite = require('./models/wpSite'); // +++ MOI: Import model WpSite
 
 // Import "ban do" (routes)
 const adminRoutes = require('./routes/adminRoutes');
@@ -61,8 +62,9 @@ async function startServer() {
     console.log('✅✅✅ KET NOI DATABASE THANH CONG! ✅✅✅');
 
     // 2. Dong bo Model voi Database
+    // (Da co App, bay gio them WpSite)
     await sequelize.sync({ alter: true });
-    console.log('🔄 Da dong bo model Apps voi database.');
+    console.log('🔄 Da dong bo cac models voi database.');
 
     // 3. Khoi dong HTTP SERVER (thay vi app.listen)
     httpServer.listen(PORT, () => {

@@ -1,8 +1,9 @@
 const App = require('../models/app');
+const WpSite = require('../models/wpSite'); // +++ MOI: Import model WpSite
 const { default: gplay } = require('google-play-scraper');
 const { Op } = require('sequelize');
-const fs = require('fs-extra'); // +++ MOI: Them module 'fs-extra'
-const path = require('path'); // +++ MOI: Them module 'path'
+const fs = require('fs-extra'); 
+const path = require('path'); 
 
 /**
  * (MOI) Ham helper de xoa thu muc anh cua app
@@ -81,7 +82,8 @@ const renderScrapePage = async (req, res) => {
       categories: categories,     
       collections: collections
     });
-  } catch (err) {
+  } catch (err)
+ {
     console.error("Loi render trang scrape:", err);
     res.status(500).send("Loi server roi Bro oi.");
   }
@@ -262,11 +264,137 @@ const handleForceDeleteApps = async (req, res) => {
   }
 };
 
+
+// ---------------------------------------------------
+// +++ MOI: CAC HAM XU LY CHO WORDPRESS SITES
+// ---------------------------------------------------
+
+/**
+ * (MOI) Hien thi trang Quan ly WP Sites
+ */
+const renderWpSitesPage = async (req, res) => {
+  try {
+    // Khong can phan trang, lay het site ra
+    const sites = await WpSite.findAll({ order: [['siteName', 'ASC']] });
+    
+    res.render('pages/wpSites', {
+      data: {
+        title: 'Quản lý Wordpress Sites',
+        page: 'wpSites' 
+      },
+      wpSites: sites // Truyen bien nay vao EJS
+    });
+  } catch (err) {
+    console.error("Loi render trang WP Sites:", err);
+    res.status(500).send("Loi server roi Bro oi.");
+  }
+};
+
+/**
+ * (MOI) API: Lay tat ca WP Sites
+ */
+const handleGetWpSites = async (req, res) => {
+  try {
+    const sites = await WpSite.findAll({ order: [['siteName', 'ASC']] });
+    return res.status(200).json(sites);
+  } catch (err) {
+    console.error("Loi API Get WP Sites:", err);
+    return res.status(500).json({ success: false, message: 'Lỗi server khi lấy danh sách site.' });
+  }
+};
+
+/**
+ * (MOI) API: Tao WP Site moi
+ */
+const handleCreateWpSite = async (req, res) => {
+  const { siteName, siteUrl, apiKey } = req.body;
+  
+  if (!siteName || !siteUrl || !apiKey) {
+    return res.status(400).json({ success: false, message: 'Nhập thiếu rồi Bro. Cần Tên, URL, và API Key.' });
+  }
+
+  try {
+    const newSite = await WpSite.create({
+      siteName,
+      siteUrl,
+      apiKey
+    });
+    return res.status(201).json({ success: true, message: 'Đã thêm site mới ngon lành!', site: newSite });
+  } catch (err) {
+    console.error("Loi API Create WP Site:", err);
+    if (err.name === 'SequelizeValidationError') {
+      return res.status(400).json({ success: false, message: `URL không hợp lệ: ${err.errors[0].message}` });
+    }
+    return res.status(500).json({ success: false, message: 'Lỗi server khi tạo site.' });
+  }
+};
+
+/**
+ * (MOI) API: Cap nhat WP Site
+ */
+const handleUpdateWpSite = async (req, res) => {
+  const { id } = req.params;
+  const { siteName, siteUrl, apiKey } = req.body;
+
+  if (!siteName || !siteUrl || !apiKey) {
+    return res.status(400).json({ success: false, message: 'Nhập thiếu rồi Bro. Cần Tên, URL, và API Key.' });
+  }
+
+  try {
+    const site = await WpSite.findByPk(id);
+    if (!site) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy site này, Bro.' });
+    }
+
+    site.siteName = siteName;
+    site.siteUrl = siteUrl;
+    site.apiKey = apiKey;
+    
+    await site.save();
+    
+    return res.status(200).json({ success: true, message: 'Đã cập nhật site ngon lành!', site: site });
+  } catch (err) {
+    console.error("Loi API Update WP Site:", err);
+    if (err.name === 'SequelizeValidationError') {
+      return res.status(400).json({ success: false, message: `URL không hợp lệ: ${err.errors[0].message}` });
+    }
+    return res.status(500).json({ success: false, message: 'Lỗi server khi cập nhật site.' });
+  }
+};
+
+/**
+ * (MOI) API: Xoa WP Site
+ */
+const handleDeleteWpSite = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const site = await WpSite.findByPk(id);
+    if (!site) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy site này, Bro.' });
+    }
+
+    await site.destroy();
+    
+    return res.status(200).json({ success: true, message: 'Đã xoá site vĩnh viễn.' });
+  } catch (err) {
+    console.error("Loi API Delete WP Site:", err);
+    return res.status(500).json({ success: false, message: 'Lỗi server khi xoá site.' });
+  }
+};
+
+
 module.exports = {
   renderScrapePage,
   renderAppListPage,
   renderTrashPage,
   handleDeleteApps,
   handleRestoreApps,
-  handleForceDeleteApps // Giu nguyen
+  handleForceDeleteApps,
+  
+  // +++ MOI: Export cac ham moi +++
+  renderWpSitesPage,
+  handleGetWpSites,
+  handleCreateWpSite,
+  handleUpdateWpSite,
+  handleDeleteWpSite
 };

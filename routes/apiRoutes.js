@@ -7,6 +7,8 @@ const adminAuth = require('../middleware/auth'); // Goi "bao ve"
 // Tat ca cac route trong file nay deu phai di qua "bao ve"
 router.use(adminAuth);
 
+// === Cac route cho Scrape Apps ===
+
 /**
  * @route POST /api/scrape
  * @desc Nhan lenh bat dau scrape tu form
@@ -21,6 +23,8 @@ router.post('/scrape', scrapeController.handleScrapeRequest);
  */
 router.get('/scrape/status', scrapeController.getJobStatus);
 
+// === Cac route cho Quan ly Apps ===
+
 /**
  * @route DELETE /api/apps
  * @desc Xoa mot hoac nhieu apps (Xoa mem - Vao thung rac)
@@ -33,13 +37,44 @@ router.delete('/apps', adminController.handleDeleteApps);
  * @desc Khoi phuc mot hoac nhieu apps tu thung rac
  * @access Private (Da qua Basic Auth)
  */
-router.post('/apps/restore', adminController.handleRestoreApps); // +++ DONG NAY MOI
+router.post('/api/apps/restore', adminController.handleRestoreApps); 
 
 /**
  * @route DELETE /api/apps/permanent
  * @desc Xoa vinh vien mot hoac nhieu apps
  * @access Private (Da qua Basic Auth)
  */
-router.delete('/apps/permanent', adminController.handleForceDeleteApps); // +++ DONG NAY MOI
+router.delete('/api/apps/permanent', adminController.handleForceDeleteApps); 
+
+// === (MOI) Cac route cho Quan ly Wordpress Sites ===
+
+/**
+ * @route GET /api/wp-sites
+ * @desc (MOI) Lay tat ca WP Sites
+ * @access Private (Da qua Basic Auth)
+ */
+router.get('/wp-sites', adminController.handleGetWpSites);
+
+/**
+ * @route POST /api/wp-sites
+ * @desc (MOI) Tao mot WP Site moi
+ * @access Private (Da qua Basic Auth)
+ */
+router.post('/wp-sites', adminController.handleCreateWpSite);
+
+/**
+ * @route PUT /api/wp-sites/:id
+ * @desc (MOI) Cap nhat mot WP Site
+ * @access Private (Da qua Basic Auth)
+ */
+router.put('/wp-sites/:id', adminController.handleUpdateWpSite);
+
+/**
+ * @route DELETE /api/wp-sites/:id
+ * @desc (MOI) Xoa mot WP Site
+ * @access Private (Da qua Basic Auth)
+ */
+router.delete('/wp-sites/:id', adminController.handleDeleteWpSite);
+
 
 module.exports = router;

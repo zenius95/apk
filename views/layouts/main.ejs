@@ -3,30 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= data.title ||
-'Admin Panel' %></title>
+    <title><%= data.title || 'Admin Panel' %></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
       body { 
-        font-family: 'Inter', system-ui, sans-serif;
--webkit-font-smoothing: antialiased; 
+        font-family: 'Inter', system-ui, sans-serif; 
+        -webkit-font-smoothing: antialiased; 
         -moz-osx-font-smoothing: grayscale; 
         background-color: #0f172a; /* slate-900 */
       }
-      .table-container::-webkit-scrollbar { width: 6px;
-}
-      .table-container::-webkit-scrollbar-track { background: #1e293b;
-} /* slate-800 */
-      .table-container::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px;
-} /* slate-600 */
-      .table-container::-webkit-scrollbar-thumb:hover { background: #64748b;
-} /* slate-500 */
+      .table-container::-webkit-scrollbar { width: 6px; }
+      .table-container::-webkit-scrollbar-track { background: #1e293b; } /* slate-800 */
+      .table-container::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; } /* slate-600 */
+      .table-container::-webkit-scrollbar-thumb:hover { background: #64748b; } /* slate-500 */
       
-      .tab-panel.hidden { display: none;
-}
+      .tab-panel.hidden { display: none; }
 
       /* +++ MOI: Custom scrollbar cho Modal body +++ */
       #modal-body-scroll::-webkit-scrollbar { width: 5px; }
@@ -41,24 +35,32 @@
             <div class="p-5 border-b border-slate-100/10">
                 <h1 class="text-2xl font-bold text-white">GPlay<span class="text-emerald-400">Scraper</span></h1>
                 <p class="text-slate-400 text-sm">Panel cua Bro</p>
-            
-</div>
+            </div>
             
             <nav class="flex-1 p-4 space-y-2">
                 <% 
                   const inactiveClass = "flex items-center p-3 rounded-lg text-slate-400 hover:bg-slate-800/50 hover:text-white border-l-4 border-transparent hover:border-emerald-400/50 transition-all duration-200 group";
-const activeClass = "flex items-center p-3 rounded-lg text-white font-medium bg-emerald-500/10 border-l-4 border-emerald-400";
-%>
+                  const activeClass = "flex items-center p-3 rounded-lg text-white font-medium bg-emerald-500/10 border-l-4 border-emerald-400";
+                  
+                  // +++ MOI: Cap nhat logic active cho 'appList'
+                  const appListActive = (data.page === 'appList' || data.page === 'trash');
+                %>
+                
                 <a href="/" class="<%= (data.page === 'scrape') ? activeClass : inactiveClass %>">
                     <i class="ri-download-cloud-2-line w-6 text-xl mr-3 <%= (data.page === 'scrape') ? 'text-emerald-400' : 'text-slate-500 group-hover:text-emerald-400' %>"></i>
                     <span>Lấy dữ liệu</span>
                 </a>
-  
-              <a href="/app-list" class="<%= (data.page === 'appList' || data.page === 'trash') ? activeClass : inactiveClass %>">
-                    <i class="ri-database-2-line w-6 text-xl mr-3 <%= (data.page === 'appList' || data.page === 'trash') ? 'text-emerald-400' : 'text-slate-500 group-hover:text-emerald-400' %>"></i>
-                    <span>Danh sách APP</span>
                 
-</a>
+                <a href="/app-list" class="<%= appListActive ? activeClass : inactiveClass %>">
+                    <i class="ri-database-2-line w-6 text-xl mr-3 <%= appListActive ? 'text-emerald-400' : 'text-slate-500 group-hover:text-emerald-400' %>"></i>
+                    <span>Danh sách APP</span>
+                </a>
+
+                <a href="/wp-sites" class="<%= (data.page === 'wpSites') ? activeClass : inactiveClass %>">
+                    <i class="ri-wordpress-line w-6 text-xl mr-3 <%= (data.page === 'wpSites') ? 'text-emerald-400' : 'text-slate-500 group-hover:text-emerald-400' %>"></i>
+                    <span>Wordpress Sites</span>
+                </a>
+
             </nav>
             
             <div class="admin-sidebar-footer p-4 border-t border-slate-100/10 text-center text-xs text-slate-500">
@@ -77,19 +79,18 @@ const activeClass = "flex items-center p-3 rounded-lg text-white font-medium bg-
     <div id="appDetailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
         <div id="modalBackdrop" class="fixed inset-0 bg-black/70 backdrop-blur-sm"></div>
         
-        <div class="relative w-full max-w-5xl max-h-[90vh] bg-slate-800/80 backdrop-blur-lg ring-1 ring-white/10 rounded-lg shadow-xl overflow-hidden flex flex-col">
+         <div class="relative w-full max-w-5xl max-h-[90vh] bg-slate-800/80 backdrop-blur-lg ring-1 ring-white/10 rounded-lg shadow-xl overflow-hidden flex flex-col">
             
             <div class="flex-shrink-0 p-4 border-b border-slate-700/50 flex items-center justify-between">
                 <h3 id="modal-header-title" class="text-xl font-semibold text-white truncate">Chi tiết App</h3>
                 <button id="modalCloseBtn" class="text-slate-400 hover:text-white transition-colors">
-                    <i class="ri-close-line text-2xl"></i>
+                     <i class="ri-close-line text-2xl"></i>
                 </button>
             </div>
             
             <div id="modal-body-scroll" class="flex-1 overflow-y-auto p-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    
-                    <div class="md:col-span-1 space-y-5">
+                     <div class="md:col-span-1 space-y-5">
                         <div class="flex items-center space-x-4">
                             <img id="modal-icon" src="" alt="App Icon" class="w-20 h-20 rounded-2xl flex-shrink-0">
                             <div>
@@ -97,15 +98,12 @@ const activeClass = "flex items-center p-3 rounded-lg text-white font-medium bg-
                                 <p id="modal-developer" class="text-emerald-400 text-sm">Developer</p>
                             </div>
                         </div>
-
                         <a id="modal-play-link" href="#" target="_blank" class="flex items-center justify-center w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white font-medium transition-colors">
                             <i class="ri-google-play-fill mr-2"></i>
                             Xem trên Google Play
                         </a>
-                        
                         <div class="space-y-3">
                             <h4 class="text-lg font-semibold text-white">Chi tiết</h4>
-                            
                             <div class="flex items-center text-sm">
                                 <i class="ri-star-line w-6 text-slate-400 mr-2 flex-shrink-0"></i>
                                 <div>
@@ -114,7 +112,6 @@ const activeClass = "flex items-center p-3 rounded-lg text-white font-medium bg-
                                     <span id="modal-reviews" class="text-slate-500 text-xs ml-1">(N/A reviews)</span>
                                 </div>
                             </div>
-                            
                             <div class="flex items-center text-sm">
                                 <i class="ri-download-2-line w-6 text-slate-400 mr-2 flex-shrink-0"></i>
                                 <div>
@@ -122,23 +119,20 @@ const activeClass = "flex items-center p-3 rounded-lg text-white font-medium bg-
                                     <span id="modal-installs" class="font-medium text-white ml-1">N/A</span>
                                 </div>
                             </div>
-                            
                             <div class="flex items-center text-sm">
-                                <i class="ri-price-tag-3-line w-6 text-slate-400 mr-2 flex-shrink-0"></i>
+                                 <i class="ri-price-tag-3-line w-6 text-slate-400 mr-2 flex-shrink-0"></i>
                                 <div>
                                     <span class="text-slate-400">Giá:</span>
                                     <span id="modal-price" class="font-medium text-white ml-1">N/A</span>
                                 </div>
                             </div>
-                            
                             <div class="flex items-center text-sm">
                                 <i class="ri-layout-grid-line w-6 text-slate-400 mr-2 flex-shrink-0"></i>
                                 <div>
                                     <span class="text-slate-400">Thể loại:</span>
                                     <span id="modal-genre" class="font-medium text-white ml-1">N/A</span>
-                                </div>
+                                 </div>
                             </div>
-                            
                             <div class="flex items-center text-sm">
                                 <i class="ri-database-2-line w-6 text-slate-400 mr-2 flex-shrink-0"></i>
                                 <div>
@@ -146,7 +140,6 @@ const activeClass = "flex items-center p-3 rounded-lg text-white font-medium bg-
                                     <span id="modal-size" class="font-medium text-white ml-1">N/A</span>
                                 </div>
                             </div>
-                            
                             <div class="flex items-center text-sm">
                                 <i class="ri-code-box-line w-6 text-slate-400 mr-2 flex-shrink-0"></i>
                                 <div>
@@ -154,7 +147,6 @@ const activeClass = "flex items-center p-3 rounded-lg text-white font-medium bg-
                                     <span id="modal-version" class="font-medium text-white ml-1">N/A</span>
                                 </div>
                             </div>
-                            
                             <div class="flex items-center text-sm">
                                 <i class="ri-calendar-check-line w-6 text-slate-400 mr-2 flex-shrink-0"></i>
                                 <div>
@@ -162,7 +154,6 @@ const activeClass = "flex items-center p-3 rounded-lg text-white font-medium bg-
                                     <span id="modal-updated" class="font-medium text-white ml-1">N/A</span>
                                 </div>
                             </div>
-
                             <div class="flex items-center text-sm">
                                 <i class="ri-shield-user-line w-6 text-slate-400 mr-2 flex-shrink-0"></i>
                                 <div>
@@ -170,33 +161,30 @@ const activeClass = "flex items-center p-3 rounded-lg text-white font-medium bg-
                                     <span id="modal-rating" class="font-medium text-white ml-1">N/A</span>
                                 </div>
                             </div>
-
-                        </div>
+                         </div>
                     </div>
-                    
                     <div class="md:col-span-2 space-y-6">
                         <div>
                             <img id="modal-header-image" src="" alt="Header Image" class="w-full h-auto rounded-lg hidden">
                         </div>
-                        
                         <div>
                             <h4 class="text-lg font-semibold text-white mb-2">Ảnh chụp màn hình</h4>
                             <div id="modal-screenshots" class="flex overflow-x-auto space-x-3 p-2 bg-slate-900/50 rounded-lg">
-                                </div>
+                             </div>
                         </div>
-                        
                         <div>
                             <h4 class="text-lg font-semibold text-white mb-2">Mô tả chi tiết</h4>
                             <div id="modal-description" class="text-sm text-slate-300 whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto prose prose-invert prose-sm">
                             </div>
-                        </div>
+                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/listManager.js"></script>
-</body>
+    <script src="/js/wpSitesManager.js"></script> </body>
 </html>

@@ -25,6 +25,13 @@ router.get('/app-list', adminController.renderAppListPage);
  * @desc Hien thi trang Thung Rac (app da xoa)
  * @access Private (Da qua Basic Auth)
  */
-router.get('/trash', adminController.renderTrashPage); // +++ MOI +++
+router.get('/trash', adminController.renderTrashPage); 
+
+/**
+ * @route GET /wp-sites
+ * @desc (MOI) Hien thi trang quan ly Wordpress Sites
+ * @access Private (Da qua Basic Auth)
+ */
+router.get('/wp-sites', adminController.renderWpSitesPage); // +++ MOI +++
 
 module.exports = router;
