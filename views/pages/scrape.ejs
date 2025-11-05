@@ -1,56 +1,123 @@
-<div class="max-w-4xl mx-auto">
-    <h1 class="text-3xl font-bold text-white mb-6">Lấy dữ liệu Google Play</h1>
+<h1 class="text-3xl font-bold text-white mb-6 tracking-tight">Lấy dữ liệu Google Play</h1>
 
-    <div id="scrape-form" class="bg-gray-800 p-6 rounded-lg shadow-xl space-y-6">
+<div id="alert-container" class="mb-6"></div>
 
-        <div id="alert-container">
-            </div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <div id="scrape-form" class="lg:col-span-2 bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg p-6 space-y-6">
 
         <div>
-            <label for="appIdsList" class="block text-sm font-medium text-gray-300 mb-2">
+            <label class="block text-sm font-medium text-slate-300 mb-2">Chế độ lấy dữ liệu</label>
+            <div class="mt-2 grid grid-cols-2 gap-2 rounded-lg bg-slate-900/70 p-1.5 transition-all duration-200">
+                <button id="btn-mode-by-id" 
+                        class="btn-mode relative flex items-center justify-center rounded-md py-2.5 px-3 text-sm font-semibold
+                               text-white bg-emerald-500 shadow-md
+                               transition-all duration-200 ease-in-out">
+                    <i class="ri-keyboard-line mr-2 text-lg"></i>
+                    Thủ công (Theo ID)
+                </button>
+                <button id="btn-mode-by-list" 
+                        class="btn-mode relative flex items-center justify-center rounded-md py-2.5 px-3 text-sm font-semibold
+                               text-slate-400 hover:bg-slate-800/50 hover:text-white
+                               transition-all duration-200 ease-in-out">
+                    <i class="ri-list-check-2 mr-2 text-lg"></i>
+                    Tự động (Theo D/s)
+                </button>
+            </div>
+        </div>
+        
+        <div id="panel-by-id">
+            <label for="appIdsList" class="block text-sm font-medium text-slate-300 mb-2">
                 Danh sách App ID (Mỗi ID một dòng)
             </label>
-            <textarea id="appIdsList" name="appIdsList" rows="10"
-                class="w-full p-3 bg-gray-900 border border-gray-700 rounded-md text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+            <textarea id="appIdsList" name="appIdsList" rows="12"
+                class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 
+                       focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition duration-200"
                 placeholder="com.google.android.gm
 com.facebook.katana
 com.mojang.minecraftpe"></textarea>
-            <p class="text-xs text-gray-500 mt-1">Loại bỏ trùng lặp và dòng trống tự động.</p>
+            <p class="text-xs text-slate-500 mt-1">Tự động loại bỏ trùng lặp và dòng trống.</p>
         </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <div id="panel-by-list" class="hidden space-y-6">
             <div>
-                <label for="concurrency" class="block text-sm font-medium text-gray-300 mb-2">
-                    Số luồng (Concurrency)
+                <label for="list-category" class="block text-sm font-medium text-slate-300 mb-2">
+                    Danh mục (Category)
                 </label>
-                <input type="number" id="concurrency" name="concurrency"
-                    class="w-full p-3 bg-gray-900 border border-gray-700 rounded-md text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                    value="5" min="1" max="50">
-                <p class="text-xs text-gray-500 mt-1">Chạy song song bao nhiêu app một lúc.</p>
+                <select id="list-category" name="list-category" 
+                        class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 
+                               focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition duration-200">
+                    <% for (const key in categories) { %>
+                        <option value="<%= categories[key] %>"><%= key %></option>
+                    <% } %>
+                </select>
             </div>
             <div>
-                <label for="delay" class="block text-sm font-medium text-gray-300 mb-2">
-                    Delay (miligiây)
+                <label for="list-collection" class="block text-sm font-medium text-slate-300 mb-2">
+                    Bộ sưu tập (Collection)
                 </label>
-                <input type="number" id="delay" name="delay"
-                    class="w-full p-3 bg-gray-900 border border-gray-700 rounded-md text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                    value="1000" min="0">
-                <p class="text-xs text-gray-500 mt-1">Nghỉ bao lâu (ms) giữa mỗi lượt lấy.</p>
+                <select id="list-collection" name="list-collection" 
+                        class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 
+                               focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition duration-200">
+                    <% for (const key in collections) { %>
+                        <option value="<%= collections[key] %>"><%= key %></option>
+                    <% } %>
+                </select>
+            </div>
+            <div>
+                <label for="list-num" class="block text-sm font-medium text-slate-300 mb-2">
+                    Số lượng (Num)
+                </label>
+                <input type="number" id="list-num" name="list-num"
+                    class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 
+                           focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition duration-200"
+                    value="50" min="1" max="200">
+                <p class="text-xs text-slate-500 mt-1">Số lượng app muốn lấy (tối đa 200).</p>
             </div>
         </div>
 
         <div>
             <button id="startScrapeBtn"
-                class="w-full flex justify-center items-center p-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg transition duration-200 ease-in-out
-                       disabled:bg-gray-600 disabled:cursor-not-allowed">
-                
-                <svg id="loading-spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                
-                <span id="btn-text">Bắt đầu lấy dữ liệu</span>
+                class="w-full flex justify-center items-center p-4 
+                       bg-gradient-to-r from-emerald-500 to-cyan-600 
+                       hover:from-emerald-600 hover:to-cyan-700 
+                       text-white font-bold rounded-lg shadow-lg 
+                       transform hover:-translate-y-1 hover:scale-[1.03] 
+                       transition-all duration-300 ease-in-out
+                       disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed disabled:transform-none">
+                <i id="loading-spinner" class="ri-loader-4-line animate-spin text-2xl -ml-1 mr-2 hidden"></i>
+                <i id="btn-icon" class="ri-play-fill text-2xl -ml-1 mr-2"></i>
+                <span id="btn-text" class="text-lg">Bắt đầu lấy dữ liệu</span>
             </button>
+        </div>
+    </div>
+
+    <div class="lg:col-span-1">
+        <div class="bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg p-6 space-y-6">
+            <h2 class="text-lg font-semibold text-white border-b border-slate-700 pb-3">
+                <i class="ri-settings-3-line mr-2"></i>Cấu hình Job (Chung)
+            </h2>
+            <div>
+                <label for="concurrency" class="block text-sm font-medium text-slate-300 mb-2">
+                    Số luồng (Concurrency)
+                </label>
+                <input type="number" id="concurrency" name="concurrency"
+                    class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 
+                           focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition duration-200"
+                    value="5" min="1" max="50">
+                <p class="text-xs text-slate-500 mt-1">Chạy song song bao nhiêu app.</p>
+            </div>
+            
+            <div>
+                <label for="delay" class="block text-sm font-medium text-slate-300 mb-2">
+                    Delay (miligiây)
+                </label>
+                <input type="number" id="delay" name="delay"
+                    class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 
+                           focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition duration-200"
+                    value="1000" min="0">
+                <p class="text-xs text-slate-500 mt-1">Nghỉ giữa mỗi lượt lấy (ms).</p>
+            </div>
         </div>
     </div>
 </div>

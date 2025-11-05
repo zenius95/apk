@@ -1,36 +1,30 @@
-const gplay = require('google-play-scraper');
+const { default: gplay } = require('google-play-scraper'); // <-- SUA DONG NAY
 const App = require('../models/app'); // Import Model
 
-/**
- * Ham sleep de "nghi" giua cac request
- * @param {number} ms So miligiay can cho
- */
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * Lay du lieu chi tiet cua 1 app va luu vao DB
- * Su dung App.upsert() de tu dong UPDATE neu da ton tai (dua tren primaryKey: appId)
- * hoac INSERT neu la app moi.
- *
- * @param {string} appId ID cua app (vd: com.google.android.gm)
- * @returns {Promise<object>} Ket qua { success, data, created, error }
+ * @returns {Promise<object>} Ket qua { success, data (appInstance), created, error }
  */
 async function scrapeAndSave(appId) {
   console.log(`[Service] Bat dau lay du lieu cho: ${appId}`);
   try {
     // 1. Goi API lay du lieu
-    // Su dung gplay.app() de lay full detail
     const appData = await gplay.app({ appId: appId });
 
-    // 2. Chuan bi du lieu de luu (theo model da toi uu)
+    // PHAN LOAI APP/GAME
+    const appType = appData.genreId && appData.genreId.startsWith('GAME') ? 'GAME' : 'APP';
+
+    // 2. Chuan bi du lieu de luu
     const dataToSave = {
-      appId: appData.appId, // Dam bao lay appId tu data tra ve
-      title: appData.title, // Luu truong title rieng de truy van
-      fullData: appData     // Luu toan bo data vao cot JSON
+      appId: appData.appId,
+      title: appData.title,
+      appType: appType,
+      fullData: appData
     };
 
-    // 3. Luu vao DB (Upsert = Update + Insert)
-    // lastScrapedAt se tu dong cap nhat (vi ta map no voi 'updatedAt' trong model)
+    // 3. Luu vao DB (Upsert)
     const [appInstance, created] = await App.upsert(dataToSave);
 
     if (created) {
@@ -39,11 +33,11 @@ async function scrapeAndSave(appId) {
       console.log(`[Service] ✅ DA CAP NHAT (Cu): ${appData.title}`);
     }
 
+    // TRA VE appInstance (da co du lieu tu DB)
     return { success: true, appId: appId, data: appInstance, created: created };
 
   } catch (err) {
     console.error(`[Service] ❌ LOI khi scrape app ${appId}: ${err.message}`);
-    // Tra ve loi de controller biet duong xu ly
     return { success: false, appId: appId, error: err.message };
   }
 }

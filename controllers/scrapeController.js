@@ -1,54 +1,52 @@
 const scraperService = require('../services/scraperService');
+// const { default: gplay } = require('google-play-scraper'); // Dong nay da chuyen sang service
 
 let isJobRunning = false;
 
 /**
- * Xu ly logic "chia viec" (concurrency pool)
- * @param {object} io - Instance cua Socket.IO de "ban" log
+ * "Bo nao" xu ly job
+ * @param {object} io - Instance cua Socket.IO
  */
 async function runScrapingJob(appIds, concurrency, delay, io) {
   isJobRunning = true;
   
-  // Dinh nghia ham ban log (qua ca console va socket)
-  const log = (message, type = 'message') => {
-    console.log(message);
-    io.emit(`log:${type}`, message); // Ban log ra cho client
-  };
+  const emit = (event, data) => io.emit(event, data);
   
-  log(`[Job] 🚀 BAT DAU JOB! Tong so ${appIds.length} apps.`, 'info');
-  log(`[Job] 🛠️ Cau hinh: ${concurrency} luong song song, delay ${delay}ms`, 'info');
+  emit('job:start', { count: appIds.length });
+  console.log(`[Job] 🚀 BAT DAU JOB! Tong so ${appIds.length} apps.`);
 
   const queue = [...appIds]; 
-  const results = {
-    success: [],
-    failed: []
-  };
+  const results = { success: 0, failed: 0 };
 
-  /**
-   * Dinh nghia mot "Lao cong" (Worker)
-   */
   const worker = async (workerId) => {
     while (queue.length > 0) {
       const appId = queue.shift(); 
       if (!appId) continue; 
 
-      log(`[Worker ${workerId}] 👷 Dang xu ly: ${appId} (Con lai: ${queue.length})`, 'message');
+      emit('app:running', { appId });
+      console.log(`[Worker ${workerId}] 👷 Dang xu ly: ${appId}`);
       
       try {
         const result = await scraperService.scrapeAndSave(appId);
+        
         if (result.success) {
-          results.success.push(appId);
-          const logMsg = result.created
-            ? `[Worker ${workerId}] ✅ DA LUU (Moi): ${result.data.title}`
-            : `[Worker ${workerId}] ✅ DA CAP NHAT (Cu): ${result.data.title}`;
-          log(logMsg, 'success');
+          // 2. Bao cho UI: "Lam xong thang nay, day la ket qua"
+          // +++ GUI TOAN BO APP INSTANCE (result.data) +++
+          emit('app:success', {
+            app: result.data, // appInstance tu DB
+            created: result.created
+          });
+          results.success++;
         } else {
-          results.failed.push({ appId, error: result.error });
-          log(`[Worker ${workerId}] ❌ LOI (App): ${appId} - ${result.error}`, 'error');
+          // 3. Bao cho UI: "Thang nay 'toang' roi"
+          emit('app:failed', { appId: appId, error: result.error });
+          results.failed++;
         }
       } catch (err) {
-        log(`[Worker ${workerId}] ❌ LOI NANG voi ${appId}: ${err.message}`, 'error');
-        results.failed.push({ appId, error: err.message });
+        // 4. Bao cho UI: "Thang nay 'toang' nang"
+        emit('app:failed', { appId: appId, error: err.message });
+        results.failed++;
+        console.error(`[Worker ${workerId}] ❌ LOI NANG voi ${appId}: ${err.message}`);
       }
 
       if (queue.length > 0) {
@@ -57,10 +55,8 @@ async function runScrapingJob(appIds, concurrency, delay, io) {
     }
   };
 
-  // Tao "doi quan" (worker pool)
   const workerPool = [];
   const actualConcurrency = Math.min(concurrency, appIds.length);
-  log(`[Job] 🤖 Huy dong ${actualConcurrency} workers...`, 'info');
   
   for (let i = 0; i < actualConcurrency; i++) {
     workerPool.push(worker(i + 1)); 
@@ -68,16 +64,8 @@ async function runScrapingJob(appIds, concurrency, delay, io) {
 
   await Promise.all(workerPool);
 
-  log("-------------------------------------------------", 'info');
-  log(`[Job] ✅✅✅ JOB HOAN TAT! ✅✅✅`, 'info');
-  log(`[Job] 👍 Thanh cong: ${results.success.length}`, 'success');
-  log(`[Job] 👎 That bai: ${results.failed.length}`, 'error');
-  if(results.failed.length > 0) {
-    log(`[Job] Cac app loi: ${results.failed.map(f => f.appId).join(', ')}`, 'error');
-  }
-  log("-------------------------------------------------", 'info');
-  
-  io.emit('job:done'); // Bao cho client biet la job da xong
+  console.log(`[Job] ✅✅✅ JOB HOAN TAT! ✅✅✅`);
+  emit('job:done', results); 
   isJobRunning = false;
 }
 
@@ -85,43 +73,31 @@ async function runScrapingJob(appIds, concurrency, delay, io) {
  * Nhan request tu router de bat dau scrape
  */
 const handleScrapeRequest = (req, res) => {
-  const io = req.io; // Lay io tu req (da duoc gan o server.js)
+  const io = req.io; 
 
   if (isJobRunning) {
-    io.emit('log:error', "[Job] ⚠️ Job dang chay roi, Bro tu choi request moi.");
-    return res.status(429).json({ 
-      message: "Job dang chay roi Bro, tu tu da. Spam a?",
-      error: true 
-    });
+    io.emit('job:error', "Job dang chay roi Bro, tu tu da.");
+    return res.status(429).json({ message: "Job dang chay roi Bro...", error: true });
   }
 
-  const { appIdsList, concurrency, delay } = req.body;
+  const { appIds, concurrency, delay } = req.body;
 
-  const appIds = [...new Set(
-    appIdsList.split('\n')
-      .map(id => id.trim())
-      .filter(Boolean)
-  )];
+  if (!appIds || appIds.length === 0) {
+    return res.status(400).json({ message: "Khong co app 'moi' nao de them vao hang cho.", error: true });
+  }
 
   const numConcurrency = parseInt(concurrency, 10) || 5;
   const numDelay = parseInt(delay, 10) || 1000;
 
-  if (appIds.length === 0) {
-    return res.status(400).json({ 
-      message: "Bro chua nhap App ID nao ca? Lay cai gi bay gio?",
-      error: true 
-    });
-  }
-
   res.status(200).json({
     message: `OK Bro! Da nhan lenh. Bat dau lay ${appIds.length} apps.`,
+    appIds: appIds
   });
 
-  // Goi ham chay job (khong await)
   runScrapingJob(appIds, numConcurrency, numDelay, io);
 };
 
-// ... (ham getJobStatus giu nguyen) ...
+// Ham kiem tra status (giu nguyen)
 const getJobStatus = (req, res) => {
   res.status(200).json({
     isJobRunning: isJobRunning

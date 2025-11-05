@@ -1,8 +1,6 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/database'); // Import ket noi database da cau hinh
+const sequelize = require('../config/database');
 
-// Dinh nghia model 'App'
-// Sequelize se tu dong tao bang ten la 'Apps' (so nhieu)
 const App = sequelize.define('App', {
   appId: {
     type: DataTypes.STRING,
@@ -16,8 +14,14 @@ const App = sequelize.define('App', {
     allowNull: false,
     comment: 'Ten app de hien thi, query cho nhanh'
   },
+  // +++ (MOI) THEM COT "LOAI" +++
+  appType: {
+    type: DataTypes.STRING(20), // GAME hoac APP
+    allowNull: true
+  },
+  // +++ HET MOI +++
   fullData: {
-    type: DataTypes.JSON, // Kieu du lieu JSON
+    type: DataTypes.JSON,
     allowNull: true,
     comment: 'Luu tru toan bo JSON data goc tu google-play-scraper'
   },
@@ -26,10 +30,9 @@ const App = sequelize.define('App', {
     defaultValue: DataTypes.NOW
   }
 }, {
-  // Cac tuy chon them cho model
-  tableName: 'apps', // Ten bang trong DB
-  timestamps: true, // Tu dong them createdAt
-  updatedAt: 'lastScrapedAt' // Su dung lastScrapedAt thay cho updatedAt
+  tableName: 'apps',
+  timestamps: true,
+  updatedAt: 'lastScrapedAt'
 });
 
 module.exports = App;

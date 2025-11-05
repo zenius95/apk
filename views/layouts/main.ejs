@@ -1,24 +1,104 @@
-<body class="bg-gray-900 text-gray-300 font-sans h-full">
+<!DOCTYPE html>
+<html lang="vi" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= data.title || 'Admin Panel' %></title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
+    <style>
+      body { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; background-color: #0f172a; }
+      #table-container-queue::-webkit-scrollbar, #table-container-saved::-webkit-scrollbar { width: 6px; }
+      #table-container-queue::-webkit-scrollbar-track, #table-container-saved::-webkit-scrollbar-track { background: #1e293b; }
+      #table-container-queue::-webkit-scrollbar-thumb, #table-container-saved::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+      #table-container-queue::-webkit-scrollbar-thumb:hover, #table-container-saved::-webkit-scrollbar-thumb:hover { background: #64748b; }
+      .tab-panel.hidden { display: none; }
+    </style>
+</head>
+<body class="text-slate-300 h-full">
 
-    <main class="flex-1 p-8 overflow-y-auto flex flex-col h-screen">
-        <div class="flex-shrink-0">
-            <%- body %>
-        </div>
-        
-        <div class="flex-1 mt-8 flex flex-col overflow-hidden">
-            <h2 class="text-xl font-semibold text-white mb-3 flex-shrink-0">
-                Theo dõi "Chiến sự" (Real-time Log)
-            </h2>
-            <div id="log-terminal" 
-                 class="flex-1 bg-gray-950 border border-gray-700 rounded-lg p-4 
-                        font-mono text-sm leading-6 overflow-y-auto scrolling-touch">
-                <p class="text-gray-500">Dang cho lenh tu Bro...</p>
-            </div>
-        </div>
-    </main>
+    <div class="flex h-screen">
+        <aside class="w-64 bg-slate-900/60 backdrop-blur-xl border-r border-slate-100/10 flex flex-col flex-shrink-0">
+            <div class="p-5 border-b border-slate-100/10"><h1 class="text-2xl font-bold text-white">GPlay<span class="text-emerald-400">Scraper</span></h1><p class="text-slate-400 text-sm">Panel cua Bro</p></div>
+            <nav class="flex-1 p-4 space-y-2">
+                <a href="/" class="flex items-center p-3 rounded-lg text-white font-medium bg-emerald-500/10 border-l-4 border-emerald-400"><i class="ri-download-cloud-2-line text-emerald-400 w-6 text-xl mr-3"></i><span>Lấy dữ liệu</span></a>
+                 <a href="#" class="flex items-center p-3 rounded-lg text-slate-400 hover:bg-slate-800/50 hover:text-white border-l-4 border-transparent hover:border-emerald-400/50 transition-all duration-200 group"><i class="ri-database-2-line text-slate-500 group-hover:text-emerald-400 w-6 text-xl mr-3 transition-colors duration-200"></i><span>Quản lý Apps (Demo)</span></a>
+            </nav>
+            <div class="p-4 border-t border-slate-100/10 text-center text-xs text-slate-500">Lam boi "AI cua Bro" ;)</div>
+        </aside>
+
+        <main class="flex-1 flex flex-col">
+            
+            <div class="max-w-7xl mx-auto w-full flex-1 flex flex-col p-6 md:p-10">
+            
+                <div class="flex-shrink-0">
+                    <%- body %>
+                </div>
+                
+                <div class="flex-1 mt-8 flex flex-col overflow-hidden">
+                    <div class="mb-4 border-b border-slate-700">
+                        <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                            <button id="tab-queue" class="tab-btn group inline-flex items-center py-3 px-1 border-b-2 font-medium text-sm text-emerald-400 border-emerald-500">
+                                <i class="ri-loader-3-line mr-2"></i>
+                                <span>Hàng chờ</span>
+                                <span id="queue-count" class="ml-2 hidden rounded-full bg-emerald-700/80 px-2.5 py-0.5 text-xs font-medium text-emerald-200">0</span>
+                            </button>
+                            <button id="tab-saved" class="tab-btn group inline-flex items-center py-3 px-1 border-b-2 font-medium text-sm text-slate-400 border-transparent hover:text-slate-200 hover:border-slate-400">
+                                <i class="ri-database-2-line mr-2"></i>
+                                <span>Đã lưu</span>
+                                <span id="saved-count" class="ml-2 hidden rounded-full bg-slate-700/80 px-2.5 py-0.5 text-xs font-medium text-slate-200">0</span>
+                            </button>
+                        </nav>
+                    </div>
+
+                    <div class="flex-1 overflow-hidden">
+                        <div id="panel-queue" class="tab-panel h-full">
+                            <div id="table-container-queue" class="h-full bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg overflow-y-auto">
+                                <table class="min-w-full divide-y divide-slate-700/50">
+                                    <thead class="bg-slate-900/50 sticky top-0 backdrop-blur-md">
+                                        <tr>
+                                            <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6 w-3/5">App</th>
+                                            <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Loại</th>
+                                            <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Trạng thái</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="app-table-body-queue" class="divide-y divide-slate-800"></tbody>
+                                </table>
+                                <div id="table-placeholder-queue" class="p-8 text-center text-slate-500">
+                                    <i class="ri-inbox-line text-4xl"></i>
+                                    <p class="mt-2">Hàng chờ đang trống.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="panel-saved" class="tab-panel hidden h-full">
+                            <div id="table-container-saved" class="h-full bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg overflow-y-auto">
+                                <table class="min-w-full divide-y divide-slate-700/50">
+                                    <thead class="bg-slate-900/50 sticky top-0 backdrop-blur-md">
+                                        <tr>
+                                            <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6 w-3/5">App</th>
+                                            <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Loại</th>
+                                            <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Lần cuối lấy</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="app-table-body-saved" class="divide-y divide-slate-800"></tbody>
+                                </table>
+                                <div id="table-placeholder-saved" class="p-8 text-center text-slate-500 hidden">
+                                    <i class="ri-database-2-line text-4xl"></i>
+                                    <p class="mt-2">Chưa có app nào trong Database.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> </main>
+    </div>
+
+    <script>
+      var initialSavedApps = <%- JSON.stringify(savedApps || []) %>;
+    </script>
 
     <script src="/socket.io/socket.io.js"></script>
-    
     <script src="/js/main.js"></script>
 </body>
 </html>
