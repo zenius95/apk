@@ -1,0 +1,24 @@
+<body class="bg-gray-900 text-gray-300 font-sans h-full">
+
+    <main class="flex-1 p-8 overflow-y-auto flex flex-col h-screen">
+        <div class="flex-shrink-0">
+            <%- body %>
+        </div>
+        
+        <div class="flex-1 mt-8 flex flex-col overflow-hidden">
+            <h2 class="text-xl font-semibold text-white mb-3 flex-shrink-0">
+                Theo dõi "Chiến sự" (Real-time Log)
+            </h2>
+            <div id="log-terminal" 
+                 class="flex-1 bg-gray-950 border border-gray-700 rounded-lg p-4 
+                        font-mono text-sm leading-6 overflow-y-auto scrolling-touch">
+                <p class="text-gray-500">Dang cho lenh tu Bro...</p>
+            </div>
+        </div>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    
+    <script src="/js/main.js"></script>
+</body>
+</html>
