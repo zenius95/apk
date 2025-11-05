@@ -5,7 +5,8 @@
             <h1 class="text-3xl font-bold text-white tracking-tight">Thùng rác</h1>
             <p class="text-slate-400 mt-1">Các app đã xoá (<%= pagination.totalItems %> app)</p>
         </div>
-        <a href="/app-list" class="inline-flex items-center justify-center rounded-md bg-slate-800 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-all mt-4 sm:mt-0">
+        <a href="/app-list" class="inline-flex items-center justify-center rounded-md bg-slate-800 px-3.5 py-2 text-sm 
+font-medium text-white shadow-sm hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-all mt-4 sm:mt-0">
             <i class="ri-arrow-left-line -ml-1 mr-2"></i>
             Quay lại Danh sách
         </a>
@@ -14,13 +15,16 @@
     <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
         <div class="w-full max-w-sm">
             <form method="GET" action="/trash">
-                <div class="relative">
+              
+  <div class="relative">
                     <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                         <i class="ri-search-line text-slate-400"></i>
                     </div>
-                    <input type="text" name="search" class="block w-full rounded-md border-0 bg-slate-800/60 py-2.5 pl-10 text-white ring-1 ring-inset ring-white/10 placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm"
+                    <input type="text" name="search" class="block 
+w-full rounded-md border-0 bg-slate-800/60 py-2.5 pl-10 text-white ring-1 ring-inset ring-white/10 placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm"
                            placeholder="Tìm trong thùng rác..."
-                           value="<%= typeof search !== 'undefined' ? search : '' %>">
+                           value="<%= typeof search !== 'undefined' ?
+search : '' %>">
                 </div>
             </form>
         </div>
@@ -28,16 +32,19 @@
         <div id="selection-controls" class="hidden items-center justify-end flex-wrap gap-4">
             <span id="selection-count" class="text-sm font-medium text-slate-300">Đã chọn 0 app</span>
             <button id="btn-select-all-db" class="text-sm text-emerald-400 hover:text-emerald-300 font-medium hidden">
-                Chọn tất cả <span class="font-bold"><%= pagination.totalItems %></span> app
+  
+              Chọn tất cả <span class="font-bold"><%= pagination.totalItems %></span> app
             </button>
             <div class="flex space-x-3">
                 <button id="btn-restore-selected" class="inline-flex items-center justify-center rounded-md bg-emerald-600/90 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <i class="ri-arrow-go-back-line -ml-1 mr-2"></i>
+                    <i class="ri-arrow-go-back-line 
+-ml-1 mr-2"></i>
                     Khôi phục
                 </button>
                 <button id="btn-force-delete-selected" class="inline-flex items-center justify-center rounded-md bg-red-800/90 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-900 disabled:opacity-50 disabled:cursor-not-allowed">
                     <i class="ri-delete-bin-2-line -ml-1 mr-2"></i>
-                    Xoá vĩnh viễn
+        
+            Xoá vĩnh viễn
                 </button>
             </div>
         </div>
@@ -46,30 +53,36 @@
     <div class="bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg overflow-hidden">
         <div class="table-container">
             <table class="min-w-full">
-                <thead class="bg-slate-900/50 sticky top-0">
+             
+   <thead class="bg-slate-900/50 sticky top-0">
                     <tr>
                         <th class="py-3.5 px-4 sm:px-6 w-12">
                             <input type="checkbox" id="select-all-page" class="h-4 w-4 rounded border-slate-600 bg-slate-700 text-emerald-500 focus:ring-emerald-600">
-                        </th>
+         
+               </th>
                         <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white w-3/5">App</th>
                         <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Loại</th>
-                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Ngày xoá</th>
+                      
+  <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Ngày xoá</th>
                         <th class="py-3.5 pl-3 pr-4 sm:pr-6 w-32 text-center text-sm font-semibold text-white">Hành động</th>
                     </tr>
                 </thead>
                 <tbody id="app-table-body" class="divide-y divide-slate-800">
-                    </tbody>
+ 
+                   </tbody>
             </table>
             
             <div id="table-placeholder" class="hidden">
                 </div>
         </div>
         
-        <%- include('../partials/_pagination', { pagination: pagination, baseUrl: baseUrl, search: search }) %>
+        <%- include('../partials/_pagination', { 
+pagination: pagination, baseUrl: baseUrl, search: search }) %>
     </div>
 
     <script>
-        var initialData = <%- JSON.stringify(savedApps || []) %>;
+        var initialData = <%- JSON.stringify(savedApps ||
+[]) %>;
         var paginationData = <%- JSON.stringify(pagination || {}) %>;
     </script>
 </body>

@@ -9,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchTerm = document.body.dataset.searchTerm || '';
 
     if (pageMode !== 'list' && pageMode !== 'trash') {
-        // Khong phai trang List/Trash, listManager.js thoat.
         return; 
     }
 
@@ -28,6 +27,33 @@ document.addEventListener('DOMContentLoaded', () => {
         btnForceDeleteSelected = document.getElementById('btn-force-delete-selected');
     }
     
+    // +++ MOI: "Bat" cac linh kien Modal (UPDATE) +++
+    const appDetailModal = document.getElementById('appDetailModal');
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const modalCloseBtn = document.getElementById('modalCloseBtn');
+    const modalBodyScroll = document.getElementById('modal-body-scroll');
+    // Placeholders
+    const modalHeaderTitle = document.getElementById('modal-header-title');
+    const modalIcon = document.getElementById('modal-icon');
+    const modalTitle = document.getElementById('modal-title');
+    const modalDeveloper = document.getElementById('modal-developer');
+    const modalPlayLink = document.getElementById('modal-play-link');
+    
+    const modalScore = document.getElementById('modal-score');
+    const modalReviews = document.getElementById('modal-reviews');
+    const modalInstalls = document.getElementById('modal-installs');
+    const modalPrice = document.getElementById('modal-price');
+    const modalGenre = document.getElementById('modal-genre');
+    const modalSize = document.getElementById('modal-size');
+    const modalVersion = document.getElementById('modal-version');
+    const modalUpdated = document.getElementById('modal-updated');
+    const modalRating = document.getElementById('modal-rating');
+
+    const modalHeaderImage = document.getElementById('modal-header-image');
+    const modalScreenshots = document.getElementById('modal-screenshots');
+    const modalDescription = document.getElementById('modal-description');
+    // +++ KET THUC LINH KIEN MODAL +++
+
     const itemsOnPage = (typeof initialData !== 'undefined') ? initialData : [];
     const totalItemsInDb = (typeof paginationData !== 'undefined') ? paginationData.totalItems : 0;
 
@@ -35,6 +61,20 @@ document.addEventListener('DOMContentLoaded', () => {
     let isSelectingAllDb = false;
 
     // --- 2. Dinh nghia Ham ---
+
+    // +++ MOI: Ham helper format +++
+    const formatNumber = (num) => {
+        if (typeof num !== 'number') return num;
+        return new Intl.NumberFormat('en-US').format(num);
+    };
+    const formatDate = (timestamp) => {
+        if (!timestamp) return 'N/A';
+        // 'updated' co the la string "May 20, 2024" hoac la timestamp
+        const date = new Date(timestamp);
+        if (isNaN(date.getTime())) return timestamp; // Neu la string thi tra ve luon
+        return date.toLocaleDateString('vi-VN');
+    };
+    // +++ KET THUC HAM HELPER +++
 
     const Toast = Swal.mixin({
         toast: true,
@@ -71,7 +111,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="flex items-center">
                     <div class="h-10 w-10 flex-shrink-0"><img class="h-10 w-10 rounded-lg" src="${appData.icon}" alt=""></div>
                     <div class="ml-4">
-                        <div class="font-medium text-white">${appData.title}</div>
+                        <div class="font-medium text-white">
+                            <a href="#" class="app-title-link hover:text-emerald-400 transition-colors">${appData.title}</a>
+                        </div>
                         <div class="text-slate-400">${appData.appId}</div>
                     </div>
                 </div>
@@ -83,7 +125,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (pageMode === 'list') {
             colDate = `<td class="px-3 py-4 text-sm text-slate-400">${new Date(app.lastScrapedAt).toLocaleString()}</td>`;
-            // +++ (SUA) Them class w-32 vao td +++
             colActions = `
                 <td class="py-4 pl-3 pr-4 sm:pr-6 text-center w-32">
                     <button class="btn-delete-single text-red-500/70 hover:text-red-400" data-app-id="${app.appId}" title="Vứt vào thùng rác">
@@ -92,7 +133,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </td>`;
         } else { // pageMode === 'trash'
             colDate = `<td class="px-3 py-4 text-sm text-slate-400">${new Date(app.deletedAt).toLocaleString()}</td>`;
-            // +++ (SUA) Them class w-32 vao td +++
             colActions = `
                 <td class="py-4 pl-3 pr-4 sm:pr-6 text-center w-32">
                     <div class="flex justify-center items-center space-x-3">
@@ -136,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Ham Cap nhat Thanh Chon (Selection Bar)
+    // +++ (CAP NHAT LON) Ham Cap nhat Thanh Chon +++
     function updateSelectionControls() {
         const count = selectedAppIds.size;
         
@@ -164,13 +204,25 @@ document.addEventListener('DOMContentLoaded', () => {
             btnSelectAllDb.classList.toggle('hidden', !showSelectAllDb);
         }
 
-        if (count === itemsOnPage.length && !isSelectingAllDb) {
+        // +++ LOGIC SUA LAI O DAY +++
+        if (isSelectingAllDb) {
+            // Neu dang chon tat ca DB, checkbox cua trang phai luon duoc check
             selectAllPageCheckbox.checked = true;
             selectAllPageCheckbox.indeterminate = false;
-        } else if (count > 0) {
+        } else if (count === 0) {
+            // Neu khong co gi dc chon
+            selectAllPageCheckbox.checked = false;
+            selectAllPageCheckbox.indeterminate = false;
+        } else if (count === itemsOnPage.length) {
+            // Neu chon het app tren trang, nhung chua phai la "tat ca DB"
+            selectAllPageCheckbox.checked = true;
+            selectAllPageCheckbox.indeterminate = false;
+        } else {
+            // Neu chi chon 1 vai app tren trang
             selectAllPageCheckbox.checked = false;
             selectAllPageCheckbox.indeterminate = true;
         }
+        // +++ KET THUC SUA LOGIC +++
     }
 
     // Ham Hanh Dong (API Call)
@@ -286,11 +338,75 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Ham hien thi Modal
+    function showAppModal(appId) {
+        // Tim data tu bien 'initialData'
+        const app = itemsOnPage.find(a => a.appId === appId);
+        if (!app) {
+            console.error("Khong tim thay app data cho:", appId);
+            return;
+        }
+
+        const data = app.fullData; // Lay fullData cho de goi
+        
+        // Bom data vao modal
+        modalHeaderTitle.textContent = data.title || 'Chi tiết App';
+        modalIcon.src = data.icon || '';
+        modalTitle.textContent = data.title || 'N/A';
+        modalDeveloper.textContent = data.developer || 'N/A';
+        modalPlayLink.href = data.url || '#';
+        
+        modalScore.textContent = data.scoreText || 'N/A';
+        modalReviews.textContent = `(${formatNumber(data.reviews) || 'N/A'} reviews)`;
+        modalInstalls.textContent = data.installs || 'N/A';
+        modalPrice.textContent = data.priceText || 'N/A';
+        modalGenre.textContent = data.genre || 'N/A';
+        modalSize.textContent = data.size || 'N/A';
+        modalVersion.textContent = data.version || 'N/A';
+        modalUpdated.textContent = formatDate(data.updated);
+        modalRating.textContent = data.contentRating || 'N/A';
+
+        // Mo ta (dung innerHTML de render HTML tu Google Play)
+        modalDescription.innerHTML = data.description || '<p class="text-slate-500">Không có mô tả.</p>';
+        
+        // Hien thi hoac an Header Image
+        if (data.headerImage) {
+            modalHeaderImage.src = data.headerImage;
+            modalHeaderImage.classList.remove('hidden');
+        } else {
+            modalHeaderImage.classList.add('hidden');
+        }
+
+        // Bom Screenshots
+        modalScreenshots.innerHTML = ''; // Xoa cai cu
+        if (data.screenshots && data.screenshots.length > 0) {
+            data.screenshots.forEach(ssUrl => {
+                const img = document.createElement('img');
+                img.src = ssUrl;
+                img.className = 'h-40 rounded-md flex-shrink-0'; // Them flex-shrink-0
+                modalScreenshots.appendChild(img);
+            });
+        } else {
+            modalScreenshots.innerHTML = '<p class="text-sm text-slate-500">Không có ảnh chụp màn hình.</p>';
+        }
+
+        // Hien modal
+        appDetailModal.classList.remove('hidden');
+        // Reset scroll ve dau
+        modalBodyScroll.scrollTop = 0;
+    }
+
+    // Ham dong Modal
+    function closeAppModal() {
+        appDetailModal.classList.add('hidden');
+    }
+
+
     // --- 3. Gan Su Kien ---
 
     selectAllPageCheckbox.addEventListener('change', () => {
         const isChecked = selectAllPageCheckbox.checked;
-        isSelectingAllDb = false; 
+        isSelectingAllDb = false; // +++ SUA: Luon reset khi click checkbox nay
         itemsOnPage.forEach(app => {
             if (isChecked) {
                 selectedAppIds.add(app.appId);
@@ -316,24 +432,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 selectedAppIds.add(appId);
             } else {
                 selectedAppIds.delete(appId);
-                isSelectingAllDb = false;
+                isSelectingAllDb = false; // +++ SUA: Luon reset khi uncheck 1 app
             }
             updateSelectionControls();
         }
     });
 
     tableBody.addEventListener('click', (e) => {
-        const appId = e.target.closest('tr')?.dataset.appId;
+        const target = e.target;
+        const row = target.closest('tr');
+        if (!row) return;
+
+        const appId = row.dataset.appId;
         if (!appId) return;
-        if (e.target.closest('.btn-delete-single')) {
+
+        // Kiem tra xem co click vao link title khong
+        if (target.closest('.app-title-link')) {
+            e.preventDefault(); // Ngan chan the <a> nhay trang
+            showAppModal(appId);
+            return; // Khong lam gi nua
+        }
+
+        // Kiem tra cac nut xoa/sua...
+        if (target.closest('.btn-delete-single')) {
             e.preventDefault();
             performAction('delete', [appId]);
         }
-        else if (e.target.closest('.btn-restore-single')) {
+        else if (target.closest('.btn-restore-single')) {
             e.preventDefault();
             performAction('restore', [appId]);
         }
-        else if (e.target.closest('.btn-force-delete-single')) {
+        else if (target.closest('.btn-force-delete-single')) {
             e.preventDefault();
             performAction('force_delete', [appId]);
         }
@@ -351,6 +480,11 @@ document.addEventListener('DOMContentLoaded', () => {
             performAction('force_delete', Array.from(selectedAppIds));
         });
     }
+
+    // Gan su kien dong Modal
+    modalCloseBtn.addEventListener('click', closeAppModal);
+    modalBackdrop.addEventListener('click', closeAppModal);
+
 
     // --- 4. Chay lan dau ---
     buildTable();

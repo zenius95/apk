@@ -1,6 +1,23 @@
 const App = require('../models/app');
 const { default: gplay } = require('google-play-scraper');
 const { Op } = require('sequelize');
+const fs = require('fs-extra'); // +++ MOI: Them module 'fs-extra'
+const path = require('path'); // +++ MOI: Them module 'path'
+
+/**
+ * (MOI) Ham helper de xoa thu muc anh cua app
+ */
+async function deleteAppImages(appId) {
+  // Duong dan giong het luc scraperService luu vao
+  const imgDir = path.join(__dirname, '..', 'public', 'images', 'apps', appId);
+  try {
+    await fs.remove(imgDir);
+    console.log(`[Image Delete] ✅ Da xoa thu muc: ${imgDir}`);
+  } catch (err) {
+    // Neu loi cung khong can lam gi lon, chi log lai
+    console.error(`[Image Delete] ❌ Loi khi xoa ${imgDir}: ${err.message}`);
+  }
+}
 
 /**
  * (MOI) Ham helper de lay data, tranh lap code
@@ -124,7 +141,7 @@ const renderTrashPage = async (req, res) => {
 };
 
 
-// --- (Cac ham API (handleDeleteApps, handleRestoreApps, handleForceDeleteApps) giu nguyen) ---
+// --- (Cac ham API (handleDeleteApps, handleRestoreApps) giu nguyen) ---
 
 const handleDeleteApps = async (req, res) => {
   const { appIds, deleteAll } = req.body;
@@ -182,26 +199,61 @@ const handleRestoreApps = async (req, res) => {
   }
 };
 
+// --- (CAP NHAT LON HAM NAY) ---
 const handleForceDeleteApps = async (req, res) => {
   const { appIds, deleteAll } = req.body;
   try {
     let numDeleted = 0;
     let whereClause = {};
+    let appIdsToDelete = []; // +++ MOI: Luu ID de xoa file
+
     if (deleteAll) {
       const search = req.body.search || '';
       if (search) {
         whereClause = { [Op.or]: [ { appId: { [Op.like]: `%${search}%` } }, { title: { [Op.like]: `%${search}%` } } ] };
       }
-      numDeleted = await App.destroy({ where: whereClause, force: true, paranoid: false });
+      
+      // +++ MOI: Tim tat ca app truoc khi xoa de lay ID +++
+      // Phai them paranoid: false de tim trong thung rac
+      const apps = await App.findAll({ where: whereClause, attributes: ['appId'], paranoid: false });
+      appIdsToDelete = apps.map(app => app.appId);
+
     } else if (appIds && Array.isArray(appIds) && appIds.length > 0) {
       whereClause = { appId: appIds };
-      numDeleted = await App.destroy({ where: whereClause, force: true, paranoid: false });
+      appIdsToDelete = [...appIds]; // +++ MOI: Luu lai ID
+      
     } else {
       return res.status(400).json({ success: false, message: 'Chưa chọn app nào để xoá vĩnh viễn.' });
     }
+
+    // Neu khong co gi de xoa
+    if (appIdsToDelete.length === 0) {
+       return res.status(200).json({ 
+        success: true, 
+        message: `Chẳng có app nào để xoá vĩnh viễn cả.`,
+        deletedCount: 0
+      });
+    }
+
+    // 1. Xoa trong DB
+    numDeleted = await App.destroy({ where: whereClause, force: true, paranoid: false });
+
+    // 2. +++ MOI: Xoa hinh anh (khong can await, cho no chay ngam) +++
+    if (numDeleted > 0) {
+      console.log(`[Job Delete] Bat dau xoa ${appIdsToDelete.length} thu muc anh...`);
+      // Chay song song cac tac vu xoa file
+      const deletePromises = appIdsToDelete.map(id => deleteAppImages(id));
+      
+      // Khong can await Promise.all, cu de no chay ngam
+      Promise.all(deletePromises)
+        .then(() => console.log(`[Job Delete] Da hoan tat lenh xoa ${appIdsToDelete.length} thu muc anh.`))
+        .catch(err => console.error('[Job Delete] Loi trong luc xoa dong loat thu muc anh:', err));
+    }
+    // -----------------------------------------------------------------
+
     return res.status(200).json({ 
       success: true, 
-      message: `Đã xoá vĩnh viễn ${numDeleted} app${numDeleted > 1 ? 's' : ''}.`,
+      message: `Đã xoá vĩnh viễn ${numDeleted} app${numDeleted > 1 ? 's' : ''}. (Đã bắt đầu dọn dẹp file ảnh)`,
       deletedCount: numDeleted
     });
   } catch (err) {
@@ -213,8 +265,8 @@ const handleForceDeleteApps = async (req, res) => {
 module.exports = {
   renderScrapePage,
   renderAppListPage,
-  renderTrashPage, // Tach lai
+  renderTrashPage,
   handleDeleteApps,
   handleRestoreApps,
-  handleForceDeleteApps
+  handleForceDeleteApps // Giu nguyen
 };

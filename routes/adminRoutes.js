@@ -18,6 +18,13 @@ router.get('/', adminController.renderScrapePage);
  * @desc Hien thi trang danh sach App da luu
  * @access Private (Da qua Basic Auth)
  */
-router.get('/app-list', adminController.renderAppListPage); // +++ ROUTE MOI
+router.get('/app-list', adminController.renderAppListPage); 
+
+/**
+ * @route GET /trash
+ * @desc Hien thi trang Thung Rac (app da xoa)
+ * @access Private (Da qua Basic Auth)
+ */
+router.get('/trash', adminController.renderTrashPage); // +++ MOI +++
 
 module.exports = router;
