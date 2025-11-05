@@ -1,6 +1,52 @@
-const App = require('../models/app'); // Goi Model App
-const { default: gplay } = require('google-play-scraper'); // Goi thu vien gplay
-const { Op } = require('sequelize'); // Goi Op
+const App = require('../models/app');
+const { default: gplay } = require('google-play-scraper');
+const { Op } = require('sequelize');
+
+/**
+ * (MOI) Ham helper de lay data, tranh lap code
+ */
+async function getPagedApps(req, isTrashView = false) {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = 20; // Tang len 20 cho "sướng"
+    const offset = (page - 1) * limit;
+    const search = req.query.search || '';
+
+    let whereClause = {};
+    if (search) {
+        whereClause = {
+            [Op.or]: [
+                { appId: { [Op.like]: `%${search}%` } },
+                { title: { [Op.like]: `%${search}%` } }
+            ]
+        };
+    }
+
+    const queryOptions = {
+        where: whereClause,
+        limit: limit,
+        offset: offset
+    };
+
+    if (isTrashView) {
+        whereClause.deletedAt = { [Op.not]: null };
+        queryOptions.paranoid = false;
+        queryOptions.order = [['deletedAt', 'DESC']];
+    } else {
+        queryOptions.order = [['lastScrapedAt', 'DESC']];
+    }
+
+    const { count, rows: apps } = await App.findAndCountAll(queryOptions);
+
+    const totalPages = Math.ceil(count / limit);
+    const pagination = {
+        totalItems: count,
+        totalPages: totalPages,
+        currentPage: page,
+        limit: limit
+    };
+    
+    return { apps, pagination, search };
+}
 
 /**
  * Hien thi trang Scrape chinh (/)
@@ -25,74 +71,58 @@ const renderScrapePage = async (req, res) => {
 };
 
 /**
- * Hien thi trang Danh Sach App / Thung Rac
+ * (SUA) Hien thi trang Danh Sach App
  */
 const renderAppListPage = async (req, res) => {
   try {
-    const isTrashView = req.query.view === 'trash';
+    const { apps, pagination, search } = await getPagedApps(req, false);
     
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = 15;
-    const offset = (page - 1) * limit;
-    const search = req.query.search || '';
-
-    let whereClause = {};
-    if (search) {
-      whereClause = {
-        [Op.or]: [
-          { appId: { [Op.like]: `%${search}%` } },
-          { title: { [Op.like]: `%${search}%` } }
-        ]
-      };
-    }
-
-    const queryOptions = {
-      where: whereClause,
-      limit: limit,
-      offset: offset
-    };
-
-    if (isTrashView) {
-      whereClause.deletedAt = { [Op.not]: null }; 
-      queryOptions.paranoid = false; 
-      queryOptions.order = [['deletedAt', 'DESC']];
-    } else {
-      queryOptions.order = [['lastScrapedAt', 'DESC']];
-    }
-
-    const { count, rows: savedApps } = await App.findAndCountAll(queryOptions);
-    
-    const totalPages = Math.ceil(count / limit);
-    const pagination = {
-      totalItems: count,
-      totalPages: totalPages,
-      currentPage: page,
-      limit: limit
-    };
-
-    // +++ (MOI) Lay so luong app trong thung rac +++
-    // Query nay luon chay de hien thi len nut, bat ke dang o view nao
+    // Dem so rac
     const trashCount = await App.count({
         where: { deletedAt: { [Op.not]: null } },
-        paranoid: false // Bat buoc de "nhin" vao thung rac
+        paranoid: false
     });
 
     res.render('pages/appList', {
       data: {
-        title: isTrashView ? 'Thùng rác - App đã xoá' : 'Danh sách APP đã lưu',
+        title: 'Danh sách APP đã lưu',
         page: 'appList'
       },
-      savedApps: savedApps,
+      savedApps: apps, // Doi ten bien
       pagination: pagination,
       search: search,
-      isTrashView: isTrashView,
-      trashCount: trashCount // +++ Truyen so dem cho view +++
+      trashCount: trashCount,
+      baseUrl: '/app-list' // Cho phan trang
     });
   } catch (err) {
-    console.error("Loi render trang App List/Trash:", err);
+    console.error("Loi render trang App List:", err);
     res.status(500).send("Loi server roi Bro oi.");
   }
 };
+
+/**
+ * (SUA) Hien thi trang Thung Rac
+ */
+const renderTrashPage = async (req, res) => {
+  try {
+    const { apps, pagination, search } = await getPagedApps(req, true);
+    
+    res.render('pages/trash', {
+      data: {
+        title: 'Thùng rác - App đã xoá',
+        page: 'trash'
+      },
+      savedApps: apps, // Doi ten bien
+      pagination: pagination,
+      search: search,
+      baseUrl: '/trash' // Cho phan trang
+    });
+  } catch (err) {
+    console.error("Loi render trang Thung Rac:", err);
+    res.status(500).send("Loi server roi Bro oi.");
+  }
+};
+
 
 // --- (Cac ham API (handleDeleteApps, handleRestoreApps, handleForceDeleteApps) giu nguyen) ---
 
@@ -104,12 +134,7 @@ const handleDeleteApps = async (req, res) => {
     if (deleteAll) {
       const search = req.body.search || '';
       if (search) {
-        whereClause = {
-          [Op.or]: [
-            { appId: { [Op.like]: `%${search}%` } },
-            { title: { [Op.like]: `%${search}%` } }
-          ]
-        };
+        whereClause = { [Op.or]: [ { appId: { [Op.like]: `%${search}%` } }, { title: { [Op.like]: `%${search}%` } } ] };
       }
       numDeleted = await App.destroy({ where: whereClause });
     } else if (appIds && Array.isArray(appIds) && appIds.length > 0) {
@@ -137,12 +162,7 @@ const handleRestoreApps = async (req, res) => {
     if (restoreAll) {
       const search = req.body.search || '';
       if (search) {
-        whereClause = {
-          [Op.or]: [
-            { appId: { [Op.like]: `%${search}%` } },
-            { title: { [Op.like]: `%${search}%` } }
-          ]
-        };
+        whereClause = { [Op.or]: [ { appId: { [Op.like]: `%${search}%` } }, { title: { [Op.like]: `%${search}%` } } ] };
       }
       numRestored = await App.restore({ where: whereClause, paranoid: false });
     } else if (appIds && Array.isArray(appIds) && appIds.length > 0) {
@@ -170,12 +190,7 @@ const handleForceDeleteApps = async (req, res) => {
     if (deleteAll) {
       const search = req.body.search || '';
       if (search) {
-        whereClause = {
-          [Op.or]: [
-            { appId: { [Op.like]: `%${search}%` } },
-            { title: { [Op.like]: `%${search}%` } }
-          ]
-        };
+        whereClause = { [Op.or]: [ { appId: { [Op.like]: `%${search}%` } }, { title: { [Op.like]: `%${search}%` } } ] };
       }
       numDeleted = await App.destroy({ where: whereClause, force: true, paranoid: false });
     } else if (appIds && Array.isArray(appIds) && appIds.length > 0) {
@@ -198,6 +213,7 @@ const handleForceDeleteApps = async (req, res) => {
 module.exports = {
   renderScrapePage,
   renderAppListPage,
+  renderTrashPage, // Tach lai
   handleDeleteApps,
   handleRestoreApps,
   handleForceDeleteApps

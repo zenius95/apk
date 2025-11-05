@@ -1,0 +1,283 @@
+/*
+ * File: public/css/admin.css
+ * Giao dien "NEON" moi, dep hon, thom hon
+ */
+
+/* --- CAI DAT CHUNG --- */
+body {
+    background-color: #0d1117; /* GitHub Dark Background */
+    color: #c9d1d9; /* GitHub Dark Text */
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Them mot lop "glow" cho man hinh */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 10% 10%, rgba(16, 185, 129, 0.05), transparent 30%),
+                radial-gradient(circle at 90% 80%, rgba(14, 165, 233, 0.05), transparent 30%);
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* --- LAYOUT CHINH (main.ejs) --- */
+.admin-layout {
+    display: flex;
+    height: 100vh;
+}
+.admin-sidebar {
+    width: 16rem; /* 256px */
+    background-color: #0d1117; /* Match body */
+    border-right: 1px solid #21262d; /* GitHub Border */
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+.admin-sidebar-header {
+    padding: 1.25rem;
+    border-bottom: 1px solid #21262d;
+}
+.admin-sidebar-nav {
+    flex: 1 1 0%;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem; /* space-y-1 */
+}
+.admin-sidebar-footer {
+    padding: 1rem;
+    border-top: 1px solid #21262d;
+    font-size: 0.75rem;
+    color: #8b949e; /* GitHub Dark Muted Text */
+    text-align: center;
+}
+
+.admin-main {
+    flex: 1 1 0%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+.admin-main-content {
+    width: 100%;
+    max-width: 80rem; /* max-w-7xl + */
+    margin-left: auto;
+    margin-right: auto;
+    padding: 2.5rem; /* p-10 */
+}
+
+/* --- PANEL CHUNG (cho trang Scrape) --- */
+.panel {
+    background: #161b22; /* GitHub Dark Card */
+    border: 1px solid #21262d;
+    border-radius: 0.5rem; /* rounded-lg */
+    box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+    overflow: hidden;
+}
+.panel-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #21262d;
+}
+.panel-title {
+    font-size: 1.125rem; /* text-lg */
+    font-weight: 600;
+    color: #f0f6fc; /* GitHub Dark H1 */
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.panel-body {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem; /* space-y-6 */
+}
+.panel-footer {
+    padding: 1rem 1.5rem;
+    background-color: #0d1117; /* GitHub Dark BG */
+    border-top: 1px solid #21262d;
+}
+
+/* --- TRANG LIST (appList / trash) --- */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* Can tren */
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #21262d;
+}
+.page-title {
+    font-size: 2.25rem; /* 3xl */
+    font-weight: 700;
+    color: #f0f6fc;
+    /* Mau chu gradient "xin" */
+    background: linear-gradient(to right, #f0f6fc, #a5b4fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.page-subtitle {
+    font-size: 1rem;
+    color: #8b949e;
+    margin-top: 0.25rem;
+}
+
+.page-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+/* --- BANG DU LIEU "DEP" --- */
+.table-wrapper {
+    background: #161b22; /* GitHub Dark Card */
+    border: 1px solid #21262d;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    /* Them border top mau me */
+    border-top: 2px solid #10b981; /* emerald-500 */
+}
+
+.table-container {
+    overflow-y: auto;
+    max-height: 65vh; /* Chieu cao toi da */
+}
+.admin-table {
+    width: 100%;
+    min-width: 800px;
+    border-collapse: collapse;
+}
+
+.admin-table thead {
+    background-color: #0d1117; /* GitHub BG */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+.admin-table th {
+    padding: 0.75rem 1.5rem; /* py-3 px-6 */
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid #21262d;
+}
+.admin-table tbody tr {
+    border-bottom: 1px solid #21262d;
+    transition: background-color 0.15s ease-in-out;
+}
+.admin-table tbody tr:last-child {
+    border-bottom: none;
+}
+.admin-table tbody tr:hover {
+    background-color: rgba(33, 38, 45, 0.7); /* GitHub Hover */
+}
+.admin-table tbody tr.selected {
+    background-color: rgba(16, 185, 129, 0.15); /* Emerald */
+}
+.admin-table tbody tr.selected:hover {
+    background-color: rgba(16, 185, 129, 0.25);
+}
+
+.admin-table td {
+    padding: 1rem 1.5rem; /* py-4 px-6 */
+    vertical-align: middle;
+    color: #c9d1d9;
+}
+.admin-table td .app-title {
+    font-weight: 600;
+    color: #f0f6fc;
+}
+.admin-table td .app-id {
+    font-size: 0.875rem;
+    color: #8b949e;
+}
+
+/* Can chinh cot */
+.admin-table th.col-check,
+.admin-table td.col-check {
+    width: 4rem;
+    text-align: center;
+}
+.admin-table th.col-actions,
+.admin-table td.col-actions {
+    width: 8rem;
+    text-align: center;
+}
+.admin-table td.col-actions .action-buttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* --- PHAN TRANG "DEP" --- */
+.pagination-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #21262d;
+    background-color: #0d1117; /* Match Thead */
+}
+.pagination-stats {
+    font-size: 0.875rem;
+    color: #8b949e;
+}
+.pagination-stats span {
+    font-weight: 600;
+    color: #c9d1d9;
+}
+.pagination-links {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.pagination-links a,
+.pagination-links span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 0.375rem;
+    transition: all 0.15s ease-in-out;
+    border: 1px solid #21262d;
+}
+.pagination-links a {
+    color: #c9d1d9;
+    background-color: #21262d; /* GitHub Button */
+}
+.pagination-links a:hover {
+    background-color: #30363d; /* GitHub Button Hover */
+    border-color: #8b949e;
+}
+.pagination-links span.active {
+    background-color: #10b981; /* emerald-500 */
+    border-color: #059669; /* emerald-600 */
+    color: #ffffff;
+    font-weight: 700;
+}
+.pagination-links span.disabled {
+    background-color: #161b22;
+    border-color: #21262d;
+    color: #484f58; /* GitHub Disabled Text */
+    cursor: not-allowed;
+}
+.pagination-links span.dots {
+    color: #484f58;
+    border: none;
+}

@@ -1,0 +1,70 @@
+<% if (typeof pagination !== 'undefined' && pagination.totalPages > 1) { %>
+    <% 
+        const currentPage = pagination.currentPage;
+        const totalPages = pagination.totalPages;
+        const window = 2; 
+        const searchQuery = (typeof search !== 'undefined' && search) ? `&search=${encodeURIComponent(search)}` : ''; 
+    %>
+    <nav class="flex items-center justify-between border-t border-slate-700/50 bg-slate-900/50 px-4 py-3 sm:px-6"
+         aria-label="Pagination">
+        
+        <div class="hidden sm:block">
+            <p class="text-sm text-slate-400">
+                Hiển thị
+                <span class="font-medium text-white"><%= (pagination.currentPage - 1) * pagination.limit + 1 %></span>
+                tới
+                <span class="font-medium text-white"><%= Math.min(pagination.currentPage * pagination.limit, pagination.totalItems) %></span>
+                của
+                <span class="font-medium text-white"><%= pagination.totalItems %></span>
+                kết quả
+            </p>
+        </div>
+        
+        <div class="flex-1 flex justify-between sm:justify-end items-center space-x-1">
+            <% 
+                const linkClass = "relative inline-flex items-center rounded-md px-3 py-2 text-sm font-medium text-slate-300 ring-1 ring-inset ring-slate-700 hover:bg-slate-700 transition";
+                const activeClass = "relative z-10 inline-flex items-center rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white";
+                const disabledClass = "relative inline-flex items-center rounded-md bg-slate-800/50 px-3 py-2 text-sm font-medium text-slate-500 ring-1 ring-inset ring-slate-700/50 cursor-not-allowed";
+                const dotsClass = "relative inline-flex items-center px-3 py-2 text-sm font-medium text-slate-500";
+            %>
+            
+            <% if (currentPage > 1) { %>
+                <a href="<%= baseUrl %>?page=<%= currentPage - 1 %><%= searchQuery %>" class="<%= linkClass %>">
+                    <i class="ri-arrow-left-s-line"></i>
+                </a>
+            <% } else { %>
+                <span class="<%= disabledClass %>"><i class="ri-arrow-left-s-line"></i></span>
+            <% } %>
+
+            <% 
+                let pagesToShow = [];
+                pagesToShow.push(1);
+                if (currentPage - window > 2) { pagesToShow.push('...'); }
+                for (let i = Math.max(2, currentPage - window); i <= Math.min(totalPages - 1, currentPage + window); i++) { pagesToShow.push(i); }
+                if (currentPage + window < totalPages - 1) { pagesToShow.push('...'); }
+                if (totalPages > 1) { pagesToShow.push(totalPages); }
+                pagesToShow = [...new Set(pagesToShow)]; 
+            %>
+
+            <% for (const pageNum of pagesToShow) { %>
+                <% if (pageNum === '...') { %>
+                    <span class="<%= dotsClass %>">...</span>
+                <% } else if (pageNum === currentPage) { %>
+                    <span class="<%= activeClass %>"><%= pageNum %></span>
+                <% } else { %>
+                    <a href="<%= baseUrl %>?page=<%= pageNum %><%= searchQuery %>" class="<%= linkClass %>">
+                        <%= pageNum %>
+                    </a>
+                <% } %>
+            <% } %>
+
+            <% if (currentPage < totalPages) { %>
+                <a href="<%= baseUrl %>?page=<%= currentPage + 1 %><%= searchQuery %>" class="<%= linkClass %>">
+                    <i class="ri-arrow-right-s-line"></i>
+                </a>
+            <% } else { %>
+                <span class="<%= disabledClass %>"><i class="ri-arrow-right-s-line"></i></span>
+            <% } %>
+        </div>
+    </nav>
+<% } %>

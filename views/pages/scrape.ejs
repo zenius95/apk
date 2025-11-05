@@ -1,145 +1,110 @@
-<h1 class="text-3xl font-bold text-white mb-6 tracking-tight">Lấy dữ liệu Google Play</h1>
+<body data-page-mode="scrape">
 
-<div id="alert-container" class="mb-6"></div>
+    <header class="mb-8 pb-4 border-b border-slate-700">
+        <h1 class="text-3xl font-bold text-white tracking-tight">Lấy dữ liệu</h1>
+        <p class="text-slate-400 mt-1">Bắt đầu "cào" data từ Google Play</p>
+    </header>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-    <div id="scrape-form" class="lg:col-span-2 bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg p-6 space-y-6">
-        <div>
-            <label class="block text-sm font-medium text-slate-300 mb-2">Chế độ lấy dữ liệu</label>
-            <div class="mt-2 grid grid-cols-2 gap-2 rounded-lg bg-slate-900/70 p-1.5 transition-all duration-200">
-                <button id="btn-mode-by-id" 
-                        class="btn-mode relative flex items-center justify-center rounded-md py-2.5 px-3 text-sm font-semibold text-white bg-emerald-500 shadow-md transition-all duration-200 ease-in-out">
-                    <i class="ri-keyboard-line mr-2 text-lg"></i>
-                    Thủ công (Theo ID)
-                </button>
-                <button id="btn-mode-by-list" 
-                        class="btn-mode relative flex items-center justify-center rounded-md py-2.5 px-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition-all duration-200 ease-in-out">
-                    <i class="ri-list-check-2 mr-2 text-lg"></i>
-                    Tự động (Theo D/s)
-                </button>
-            </div>
-        </div>
-        
-        <div id="panel-by-id">
-            <label for="appIdsList" class="block text-sm font-medium text-slate-300 mb-2">
-                Danh sách App ID (Mỗi ID một dòng)
-            </label>
-            <textarea id="appIdsList" name="appIdsList" rows="12"
-                class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition duration-200"
-                placeholder="com.google.android.gm
-com.facebook.katana
-com.mojang.minecraftpe"></textarea>
-            <p class="text-xs text-slate-500 mt-1">Tự động loại bỏ trùng lặp và dòng trống.</p>
-        </div>
-        
-        <div id="panel-by-list" class="hidden space-y-6">
-            <div>
-                <label for="list-category" class="block text-sm font-medium text-slate-300 mb-2">
-                    Danh mục (Category)
-                </label>
-                <select id="list-category" name="list-category" 
-                        class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition duration-200">
-                    <% for (const key in categories) { %>
-                        <option value="<%= categories[key] %>"><%= key %></option>
-                    <% } %>
-                </select>
-            </div>
-            <div>
-                <label for="list-collection" class="block text-sm font-medium text-slate-300 mb-2">
-                    Bộ sưu tập (Collection)
-                </label>
-                <select id="list-collection" name="list-collection" 
-                        class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition duration-200">
-                    <% for (const key in collections) { %>
-                        <option value="<%= collections[key] %>"><%= key %></option>
-                    <% } %>
-                </select>
-            </div>
-            <div>
-                <label for="list-num" class="block text-sm font-medium text-slate-300 mb-2">
-                    Số lượng (Num)
-                </label>
-                <input type="number" id="list-num" name="list-num"
-                    class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition duration-200"
-                    value="50" min="1" max="200">
-                <p class="text-xs text-slate-500 mt-1">Số lượng app muốn lấy (tối đa 200).</p>
-            </div>
-        </div>
-
-        <div>
-            <button id="startScrapeBtn"
-                class="w-full flex justify-center items-center p-4 
-                       bg-gradient-to-r from-emerald-500 to-cyan-600 
-                       hover:from-emerald-600 hover:to-cyan-700 
-                       text-white font-bold rounded-lg shadow-lg 
-                       transform hover:-translate-y-1 hover:scale-[1.03] 
-                       transition-all duration-300 ease-in-out
-                       disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed disabled:transform-none">
-                <i id="loading-spinner" class="ri-loader-4-line animate-spin text-2xl -ml-1 mr-2 hidden"></i>
-                <i id="btn-icon" class="ri-play-fill text-2xl -ml-1 mr-2"></i>
-                <span id="btn-text" class="text-lg">Bắt đầu lấy dữ liệu</span>
-            </button>
-        </div>
-    </div>
-
-    <div class="lg:col-span-1">
-        <div class="bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg p-6 space-y-6">
-            <h2 class="text-lg font-semibold text-white border-b border-slate-700 pb-3">
-                <i class="ri-settings-3-line mr-2"></i>Cấu hình Job (Chung)
-            </h2>
-            <div>
-                <label for="concurrency" class="block text-sm font-medium text-slate-300 mb-2">
-                    Số luồng (Concurrency)
-                </label>
-                <input type="number" id="concurrency" name="concurrency"
-                    class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition duration-200"
-                    value="5" min="1" max="50">
-                <p class="text-xs text-slate-500 mt-1">Chạy song song bao nhiêu app.</p>
-            </div>
-            
-            <div>
-                <label for="delay" class="block text-sm font-medium text-slate-300 mb-2">
-                    Delay (miligiây)
-                </label>
-                <input type="number" id="delay" name="delay"
-                    class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition duration-200"
-                    value="1000" min="0">
-                <p class="text-xs text-slate-500 mt-1">Nghỉ giữa mỗi lượt lấy (ms).</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="flex-1 mt-8 flex flex-col overflow-hidden">
-    <div class="mb-4 border-b border-slate-700">
-        <nav class="-mb-px flex space-x-6" aria-label="Tabs">
-            <button id="tab-queue" class="tab-btn group inline-flex items-center py-3 px-1 border-b-2 font-medium text-sm text-emerald-400 border-emerald-500">
-                <i class="ri-loader-3-line mr-2"></i>
-                <span>Hàng chờ</span>
-                <span id="queue-count" class="ml-2 hidden rounded-full bg-emerald-700/80 px-2.5 py-0.5 text-xs font-medium text-emerald-200">0</span>
-            </button>
-            </nav>
-    </div>
-
-    <div class="flex-1 overflow-hidden">
-        <div id="panel-queue" class="tab-panel h-full">
-            <div id="table-container-queue" class="h-full bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg overflow-y-auto">
-                <table class="min-w-full divide-y divide-slate-700/50">
-                    <thead class="bg-slate-900/50 sticky top-0 backdrop-blur-md">
-                        <tr>
-                            <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6 w-3/5">App</th>
-                            <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Loại</th>
-                            <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Trạng thái</th>
-                        </tr>
-                    </thead>
-                    <tbody id="app-table-body-queue" class="divide-y divide-slate-800"></tbody>
-                </table>
-                <div id="table-placeholder-queue" class="p-8 text-center text-slate-500">
-                    <i class="ri-inbox-line text-4xl"></i>
-                    <p class="mt-2">Hàng chờ đang trống.</p>
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg">
+                <div class="p-6 space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Chế độ lấy dữ liệu</label>
+                        <div class="mt-2 grid grid-cols-2 gap-2 rounded-lg bg-slate-900/70 p-1.5">
+                            <button id="btn-mode-by-id" class="btn-mode relative flex items-center justify-center rounded-md py-2.5 px-3 text-sm font-semibold text-white bg-emerald-500 shadow-md">
+                                <i class="ri-keyboard-line mr-2 text-lg"></i>
+                                Thủ công (Theo ID)
+                            </button>
+                            <button id="btn-mode-by-list" class="btn-mode relative flex items-center justify-center rounded-md py-2.5 px-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white">
+                                <i class="ri-list-check-2 mr-2 text-lg"></i>
+                                Tự động (Theo D/s)
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="panel-by-id">
+                        <label for="appIdsList" class="block text-sm font-medium text-slate-300 mb-2">Danh sách App ID (Mỗi ID một dòng)</label>
+                        <textarea id="appIdsList" name="appIdsList" rows="12" class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 transition"></textarea>
+                    </div>
+                    
+                    <div id="panel-by-list" class="hidden space-y-4">
+                        <div>
+                            <label for="list-category" class="block text-sm font-medium text-slate-300 mb-2">Danh mục</label>
+                            <select id="list-category" name="list-category" class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 transition">
+                                <% for (const key in categories) { %>
+                                    <option value="<%= categories[key] %>"><%= key %></option>
+                                <% } %>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="list-collection" class="block text-sm font-medium text-slate-300 mb-2">Bộ sưu tập</label>
+                            <select id="list-collection" name="list-collection" class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 transition">
+                                <% for (const key in collections) { %>
+                                    <option value="<%= collections[key] %>"><%= key %></option>
+                                <% } %>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="list-num" class="block text-sm font-medium text-slate-300 mb-2">Số lượng (Tối đa 200)</label>
+                            <input type="number" id="list-num" name="list-num" class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 transition" value="50" min="1" max="200">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6 border-t border-slate-700/50">
+                    <button id="startScrapeBtn" class="w-full flex justify-center items-center p-3 bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700 text-white font-bold rounded-lg shadow-lg transform hover:scale-[1.02] transition-all duration-300 disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed">
+                        <i id="loading-spinner" class="ri-loader-4-line animate-spin text-2xl -ml-1 mr-2 hidden"></i>
+                        <i id="btn-icon" class="ri-play-fill text-2xl -ml-1 mr-2"></i>
+                        <span id="btn-text" class="text-lg">Bắt đầu lấy dữ liệu</span>
+                    </button>
                 </div>
             </div>
+        </div> <div class="lg:col-span-1">
+            <div class="bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg p-6 space-y-6 sticky top-10">
+                <h3 class="text-lg font-semibold text-white border-b border-slate-700 pb-3 flex items-center">
+                    <i class="ri-settings-3-line mr-2 text-cyan-400"></i>
+                    Cấu hình Job
+                </h3>
+                <div>
+                    <label for="concurrency" class="block text-sm font-medium text-slate-300 mb-2">Số luồng (Concurrency)</label>
+                    <input type="number" id="concurrency" name="concurrency" class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 transition" value="5" min="1" max="50">
+                    <p class="text-xs text-slate-500 mt-1">Chạy song song bao nhiêu app.</p>
+                </div>
+                <div>
+                    <label for="delay" class="block text-sm font-medium text-slate-300 mb-2">Delay (miligiây)</label>
+                    <input type="number" id="delay" name="delay" class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 transition" value="1000" min="0">
+                    <p class="text-xs text-slate-500 mt-1">Nghỉ giữa mỗi lượt lấy (ms).</p>
+                </div>
+            </div>
+        </div> </div>
+    
+    <div class="mt-8 bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg overflow-hidden">
+        <div class="p-5 border-b border-slate-700/50">
+            <h3 class="text-lg font-medium text-white flex items-center">
+                <i class="ri-loader-3-line mr-2 text-emerald-400"></i>
+                Hàng chờ
+                <span id="queue-count" class="ml-2 hidden rounded-full bg-emerald-700/80 px-2.5 py-0.5 text-xs font-medium text-emerald-200">0</span>
+            </h3>
+        </div>
+        <div class="table-container" style="max-height: 40vh;">
+            <table class="min-w-full">
+                <thead class="bg-slate-900/50 sticky top-0">
+                    <tr>
+                        <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6 w-3/5">App</th>
+                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Loại</th>
+                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody id="app-table-body-queue" class="divide-y divide-slate-800">
+                    </tbody>
+            </table>
+            <div id="table-placeholder-queue" class="p-12 text-center text-slate-500">
+                <i class="ri-inbox-line text-5xl"></i>
+                <p class="mt-4 text-lg">Hàng chờ đang trống.</p>
+            </div>
         </div>
     </div>
-</div>
+    
+</body>
