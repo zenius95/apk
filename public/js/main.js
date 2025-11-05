@@ -177,24 +177,22 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       // 4. Goi API "ra lenh"
       const response = await fetch('/api/scrape', {
-        // ... (headers, body)
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload) 
       });
       
       const result = await response.json(); 
       if (!response.ok) { throw new Error(result.message || 'Lỗi không xác định'); }
 
-      // 5. Nhan list App ID (DA DUOC LOC) tu backend tra ve
+      // 5. Nhan list App ID tu backend tra ve
       const { appIds: returnedAppIds, message } = result;
       
-      // +++ SUA DONG NAY +++
-      // Loc app moi (so voi trang hien tai) <-- XOA DI
-      // const newAppIds = returnedAppIds.filter(id => !savedAppIds.has(id));
-      
-      // +++ THAY BANG DONG NAY +++
-      const newAppIds = returnedAppIds; // Backend da loc roi, frontend chi can lay
+      // Loc app moi (so voi trang hien tai)
+      const newAppIds = returnedAppIds.filter(id => !savedAppIds.has(id));
 
       if (newAppIds.length === 0) {
-        showAlert(message, false); // Hien thi thong bao "Da co het roi" tu backend
+        showAlert("Tat ca app tim thay deu da co trong 'Da luu'.", false);
         updateButtonState(false); 
         queuePlaceholder.innerHTML = '<p class="text-slate-500 p-8 text-center"><i class="ri-inbox-line text-4xl"></i><br>Hàng chờ đang trống.</p>';
         return;
@@ -203,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // 6. Ve bang "Hang Cho" voi cac app moi
       buildQueueTable(newAppIds);
       switchToTab('queue'); 
-      showAlert(message, false); // Hien thi thong bao thanh cong tu backend
+      showAlert(message, false);
       appIdsListEl.value = ''; 
 
     } catch (err) {
