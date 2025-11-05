@@ -42,9 +42,15 @@ document.addEventListener('DOMContentLoaded', () => {
   let savedAppIds = new Set(initialSavedApps.map(app => app.appId));
   let currentScrapeMode = 'by_id'; // +++ BIEN LUU CHE DO HIEN TAI +++
 
+  // +++ BIEN LUU TONG SO APP DA LUU +++
+  // 'paginationData' va 'searchTerm' duoc lay tu script inline trong main.ejs
+  let totalSavedApps = (paginationData && typeof paginationData.totalItems !== 'undefined')
+    ? paginationData.totalItems
+    : initialSavedApps.length; // Fallback neu khong co pagination
+
   // --- 3. Dinh nghia cac ham "chuc nang" ---
 
-  // (Cac ham showAlert, updateButtonState, checkJobStatus, updateTabCounts, buildSavedRow, buildInitialSavedTable, buildQueueTable deu giu nguyen)
+  // (Cac ham showAlert, updateButtonState, checkJobStatus deu giu nguyen)
   function showAlert(message, isError = false) { /* ... (Giu nguyen) ... */
     alertContainer.innerHTML = ''; if (!message) return;
     const t = isError ? { bg: 'bg-red-800/70', b: 'border-red-600/50', x: 'text-red-200', i: 'Toang!' } : { bg: 'bg-green-800/70', b: 'border-green-600/50', x: 'text-green-200', i: 'Ngon!' };
@@ -59,14 +65,20 @@ document.addEventListener('DOMContentLoaded', () => {
   async function checkJobStatus() { /* ... (Giu nguyen) ... */
      try { const r = await fetch('/api/scrape/status'), d = await r.json(); updateButtonState(d.isJobRunning); } catch (e) { updateButtonState(false); }
   }
-  function updateTabCounts() { /* ... (Giu nguyen) ... */
+
+  // +++ CAP NHAT HAM DEM SO LUONG TAB +++
+  function updateTabCounts() {
     const queueLen = queueTableBody.rows.length;
-    const savedLen = savedAppIds.size;
+    
+    // Su dung bien toan cuc 'totalSavedApps'
+    const savedLen = totalSavedApps;
+        
     queueCount.textContent = queueLen;
     savedCount.textContent = savedLen;
     queueCount.classList.toggle('hidden', queueLen === 0);
     savedCount.classList.toggle('hidden', savedLen === 0);
   }
+
   function buildSavedRow(app) { /* ... (Giu nguyen) ... */
     const row = document.createElement('tr'); row.setAttribute('data-app-id', app.appId);
     const appData = app.fullData;
@@ -79,12 +91,31 @@ document.addEventListener('DOMContentLoaded', () => {
       <td class="px-3 py-4 text-sm text-slate-400">${new Date(app.lastScrapedAt).toLocaleString()}</td>`;
     return row;
   }
-  function buildInitialSavedTable() { /* ... (Giu nguyen) ... */
+  
+  // +++ CAP NHAT LOGIC VE BANG "DA LUU" VA PLACEHOLDER +++
+  function buildInitialSavedTable() {
     savedTableBody.innerHTML = '';
-    if (initialSavedApps.length === 0) { savedPlaceholder.classList.remove('hidden'); }
-    else { savedPlaceholder.classList.add('hidden'); initialSavedApps.forEach(app => { savedTableBody.appendChild(buildSavedRow(app)); }); }
-    updateTabCounts();
+    
+    if (initialSavedApps.length === 0) { 
+      savedPlaceholder.classList.remove('hidden');
+      
+      // 'searchTerm' duoc khai bao global tu main.ejs
+      if (searchTerm) {
+        // Neu dang tim kiem ma khong co ket qua
+        savedPlaceholder.innerHTML = `<div class="p-8 text-center text-slate-500"><i class="ri-search-line text-4xl"></i><p class="mt-2">Không tìm thấy app nào khớp với "<span class="text-yellow-400">${searchTerm}</span>".</p></div>`;
+      } else {
+        // Neu khong tim kiem, va DB trong
+        savedPlaceholder.innerHTML = '<div class="p-8 text-center text-slate-500"><i class="ri-database-2-line text-4xl"></i><p class="mt-2">Chưa có app nào trong Database.</p></div>';
+      }
+      
+    } else { 
+      // Neu co data, an placeholder di
+      savedPlaceholder.classList.add('hidden'); 
+      initialSavedApps.forEach(app => { savedTableBody.appendChild(buildSavedRow(app)); }); 
+    }
+    updateTabCounts(); // Luon cap nhat so luong khi ve bang
   }
+
   function buildQueueTable(appIds) { /* ... (Giu nguyen - Ham ve bang "Hang cho" 3 cot) ... */
     queueTableBody.innerHTML = '';
     if (appIds.length === 0) { queuePlaceholder.classList.remove('hidden');
@@ -146,22 +177,24 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       // 4. Goi API "ra lenh"
       const response = await fetch('/api/scrape', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload) 
+        // ... (headers, body)
       });
       
       const result = await response.json(); 
       if (!response.ok) { throw new Error(result.message || 'Lỗi không xác định'); }
 
-      // 5. Nhan list App ID tu backend tra ve
+      // 5. Nhan list App ID (DA DUOC LOC) tu backend tra ve
       const { appIds: returnedAppIds, message } = result;
       
-      // Loc app moi
-      const newAppIds = returnedAppIds.filter(id => !savedAppIds.has(id));
+      // +++ SUA DONG NAY +++
+      // Loc app moi (so voi trang hien tai) <-- XOA DI
+      // const newAppIds = returnedAppIds.filter(id => !savedAppIds.has(id));
+      
+      // +++ THAY BANG DONG NAY +++
+      const newAppIds = returnedAppIds; // Backend da loc roi, frontend chi can lay
 
       if (newAppIds.length === 0) {
-        showAlert("Tat ca app tim thay deu da co trong 'Da luu'.", false);
+        showAlert(message, false); // Hien thi thong bao "Da co het roi" tu backend
         updateButtonState(false); 
         queuePlaceholder.innerHTML = '<p class="text-slate-500 p-8 text-center"><i class="ri-inbox-line text-4xl"></i><br>Hàng chờ đang trống.</p>';
         return;
@@ -170,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // 6. Ve bang "Hang Cho" voi cac app moi
       buildQueueTable(newAppIds);
       switchToTab('queue'); 
-      showAlert(message, false);
+      showAlert(message, false); // Hien thi thong bao thanh cong tu backend
       appIdsListEl.value = ''; 
 
     } catch (err) {
@@ -233,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // --- 4. Lang nghe cac "Tin Nhan" tu Server (Giu nguyen) ---
+  // --- 4. Lang nghe cac "Tin Nhan" tu Server ---
   
   socket.on('job:info', (message) => { /* ... (Giu nguyen) ... */
     showAlert(message, false);
@@ -245,18 +278,40 @@ document.addEventListener('DOMContentLoaded', () => {
       row.cells[2].innerHTML = `<span class="inline-flex items-center rounded-md bg-blue-700/80 px-2 py-1 text-xs font-medium text-blue-200"><i class="ri-refresh-line animate-spin mr-1.5"></i>Đang xử lý...</span>`;
     }
   });
-  socket.on('app:success', (data) => { /* ... (Giu nguyen) ... */
+
+  // +++ CAP NHAT LOGIC SOCKET 'APP:SUCCESS' +++
+  socket.on('app:success', (data) => {
     const app = data.app;
+    const isCreated = data.created; // true neu la app moi, false neu la update
+    
     const rowInQueue = queueTableBody.querySelector(`tr[data-app-id="${app.appId}"]`);
     if (rowInQueue) { rowInQueue.remove(); }
-    savedAppIds.add(app.appId); 
+    
     let rowInSaved = savedTableBody.querySelector(`tr[data-app-id="${app.appId}"]`);
     const newSavedRow = buildSavedRow(app); 
-    if (rowInSaved) { rowInSaved.replaceWith(newSavedRow); }
-    else { savedTableBody.prepend(newSavedRow); }
+    
+    if (rowInSaved) { 
+      // App da co trong bang (trang hien tai), chi can thay the
+      rowInSaved.replaceWith(newSavedRow); 
+    }
+    else { 
+      // App khong co trong bang (trang hien tai)
+      if (isCreated) {
+         totalSavedApps++; // +++ TANG BIEN TONG NEU LA APP MOI
+      }
+      
+      // Chi prepend vao bang "Da luu" neu Bro khong dang tim kiem
+      // de tranh lam loan ket qua tim kiem/phan trang
+      if (!searchTerm) {
+          savedTableBody.prepend(newSavedRow);
+          savedAppIds.add(app.appId); // Them vao set cua trang hien tai
+      }
+    }
+    
     savedPlaceholder.classList.add('hidden');
-    updateTabCounts();
+    updateTabCounts(); // Cap nhat lai so luong
   });
+
   socket.on('app:failed', (data) => { /* ... (Giu nguyen) ... */
     const row = queueTableBody.querySelector(`tr[data-app-id="${data.appId}"]`);
     if (row) {
@@ -297,8 +352,18 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // +++ CHAY LAN DAU +++
-  buildInitialSavedTable(); 
+  buildInitialSavedTable(); // buildInitialSavedTable da goi updateTabCounts()
   checkJobStatus(); 
-  switchToTab('saved'); 
+  
+  // +++ CAP NHAT LOGIC CHON TAB MAC DINH +++
+  const urlParams = new URLSearchParams(window.location.search);
+  
+  // 'searchTerm' va 'paginationData' da duoc khai bao global tu main.ejs
+  if (urlParams.has('page') || urlParams.has('search')) {
+    switchToTab('saved'); // Neu co pagination/search, mo tab "Da luu"
+  } else {
+    switchToTab('saved'); // Van mac dinh la 'saved'
+  }
+  
   setScrapeMode('by_id'); // Dat che do mac dinh la 'by_id'
 });

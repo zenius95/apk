@@ -3,16 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= data.title || 'Admin Panel' %></title>
+    <title><%= data.title ||
+'Admin Panel' %></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
     <style>
-      body { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; background-color: #0f172a; }
-      #table-container-queue::-webkit-scrollbar, #table-container-saved::-webkit-scrollbar { width: 6px; }
-      #table-container-queue::-webkit-scrollbar-track, #table-container-saved::-webkit-scrollbar-track { background: #1e293b; }
-      #table-container-queue::-webkit-scrollbar-thumb, #table-container-saved::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
-      #table-container-queue::-webkit-scrollbar-thumb:hover, #table-container-saved::-webkit-scrollbar-thumb:hover { background: #64748b; }
-      .tab-panel.hidden { display: none; }
+      body { font-family: 'Inter', system-ui, sans-serif;
+-webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; background-color: #0f172a; }
+      #table-container-queue::-webkit-scrollbar, #table-container-saved::-webkit-scrollbar { width: 6px;
+}
+      #table-container-queue::-webkit-scrollbar-track, #table-container-saved::-webkit-scrollbar-track { background: #1e293b;
+}
+      #table-container-queue::-webkit-scrollbar-thumb, #table-container-saved::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px;
+}
+      #table-container-queue::-webkit-scrollbar-thumb:hover, #table-container-saved::-webkit-scrollbar-thumb:hover { background: #64748b;
+}
+      .tab-panel.hidden { display: none;
+}
     </style>
 </head>
 <body class="text-slate-300 h-full">
@@ -22,80 +29,164 @@
             <div class="p-5 border-b border-slate-100/10"><h1 class="text-2xl font-bold text-white">GPlay<span class="text-emerald-400">Scraper</span></h1><p class="text-slate-400 text-sm">Panel cua Bro</p></div>
             <nav class="flex-1 p-4 space-y-2">
                 <a href="/" class="flex items-center p-3 rounded-lg text-white font-medium bg-emerald-500/10 border-l-4 border-emerald-400"><i class="ri-download-cloud-2-line text-emerald-400 w-6 text-xl mr-3"></i><span>Lấy dữ liệu</span></a>
-                 <a href="#" class="flex items-center p-3 rounded-lg text-slate-400 hover:bg-slate-800/50 hover:text-white border-l-4 border-transparent hover:border-emerald-400/50 transition-all duration-200 group"><i class="ri-database-2-line text-slate-500 group-hover:text-emerald-400 w-6 text-xl mr-3 transition-colors duration-200"></i><span>Quản lý Apps (Demo)</span></a>
+ 
+                <a href="#" class="flex items-center p-3 rounded-lg text-slate-400 hover:bg-slate-800/50 hover:text-white border-l-4 border-transparent hover:border-emerald-400/50 transition-all duration-200 group"><i class="ri-database-2-line text-slate-500 group-hover:text-emerald-400 w-6 text-xl mr-3 transition-colors duration-200"></i><span>Quản lý Apps (Demo)</span></a>
             </nav>
             <div class="p-4 border-t border-slate-100/10 text-center text-xs text-slate-500">Lam boi "AI cua Bro" ;)</div>
         </aside>
 
         <main class="flex-1 flex flex-col">
-            
+     
+       
             <div class="max-w-7xl mx-auto w-full flex-1 flex flex-col p-6 md:p-10">
             
                 <div class="flex-shrink-0">
                     <%- body %>
                 </div>
-                
+      
+          
                 <div class="flex-1 mt-8 flex flex-col overflow-hidden">
                     <div class="mb-4 border-b border-slate-700">
                         <nav class="-mb-px flex space-x-6" aria-label="Tabs">
-                            <button id="tab-queue" class="tab-btn group inline-flex items-center py-3 px-1 border-b-2 font-medium text-sm text-emerald-400 border-emerald-500">
+                  
+          <button id="tab-queue" class="tab-btn group inline-flex items-center py-3 px-1 border-b-2 font-medium text-sm text-emerald-400 border-emerald-500">
                                 <i class="ri-loader-3-line mr-2"></i>
                                 <span>Hàng chờ</span>
-                                <span id="queue-count" class="ml-2 hidden rounded-full bg-emerald-700/80 px-2.5 py-0.5 text-xs font-medium text-emerald-200">0</span>
+           
+                     <span id="queue-count" class="ml-2 hidden rounded-full bg-emerald-700/80 px-2.5 py-0.5 text-xs font-medium text-emerald-200">0</span>
                             </button>
-                            <button id="tab-saved" class="tab-btn group inline-flex items-center py-3 px-1 border-b-2 font-medium text-sm text-slate-400 border-transparent hover:text-slate-200 hover:border-slate-400">
+                            <button id="tab-saved" class="tab-btn group inline-flex items-center py-3 px-1 border-b-2 font-medium text-sm text-slate-400 border-transparent 
+hover:text-slate-200 hover:border-slate-400">
                                 <i class="ri-database-2-line mr-2"></i>
                                 <span>Đã lưu</span>
-                                <span id="saved-count" class="ml-2 hidden rounded-full bg-slate-700/80 px-2.5 py-0.5 text-xs font-medium text-slate-200">0</span>
+                                
+<span id="saved-count" class="ml-2 hidden rounded-full bg-slate-700/80 px-2.5 py-0.5 text-xs font-medium text-slate-200">0</span>
                             </button>
                         </nav>
                     </div>
 
-                    <div class="flex-1 overflow-hidden">
+                  
+  <div class="flex-1 overflow-hidden">
                         <div id="panel-queue" class="tab-panel h-full">
                             <div id="table-container-queue" class="h-full bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg overflow-y-auto">
-                                <table class="min-w-full divide-y divide-slate-700/50">
+                                
+<table class="min-w-full divide-y divide-slate-700/50">
                                     <thead class="bg-slate-900/50 sticky top-0 backdrop-blur-md">
                                         <tr>
-                                            <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6 w-3/5">App</th>
+                 
+                           <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6 w-3/5">App</th>
                                             <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Loại</th>
-                                            <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Trạng thái</th>
+             
+                               <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Trạng thái</th>
                                         </tr>
-                                    </thead>
+                     
+               </thead>
                                     <tbody id="app-table-body-queue" class="divide-y divide-slate-800"></tbody>
                                 </table>
-                                <div id="table-placeholder-queue" class="p-8 text-center text-slate-500">
+              
+                  <div id="table-placeholder-queue" class="p-8 text-center text-slate-500">
                                     <i class="ri-inbox-line text-4xl"></i>
-                                    <p class="mt-2">Hàng chờ đang trống.</p>
+                                    <p class="mt-2">Hàng chờ đang 
+trống.</p>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div id="panel-saved" class="tab-panel hidden h-full">
-                            <div id="table-container-saved" class="h-full bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg overflow-y-auto">
-                                <table class="min-w-full divide-y divide-slate-700/50">
+                
+        
+                        <div id="panel-saved" class="tab-panel hidden h-full flex flex-col">
+                            
+                            <div class="flex-shrink-0 p-4 bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 rounded-t-lg border-b border-slate-700/50">
+                                <form method="GET" action="/">
+                                    <div class="relative">
+                                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                            <i class="ri-search-line text-slate-400"></i>
+                                        </div>
+                                        <input type="text" name="search" id="saved-search"
+                                            class="block w-full rounded-md border-0 bg-slate-900/70 py-2.5 pl-10 text-white ring-1 ring-inset ring-slate-700 placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm"
+                                            placeholder="Tìm theo Tên hoặc App ID..."
+                                            value="<%= typeof search !== 'undefined' ? search : '' %>">
+                                    </div>
+                                </form>
+                            </div>
+                            <div id="table-container-saved" class="flex-1 bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-b-lg overflow-y-auto">
+                           
+     <table class="min-w-full divide-y divide-slate-700/50">
                                     <thead class="bg-slate-900/50 sticky top-0 backdrop-blur-md">
                                         <tr>
-                                            <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6 w-3/5">App</th>
+            
+                                <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6 w-3/5">App</th>
                                             <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Loại</th>
-                                            <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Lần cuối lấy</th>
+        
+                                    <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Lần cuối lấy</th>
                                         </tr>
-                                    </thead>
+               
+                     </thead>
                                     <tbody id="app-table-body-saved" class="divide-y divide-slate-800"></tbody>
                                 </table>
-                                <div id="table-placeholder-saved" class="p-8 text-center text-slate-500 hidden">
+        
+                        <div id="table-placeholder-saved" class="p-8 text-center text-slate-500 hidden">
                                     <i class="ri-database-2-line text-4xl"></i>
-                                    <p class="mt-2">Chưa có app nào trong Database.</p>
+                                 
+   <p class="mt-2">Chưa có app nào trong Database.</p>
                                 </div>
                             </div>
-                        </div>
-                    </div>
+
+                            <% if (typeof pagination !== 'undefined' && pagination.totalPages > 1) { %>
+                                <nav class="flex-shrink-0 flex items-center justify-between border-t border-slate-700/50 bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 rounded-b-lg px-4 py-3 sm:px-6"
+                                     aria-label="Pagination">
+                                    <div class="hidden sm:block">
+                                        <p class="text-sm text-slate-400">
+                                            Hiển thị
+                                            <span class="font-medium text-white"><%= (pagination.currentPage - 1) * pagination.limit + 1 %></span>
+                                            tới
+                                            <span class="font-medium text-white"><%= Math.min(pagination.currentPage * pagination.limit, pagination.totalItems) %></span>
+                                            của
+                                            <span class="font-medium text-white"><%= pagination.totalItems %></span>
+                                            kết quả
+                                        </p>
+                                    </div>
+                                    <div class="flex-1 flex justify-between sm:justify-end">
+                                        <% 
+                                        const searchQuery = (typeof search !== 'undefined' && search) ? `&search=${encodeURIComponent(search)}` : ''; 
+                                        %>
+                                        
+                                        <% if (pagination.currentPage > 1) { %>
+                                            <a href="/?page=<%= pagination.currentPage - 1 %><%= searchQuery %>"
+                                               class="relative inline-flex items-center rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-slate-300 ring-1 ring-inset ring-slate-700 hover:bg-slate-700">
+                                                Trước
+                                            </a>
+                                        <% } else { %>
+                                            <span class="relative inline-flex items-center rounded-md bg-slate-900/50 px-3 py-2 text-sm font-medium text-slate-500 ring-1 ring-inset ring-slate-700/50 cursor-not-allowed">
+                                                Trước
+                                            </span>
+                                        <% } %>
+                                        
+                                        <% if (pagination.currentPage < pagination.totalPages) { %>
+                                            <a href="/?page=<%= pagination.currentPage + 1 %><%= searchQuery %>"
+                                               class="relative ml-3 inline-flex items-center rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-slate-300 ring-1 ring-inset ring-slate-700 hover:bg-slate-700">
+                                                Sau
+                                            </a>
+                                        <% } else { %>
+                                            <span class="relative ml-3 inline-flex items-center rounded-md bg-slate-900/50 px-3 py-2 text-sm font-medium text-slate-500 ring-1 ring-inset ring-slate-700/50 cursor-not-allowed">
+                                                Sau
+                                            </span>
+                                        <% } %>
+                                    </div>
+                                </nav>
+                            <% } %>
+                            </div>
+       
+             </div>
                 </div>
             </div> </main>
     </div>
 
     <script>
-      var initialSavedApps = <%- JSON.stringify(savedApps || []) %>;
+      var initialSavedApps = <%- JSON.stringify(savedApps ||
+[]) %>;
+      // +++ THEM BIEN JS DE TRUYEN DATA PHAN TRANG/TIM KIEM +++
+      var paginationData = <%- JSON.stringify(pagination || {}) %>;
+      var searchTerm = <%- JSON.stringify(search || '') %>;
     </script>
 
     <script src="/socket.io/socket.io.js"></script>
