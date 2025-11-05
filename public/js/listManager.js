@@ -8,8 +8,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const pageMode = document.body.dataset.pageMode; // 'list' hoac 'trash'
     const searchTerm = document.body.dataset.searchTerm || '';
 
-    if (!pageMode) {
-        return;
+    if (pageMode !== 'list' && pageMode !== 'trash') {
+        // Khong phai trang List/Trash, listManager.js thoat.
+        return; 
     }
 
     const tableBody = document.getElementById('app-table-body');
