@@ -16,6 +16,10 @@ router.use(adminAuth);
  */
 router.post('/scrape', scrapeController.handleScrapeRequest);
 
+// Route Stop Job
+router.post('/scrape/stop', scrapeController.handleStopJob);
+
+
 /**
  * @route GET /api/scrape/status
  * @desc (Optional) De UI kiem tra xem job dang chay hay khong
@@ -37,14 +41,14 @@ router.delete('/apps', adminController.handleDeleteApps);
  * @desc Khoi phuc mot hoac nhieu apps tu thung rac
  * @access Private (Da qua Basic Auth)
  */
-router.post('/api/apps/restore', adminController.handleRestoreApps); 
+router.post('/apps/restore', adminController.handleRestoreApps); 
 
 /**
  * @route DELETE /api/apps/permanent
  * @desc Xoa vinh vien mot hoac nhieu apps
  * @access Private (Da qua Basic Auth)
  */
-router.delete('/api/apps/permanent', adminController.handleForceDeleteApps); 
+router.delete('/apps/permanent', adminController.handleForceDeleteApps); 
 
 // === (MOI) Cac route cho Quan ly Wordpress Sites ===
 

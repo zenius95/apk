@@ -84,30 +84,28 @@
             </div>
         </div> </div>
     
-    <div class="mt-8 bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg overflow-hidden">
-        <div class="p-5 border-b border-slate-700/50">
-            <h3 class="text-lg font-medium text-white flex items-center">
-                <i class="ri-loader-3-line mr-2 text-emerald-400"></i>
-                Hàng chờ
-                <span id="queue-count" class="ml-2 hidden rounded-full bg-emerald-700/80 px-2.5 py-0.5 text-xs font-medium text-emerald-200">0</span>
+    <div class="mt-8 bg-slate-900 ring-1 ring-white/10 shadow-xl rounded-lg overflow-hidden flex flex-col" style="height: 500px;">
+        
+        <div class="p-3 border-b border-slate-700/50 bg-slate-800 flex justify-between items-center">
+            <h3 class="text-sm font-mono text-slate-400 flex items-center">
+                <i class="ri-terminal-box-line mr-2 text-emerald-500"></i>
+                Scraper Terminal
             </h3>
-        </div>
-        <div class="table-container" style="max-height: 40vh;">
-            <table class="min-w-full">
-                <thead class="bg-slate-900/50 sticky top-0">
-                    <tr>
-                        <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6 w-3/5">App</th>
-                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Loại</th>
-                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Trạng thái</th>
-                    </tr>
-                </thead>
-                <tbody id="app-table-body-queue" class="divide-y divide-slate-800">
-                    </tbody>
-            </table>
-            <div id="table-placeholder-queue" class="p-12 text-center text-slate-500">
-                <i class="ri-inbox-line text-5xl"></i>
-                <p class="mt-4 text-lg">Hàng chờ đang trống.</p>
+            <div class="flex items-center space-x-4">
+                <div class="text-xs font-mono space-x-2">
+                    <span class="text-slate-400">Total: <span id="stat-total" class="text-white">0</span></span>
+                    <span class="text-green-500">OK: <span id="stat-success">0</span></span>
+                    <span class="text-red-500">Fail: <span id="stat-failed">0</span></span>
+                </div>
+                
+                <button id="btn-stop-job" class="hidden px-3 py-1 bg-red-900/50 hover:bg-red-800 text-red-200 text-xs font-bold rounded border border-red-700/50 transition-all">
+                    <i class="ri-stop-circle-line mr-1"></i> DỪNG LẠI
+                </button>
             </div>
+        </div>
+
+        <div id="terminal-body" class="flex-1 p-4 overflow-y-auto font-mono text-sm space-y-1 bg-black/90 scroll-smooth">
+            <div class="text-slate-500 italic">Waiting for command...</div>
         </div>
     </div>
     

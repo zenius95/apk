@@ -173,23 +173,46 @@ const handleDeleteApps = async (req, res) => {
   }
 };
 
+// --- 1. SỬA HÀM KHÔI PHỤC (handleRestoreApps) ---
 const handleRestoreApps = async (req, res) => {
   const { appIds, restoreAll } = req.body;
   try {
     let numRestored = 0;
     let whereClause = {};
+
     if (restoreAll) {
+      // Nếu chọn tất cả: Phải lọc theo Search (nếu có) VÀ chỉ những thằng đang trong thùng rác
       const search = req.body.search || '';
+      
+      // Logic tạo điều kiện tìm kiếm
       if (search) {
-        whereClause = { [Op.or]: [ { appId: { [Op.like]: `%${search}%` } }, { title: { [Op.like]: `%${search}%` } } ] };
+        whereClause = {
+            [Op.and]: [
+                { deletedAt: { [Op.not]: null } }, // QUAN TRỌNG: Chỉ lấy thằng đã xóa
+                {
+                    [Op.or]: [
+                        { appId: { [Op.like]: `%${search}%` } },
+                        { title: { [Op.like]: `%${search}%` } }
+                    ]
+                }
+            ]
+        };
+      } else {
+        // Nếu không search, chỉ cần điều kiện đã xóa
+        whereClause = { deletedAt: { [Op.not]: null } };
       }
+
+      // Thực hiện khôi phục
       numRestored = await App.restore({ where: whereClause, paranoid: false });
+
     } else if (appIds && Array.isArray(appIds) && appIds.length > 0) {
+      // Nếu chọn lẻ tẻ: Chỉ cần where theo ID
       whereClause = { appId: appIds };
       numRestored = await App.restore({ where: whereClause, paranoid: false });
     } else {
       return res.status(400).json({ success: false, message: 'Chưa chọn app nào để khôi phục.' });
     }
+
     return res.status(200).json({ 
       success: true, 
       message: `Đã khôi phục ${numRestored} app${numRestored > 1 ? 's' : ''}.`,
@@ -201,57 +224,65 @@ const handleRestoreApps = async (req, res) => {
   }
 };
 
-// --- (CAP NHAT LON HAM NAY) ---
+// --- 2. SỬA HÀM XÓA VĨNH VIỄN (handleForceDeleteApps) ---
 const handleForceDeleteApps = async (req, res) => {
   const { appIds, deleteAll } = req.body;
   try {
     let numDeleted = 0;
     let whereClause = {};
-    let appIdsToDelete = []; // +++ MOI: Luu ID de xoa file
+    let appIdsToDelete = []; 
 
     if (deleteAll) {
+      // Tương tự, phải lọc chỉ những thằng trong thùng rác
       const search = req.body.search || '';
+      
       if (search) {
-        whereClause = { [Op.or]: [ { appId: { [Op.like]: `%${search}%` } }, { title: { [Op.like]: `%${search}%` } } ] };
+        whereClause = {
+            [Op.and]: [
+                { deletedAt: { [Op.not]: null } }, // QUAN TRỌNG: Chỉ lấy thằng đã xóa
+                {
+                    [Op.or]: [
+                        { appId: { [Op.like]: `%${search}%` } },
+                        { title: { [Op.like]: `%${search}%` } }
+                    ]
+                }
+            ]
+        };
+      } else {
+        whereClause = { deletedAt: { [Op.not]: null } };
       }
       
-      // +++ MOI: Tim tat ca app truoc khi xoa de lay ID +++
-      // Phai them paranoid: false de tim trong thung rac
+      // Tim ID để xóa file ảnh trước
       const apps = await App.findAll({ where: whereClause, attributes: ['appId'], paranoid: false });
       appIdsToDelete = apps.map(app => app.appId);
 
     } else if (appIds && Array.isArray(appIds) && appIds.length > 0) {
       whereClause = { appId: appIds };
-      appIdsToDelete = [...appIds]; // +++ MOI: Luu lai ID
+      appIdsToDelete = [...appIds];
       
     } else {
       return res.status(400).json({ success: false, message: 'Chưa chọn app nào để xoá vĩnh viễn.' });
     }
 
-    // Neu khong co gi de xoa
     if (appIdsToDelete.length === 0) {
        return res.status(200).json({ 
         success: true, 
-        message: `Chẳng có app nào để xoá vĩnh viễn cả.`,
+        message: `Chẳng có app rác nào để xoá vĩnh viễn cả.`,
         deletedCount: 0
       });
     }
 
-    // 1. Xoa trong DB
+    // Xoa trong DB
     numDeleted = await App.destroy({ where: whereClause, force: true, paranoid: false });
 
-    // 2. +++ MOI: Xoa hinh anh (khong can await, cho no chay ngam) +++
+    // Xoa hinh anh
     if (numDeleted > 0) {
       console.log(`[Job Delete] Bat dau xoa ${appIdsToDelete.length} thu muc anh...`);
-      // Chay song song cac tac vu xoa file
       const deletePromises = appIdsToDelete.map(id => deleteAppImages(id));
-      
-      // Khong can await Promise.all, cu de no chay ngam
       Promise.all(deletePromises)
         .then(() => console.log(`[Job Delete] Da hoan tat lenh xoa ${appIdsToDelete.length} thu muc anh.`))
         .catch(err => console.error('[Job Delete] Loi trong luc xoa dong loat thu muc anh:', err));
     }
-    // -----------------------------------------------------------------
 
     return res.status(200).json({ 
       success: true, 
