@@ -1,92 +1,104 @@
 /*
  * File: public/js/wpSitesManager.js
- * "Não" chung cho trang Quan Ly WP Sites
+ * "Não" chung cho trang Quan Ly WP Sites (Phien ban Modal)
  */
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- 1. Kiem tra co phai trang WP Sites khong ---
-    // +++ SUA LOGIC TIM PAGEMODE +++
-    const pageModeEl = document.querySelector('div[data-page-mode="wpSites"]');
-    if (!pageModeEl) {
-        // Khong phai trang WP Sites, thoat
-        return; 
-    }
+    // --- 1. Kiem tra trang ---
+    const pageMode = document.body.dataset.pageMode;
+    if (pageMode !== 'wpSites') return;
 
-    // --- 2. Lay linh kien UI (Lay tu document) ---
+    // --- 2. Lay linh kien UI ---
     const tableBody = document.getElementById('wp-sites-table-body');
     const placeholder = document.getElementById('wp-table-placeholder');
     const alertContainer = document.getElementById('alert-container-wp');
     
-    // +++ MOI: Linh kien Modal (Phai tim o document goc) +++
+    // Modal Elements
     const wpSiteModal = document.getElementById('wpSiteModal');
-    const wpSiteModalBackdrop = document.getElementById('wpSiteModalBackdrop');
-    const wpSiteModalCloseBtn = document.getElementById('wpSiteModalCloseBtn');
-    const btnOpenWpModal = document.getElementById('btn-open-wp-modal'); // Nut "Them Site Moi"
+    const wpModalBackdrop = document.getElementById('wpModalBackdrop');
+    const wpModalCloseBtn = document.getElementById('wpModalCloseBtn');
+    const btnOpenAddModal = document.getElementById('btn-open-add-modal');
 
-    // Form (Ben trong Modal)
+    // Form Elements
     const form = document.getElementById('wp-site-form');
-    const formTitle = document.getElementById('wp-form-title'); // Title tren Modal
+    const formTitle = document.getElementById('wp-form-title');
     const siteIdInput = document.getElementById('wp-site-id');
     const siteNameInput = document.getElementById('wp-site-name');
     const siteUrlInput = document.getElementById('wp-site-url');
+    const siteLangInput = document.getElementById('wp-site-lang');
     const apiKeyInput = document.getElementById('wp-api-key');
     
     const submitButton = document.getElementById('wp-form-submit');
     const submitButtonIcon = document.getElementById('wp-btn-icon');
     const submitButtonText = document.getElementById('wp-btn-text');
+    const cancelButton = document.getElementById('wp-form-cancel');
 
-    // Lay data co san tu EJS (Gio bien nay la global)
+    // Data
     let sites = (typeof initialWpSites !== 'undefined') ? initialWpSites : [];
 
-    // --- 3. Dinh nghia Ham ---
+    // --- 3. Helper Functions ---
 
-    // +++ MOI: Ham Mo/Dong Modal +++
-    function showWpModal() {
-        if (wpSiteModal) wpSiteModal.classList.remove('hidden');
-    }
-    function closeWpModal() {
-        if (wpSiteModal) wpSiteModal.classList.add('hidden');
-        resetForm(); // Reset form khi dong
-    }
-
-    // Ham hien thong bao (Giu nguyen)
     function showAlert(message, isError = false) { 
         alertContainer.innerHTML = ''; 
         if (!message) return;
-        
         const t = isError 
-            ? { bg: 'bg-red-800/70', b: 'border-red-600/50', x: 'text-red-200', i: 'Toang!' } 
-            : { bg: 'bg-green-800/70', b: 'border-green-600/50', x: 'text-green-200', i: 'Ngon!' };
-        
+            ? { bg: 'bg-red-900/80', b: 'border-red-700/50', x: 'text-red-200', i: 'Toang!' } 
+            : { bg: 'bg-emerald-900/80', b: 'border-emerald-700/50', x: 'text-emerald-200', i: 'Ngon!' };
         alertContainer.innerHTML = `
-            <div class="${t.bg} ${t.b} backdrop-blur-md ${t.x} px-4 py-3 rounded-lg relative ring-1 ring-white/10" role="alert">
-                <strong class="font-bold">${t.i}</strong>
-                <span class="block sm:inline ml-2">${message}</span>
+            <div class="${t.bg} ${t.b} border backdrop-blur-md ${t.x} px-4 py-3 rounded-lg relative shadow-lg" role="alert">
+                <strong class="font-bold flex items-center"><i class="ri-${isError ? 'error-warning' : 'checkbox-circle'}-fill mr-2"></i>${t.i}</strong>
+                <span class="block sm:inline ml-1">${message}</span>
             </div>`;
-        
-        setTimeout(() => {
-            alertContainer.innerHTML = '';
-        }, 5000);
+        setTimeout(() => { alertContainer.innerHTML = ''; }, 5000);
     }
 
-    // Ham "Ve" 1 hang (Giu nguyen)
+    // --- Modal Logic ---
+    function openModal() {
+        wpSiteModal.classList.remove('hidden');
+        // Animation nhe
+        setTimeout(() => {
+            wpSiteModal.firstHZElementChild?.classList.remove('scale-95', 'opacity-0'); // Neu co animation
+        }, 10);
+    }
+
+    function closeModal() {
+        wpSiteModal.classList.add('hidden');
+        resetForm(); // Reset form khi dong
+    }
+
+    // --- Table Logic ---
     function buildRow(site) {
+        const flags = {
+            'vi': '🇻🇳', 'en': '🇺🇸', 'ja': '🇯🇵', 'ko': '🇰🇷',
+            'zh': '🇨🇳', 'fr': '🇫🇷', 'de': '🇩🇪', 'es': '🇪🇸',
+            'ru': '🇷🇺', 'pt': '🇵🇹', 'it': '🇮🇹', 'id': '🇮🇩',
+            'th': '🇹🇭', 'hi': '🇮🇳'
+        };
+        const flag = flags[site.language] || '🏳️'; 
+
         return `
-            <tr data-site-id="${site.id}">
+            <tr data-site-id="${site.id}" class="hover:bg-slate-800/30 transition-colors">
                 <td class="py-4 pl-4 pr-3 text-sm sm:pl-6">
-                    <div class="font-medium text-white">${site.siteName}</div>
-                    <div class="text-slate-400 text-xs">ID: ${site.id}</div>
+                    <div class="font-bold text-white">${site.siteName}</div>
+                    <div class="text-slate-500 text-xs font-mono mt-0.5">ID: ${site.id}</div>
                 </td>
                 <td class="px-3 py-4 text-sm text-slate-300">
-                    <a href="${site.siteUrl}" target="_blank" class="hover:text-emerald-400">${site.siteUrl} <i class="ri-external-link-line text-xs"></i></a>
+                    <a href="${site.siteUrl}" target="_blank" class="hover:text-emerald-400 truncate block max-w-[250px] transition-colors">
+                        ${site.siteUrl} <i class="ri-external-link-line text-xs ml-1 opacity-50"></i>
+                    </a>
+                </td>
+                <td class="px-3 py-4 text-sm text-center">
+                    <span class="inline-flex items-center rounded-md bg-slate-700/50 px-2.5 py-1 text-xs font-medium text-slate-200 ring-1 ring-inset ring-slate-600/50">
+                        <span class="mr-1.5 text-base">${flag}</span> ${site.language || 'vi'}
+                    </span>
                 </td>
                 <td class="py-4 pl-3 pr-4 sm:pr-6 text-center w-32">
-                    <div class="flex justify-center items-center space-x-3">
-                        <button class="btn-edit-site text-cyan-500/70 hover:text-cyan-400" data-id="${site.id}" title="Sửa site này">
-                            <i class="ri-pencil-line text-lg"></i>
+                    <div class="flex justify-center items-center space-x-2">
+                        <button class="btn-edit-site p-2 rounded-lg text-cyan-400 hover:bg-cyan-400/10 transition-colors" data-id="${site.id}" title="Sửa">
+                            <i class="ri-pencil-line text-xl"></i>
                         </button>
-                        <button class="btn-delete-site text-red-500/70 hover:text-red-400" data-id="${site.id}" title="Xoá site này">
-                            <i class="ri-delete-bin-line text-lg"></i>
+                        <button class="btn-delete-site p-2 rounded-lg text-red-400 hover:bg-red-400/10 transition-colors" data-id="${site.id}" title="Xoá">
+                            <i class="ri-delete-bin-line text-xl"></i>
                         </button>
                     </div>
                 </td>
@@ -94,57 +106,49 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    // Ham "Ve" toan bo bang (Giu nguyen)
     function buildTable() {
-        if (!tableBody) return; 
         if (sites.length === 0) {
-            if (placeholder) placeholder.classList.remove('hidden');
+            placeholder.classList.remove('hidden');
             tableBody.innerHTML = '';
         } else {
-            if (placeholder) placeholder.classList.add('hidden');
+            placeholder.classList.add('hidden');
             tableBody.innerHTML = sites.map(buildRow).join('');
         }
     }
 
-    // Ham reset Form ve che do "Them moi" (Giu nguyen)
+    // --- Form Logic ---
     function resetForm() {
-        if (!form) return; 
         form.reset();
-        if (siteIdInput) siteIdInput.value = ''; 
+        siteIdInput.value = ''; 
+        siteLangInput.value = 'vi';
         
-        if (formTitle) formTitle.innerHTML = '<i class="ri-add-line mr-2 text-emerald-400"></i> Thêm Site Mới';
-        if (submitButtonIcon) submitButtonIcon.className = 'ri-add-line text-2xl -ml-1 mr-2';
-        if (submitButtonText) submitButtonText.textContent = 'Thêm Site';
+        // Set UI ve che do "Them moi"
+        formTitle.innerHTML = '<i class="ri-add-line mr-2 text-emerald-400"></i> Thêm Site Mới';
+        submitButtonIcon.className = 'ri-add-line text-xl mr-2';
+        submitButtonText.textContent = 'Thêm Site';
         
-        if (submitButton) submitButton.disabled = false;
+        submitButton.disabled = false;
     }
 
-    // Ham bat che do "Sua" (Goi them showWpModal)
     function setEditMode(site) {
-        if (!form) return; 
         siteIdInput.value = site.id;
         siteNameInput.value = site.siteName;
         siteUrlInput.value = site.siteUrl;
-        apiKeyInput.value = site.apiKey;
+        siteLangInput.value = site.language || 'vi';
+        apiKeyInput.value = site.apiKey; 
         
+        // Set UI ve che do "Sua"
         formTitle.innerHTML = '<i class="ri-pencil-line mr-2 text-cyan-400"></i> Sửa Site';
-        submitButtonIcon.className = 'ri-save-line text-2xl -ml-1 mr-2';
+        submitButtonIcon.className = 'ri-save-line text-xl mr-2';
         submitButtonText.textContent = 'Lưu Thay Đổi';
-        
-        // +++ MOI: Hien Modal len +++
-        showWpModal();
-        siteNameInput.focus();
     }
 
-    // Ham xu ly Submit (Goi closeWpModal khi xong)
     async function handleSubmit(e) {
         e.preventDefault();
-        showAlert(null); 
-
+        
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
         const siteId = data.id;
-        
         const isUpdating = !!siteId; 
         
         const endpoint = isUpdating ? `/api/wp-sites/${siteId}` : '/api/wp-sites';
@@ -161,91 +165,71 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const result = await response.json();
-            if (!response.ok) {
-                throw new Error(result.message || 'Lỗi không xác định');
-            }
+            if (!response.ok) throw new Error(result.message || 'Lỗi không xác định');
 
             showAlert(result.message, false);
 
             if (isUpdating) {
                 const index = sites.findIndex(s => s.id == siteId);
-                if (index !== -1) {
-                    sites[index] = result.site;
-                }
+                if (index !== -1) sites[index] = result.site;
             } else {
                 sites.push(result.site);
             }
             
             sites.sort((a, b) => a.siteName.localeCompare(b.siteName));
-            
             buildTable(); 
-            // +++ MOI: Dong Modal (thay vi resetForm) +++
-            closeWpModal(); 
+            closeModal(); // Dong modal sau khi thanh cong
 
         } catch (err) {
             showAlert(err.message, true);
-            // Neu loi, van phai bat lai nut
+            // Neu loi thi giu modal de user sua
+        } finally {
             submitButton.disabled = false;
             submitButtonText.textContent = isUpdating ? 'Lưu Thay Đổi' : 'Thêm Site';
-        } 
+        }
     }
 
-    // Ham xu ly nut Edit / Delete (Giu nguyen)
     async function handleTableClick(e) {
         const target = e.target;
         const btnEdit = target.closest('.btn-edit-site');
         const btnDelete = target.closest('.btn-delete-site');
 
         if (btnEdit) {
-            e.preventDefault();
             const id = btnEdit.dataset.id;
             const siteToEdit = sites.find(s => s.id == id);
             if (siteToEdit) {
-                setEditMode(siteToEdit);
+                setEditMode(siteToEdit); // Dien data vao form
+                openModal(); // Mo modal len
             }
-            return;
         }
 
         if (btnDelete) {
-            e.preventDefault();
             const id = btnDelete.dataset.id;
             const siteToDelete = sites.find(s => s.id == id);
-            
             if (!siteToDelete) return;
 
-            // ... (Phan code Swal.fire confirm giu nguyen) ...
             const confirmResult = await Swal.fire({
-                title: 'Bro, xoá site này?',
-                text: `Xoá vĩnh viễn "${siteToDelete.siteName}". Không thể hoàn tác!`,
+                title: 'Xoá site này?',
+                text: `Bạn có chắc muốn xoá "${siteToDelete.siteName}"? Hành động này không thể hoàn tác.`,
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonText: 'OK, xoá đi!',
-                cancelButtonText: 'Đổi ý',
+                confirmButtonText: 'Xoá luôn!',
+                cancelButtonText: 'Huỷ',
                 confirmButtonColor: '#dc2626',
-                cancelButtonColor: '#64748b', 
+                cancelButtonColor: '#475569', 
                 background: '#1e293b',
                 color: '#e2e8f0'
             });
 
             if (confirmResult.isConfirmed) {
                 try {
-                    const response = await fetch(`/api/wp-sites/${id}`, {
-                        method: 'DELETE'
-                    });
+                    const response = await fetch(`/api/wp-sites/${id}`, { method: 'DELETE' });
                     const result = await response.json();
-                    if (!response.ok) {
-                        throw new Error(result.message || 'Lỗi không xác định');
-                    }
+                    if (!response.ok) throw new Error(result.message);
                     
                     showAlert(result.message, false);
-                    
                     sites = sites.filter(s => s.id != id);
-                    buildTable(); 
-                    
-                    if (siteIdInput && siteIdInput.value == id) {
-                        resetForm();
-                    }
-
+                    buildTable();
                 } catch (err) {
                     showAlert(err.message, true);
                 }
@@ -253,24 +237,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- 4. Gan Su Kien ---
+    form.addEventListener('submit', handleSubmit);
+    
+    // Modal triggers
+    btnOpenAddModal.addEventListener('click', () => {
+        resetForm();
+        openModal();
+    });
+    
+    wpModalCloseBtn.addEventListener('click', closeModal);
+    wpModalBackdrop.addEventListener('click', closeModal);
+    cancelButton.addEventListener('click', closeModal);
 
-    // --- 4. Gan Su Kien (Them check ton tai) ---
-    if (form) form.addEventListener('submit', handleSubmit);
-    if (tableBody) tableBody.addEventListener('click', handleTableClick);
-
-    // +++ MOI: Gan su kien cho Modal +++
-    if (btnOpenWpModal) {
-        btnOpenWpModal.addEventListener('click', () => {
-            resetForm(); 
-            showWpModal(); 
-            if (siteNameInput) siteNameInput.focus();
-        });
-    }
-    if (wpSiteModalCloseBtn) wpSiteModalCloseBtn.addEventListener('click', closeWpModal);
-    if (wpSiteModalBackdrop) wpSiteModalBackdrop.addEventListener('click', closeWpModal);
-
+    tableBody.addEventListener('click', handleTableClick);
 
     // --- 5. Chay lan dau ---
     buildTable();
-    resetForm(); // Chay lan dau de set title cho form (mac du form dang an)
 });

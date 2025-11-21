@@ -1,12 +1,12 @@
-<div data-page-mode="wpSites">
+<body data-page-mode="wpSites">
     
-    <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 pb-4 border-b border-slate-700">
+    <header class="mb-6 pb-4 border-b border-slate-700 flex justify-between items-center">
         <div>
             <h1 class="text-3xl font-bold text-white tracking-tight">Quản lý Wordpress Sites</h1>
             <p class="text-slate-400 mt-1">Thêm, sửa, xoá các site con Wordpress</p>
         </div>
-        <button id="btn-open-wp-modal" class="inline-flex items-center justify-center rounded-md bg-emerald-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 transition-all mt-4 sm:mt-0">
-            <i class="ri-add-line -ml-1 mr-2"></i>
+        <button id="btn-open-add-modal" class="flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg shadow-md transition-all">
+            <i class="ri-add-line mr-2 text-xl"></i>
             Thêm Site Mới
         </button>
     </header>
@@ -20,13 +20,14 @@
                 <table class="min-w-full">
                     <thead class="bg-slate-900/50 sticky top-0">
                         <tr>
-                            <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6 w-2/5">Tên Site</th>
-                            <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-2/5">URL</th>
-                            <th class="py-3.5 pl-3 pr-4 sm:pr-6 w-1/5 text-center text-sm font-semibold text-white">Hành động</th>
+                            <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white sm:pl-6 w-1/3">Tên Site</th>
+                            <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/3">URL</th>
+                            <th class="px-3 py-3.5 text-center text-sm font-semibold text-white w-1/6">Lang</th>
+                            <th class="py-3.5 pl-3 pr-4 sm:pr-6 w-1/6 text-center text-sm font-semibold text-white">Hành động</th>
                         </tr>
                     </thead>
                     <tbody id="wp-sites-table-body" class="divide-y divide-slate-800">
-                        </tbody>
+                    </tbody>
                 </table>
                 
                 <div id="wp-table-placeholder" class="hidden">
@@ -39,44 +40,70 @@
         </div>
     </div> 
 
-    <script>
-        var initialWpSites = <%- JSON.stringify(wpSites || []) %>;
-    </script>
-
     <div id="wpSiteModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div id="wpSiteModalBackdrop" class="fixed inset-0 bg-black/70 backdrop-blur-sm"></div>
+        <div id="wpModalBackdrop" class="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"></div>
         
-        <div class="relative w-full max-w-lg bg-slate-800/80 backdrop-blur-lg ring-1 ring-white/10 rounded-lg shadow-xl overflow-hidden flex flex-col">
+        <div class="relative w-full max-w-lg bg-slate-800 ring-1 ring-white/10 rounded-xl shadow-2xl overflow-hidden transform transition-all scale-100">
             
-            <div class="flex-shrink-0 p-4 border-b border-slate-700/50 flex items-center justify-between">
-                <h3 id="wp-form-title" class="text-xl font-semibold text-white truncate">
-                    </h3>
-                <button id="wpSiteModalCloseBtn" class="text-slate-400 hover:text-white transition-colors">
-                     <i class="ri-close-line text-2xl"></i>
+            <div class="px-6 py-4 border-b border-slate-700 flex items-center justify-between bg-slate-900/50">
+                <h3 id="wp-form-title" class="text-xl font-bold text-white flex items-center">
+                    <i class="ri-add-line mr-2 text-emerald-400"></i>
+                    Thêm Site Mới
+                </h3>
+                <button id="wpModalCloseBtn" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="ri-close-line text-2xl"></i>
                 </button>
             </div>
-            
-            <div id="wp-modal-body" class="overflow-y-auto p-6">
-                <form id="wp-site-form" class="space-y-4">
+
+            <div class="p-6">
+                <form id="wp-site-form" class="space-y-5">
                     <input type="hidden" id="wp-site-id" name="id" value="">
 
                     <div>
                         <label for="wp-site-name" class="block text-sm font-medium text-slate-300 mb-2">Tên Site</label>
-                        <input type="text" id="wp-site-name" name="siteName" class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 transition" placeholder="Vd: Blog Tin Tức" required>
+                        <input type="text" id="wp-site-name" name="siteName" class="w-full p-3 bg-slate-900/50 border border-slate-600 rounded-lg text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" placeholder="Vd: Blog Tin Tức" required>
                     </div>
+                    
                     <div>
                         <label for="wp-site-url" class="block text-sm font-medium text-slate-300 mb-2">URL Site</label>
-                        <input type="url" id="wp-site-url" name="siteUrl" class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 transition" placeholder="https://blog.example.com" required>
+                        <input type="url" id="wp-site-url" name="siteUrl" class="w-full p-3 bg-slate-900/50 border border-slate-600 rounded-lg text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" placeholder="https://blog.example.com" required>
                         <p class="text-xs text-slate-500 mt-1">Phải bao gồm https://</p>
                     </div>
+
+                    <div>
+                        <label for="wp-site-lang" class="block text-sm font-medium text-slate-300 mb-2">Ngôn ngữ</label>
+                        <select id="wp-site-lang" name="language" class="w-full p-3 bg-slate-900/50 border border-slate-600 rounded-lg text-slate-200 focus:ring-2 focus:ring-emerald-500 transition">
+                            <option value="vi">🇻🇳 Tiếng Việt (vi)</option>
+                            <option value="en">🇺🇸 Tiếng Anh (en)</option>
+                            <option value="ja">🇯🇵 Tiếng Nhật (ja)</option>
+                            <option value="ko">🇰🇷 Tiếng Hàn (ko)</option>
+                            <option value="zh">🇨🇳 Tiếng Trung (zh)</option>
+                            <option value="fr">🇫🇷 Tiếng Pháp (fr)</option>
+                            <option value="de">🇩🇪 Tiếng Đức (de)</option>
+                            <option value="es">🇪🇸 Tiếng Tây Ban Nha (es)</option>
+                            <option value="ru">🇷🇺 Tiếng Nga (ru)</option>
+                            <option value="pt">🇵🇹 Tiếng Bồ Đào Nha (pt)</option>
+                            <option value="it">🇮🇹 Tiếng Ý (it)</option>
+                            <option value="id">🇮🇩 Tiếng Indo (id)</option>
+                            <option value="th">🇹🇭 Tiếng Thái (th)</option>
+                            <option value="hi">🇮🇳 Tiếng Ấn Độ (hi)</option>
+                        </select>
+                    </div>
+  
                     <div>
                         <label for="wp-api-key" class="block text-sm font-medium text-slate-300 mb-2">API Key</label>
-                        <input type="password" id="wp-api-key" name="apiKey" class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 transition" placeholder="Nhập chuỗi API Key bí mật" required>
+                        <div class="relative">
+                            <input type="password" id="wp-api-key" name="apiKey" class="w-full p-3 bg-slate-900/50 border border-slate-600 rounded-lg text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition pr-10" placeholder="Nhập chuỗi API Key bí mật" required>
+                            <i class="ri-key-2-line absolute right-3 top-3.5 text-slate-500"></i>
+                        </div>
                     </div>
 
-                    <div class="pt-2">
-                        <button id="wp-form-submit" type="submit" class="w-full flex justify-center items-center p-3 bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700 text-white font-bold rounded-lg shadow-lg transform hover:scale-[1.02] transition-all duration-300 disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed">
-                            <i id="wp-btn-icon" class="ri-add-line text-2xl -ml-1 mr-2"></i>
+                    <div class="flex items-center gap-3 pt-4 border-t border-slate-700 mt-6">
+                        <button id="wp-form-cancel" type="button" class="flex-1 py-3 px-4 bg-slate-700 hover:bg-slate-600 text-slate-300 font-medium rounded-lg transition-all duration-200">
+                            Huỷ
+                        </button>
+                        <button id="wp-form-submit" type="submit" class="flex-[2] flex justify-center items-center py-3 px-4 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold rounded-lg shadow-lg transform transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i id="wp-btn-icon" class="ri-add-line text-xl mr-2"></i>
                             <span id="wp-btn-text">Thêm Site</span>
                         </button>
                     </div>
@@ -84,4 +111,8 @@
             </div>
         </div>
     </div>
-    </div>
+
+    <script>
+        var initialWpSites = <%- JSON.stringify(wpSites || []) %>;
+    </script>
+</body>

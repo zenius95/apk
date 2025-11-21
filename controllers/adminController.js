@@ -1,5 +1,5 @@
 const App = require('../models/app');
-const WpSite = require('../models/wpSite'); // +++ MOI: Import model WpSite
+const WpSite = require('../models/wpSite');
 const { default: gplay } = require('google-play-scraper');
 const { Op } = require('sequelize');
 const fs = require('fs-extra'); 
@@ -9,13 +9,11 @@ const path = require('path');
  * (MOI) Ham helper de xoa thu muc anh cua app
  */
 async function deleteAppImages(appId) {
-  // Duong dan giong het luc scraperService luu vao
   const imgDir = path.join(__dirname, '..', 'public', 'images', 'apps', appId);
   try {
     await fs.remove(imgDir);
     console.log(`[Image Delete] ✅ Da xoa thu muc: ${imgDir}`);
   } catch (err) {
-    // Neu loi cung khong can lam gi lon, chi log lai
     console.error(`[Image Delete] ❌ Loi khi xoa ${imgDir}: ${err.message}`);
   }
 }
@@ -25,7 +23,7 @@ async function deleteAppImages(appId) {
  */
 async function getPagedApps(req, isTrashView = false) {
     const page = parseInt(req.query.page, 10) || 1;
-    const limit = 20; // Tang len 20 cho "sướng"
+    const limit = 20; 
     const offset = (page - 1) * limit;
     const search = req.query.search || '';
 
@@ -90,13 +88,12 @@ const renderScrapePage = async (req, res) => {
 };
 
 /**
- * (SUA) Hien thi trang Danh Sach App
+ * Hien thi trang Danh Sach App
  */
 const renderAppListPage = async (req, res) => {
   try {
     const { apps, pagination, search } = await getPagedApps(req, false);
     
-    // Dem so rac
     const trashCount = await App.count({
         where: { deletedAt: { [Op.not]: null } },
         paranoid: false
@@ -107,11 +104,11 @@ const renderAppListPage = async (req, res) => {
         title: 'Danh sách APP đã lưu',
         page: 'appList'
       },
-      savedApps: apps, // Doi ten bien
+      savedApps: apps, 
       pagination: pagination,
       search: search,
       trashCount: trashCount,
-      baseUrl: '/app-list' // Cho phan trang
+      baseUrl: '/app-list'
     });
   } catch (err) {
     console.error("Loi render trang App List:", err);
@@ -120,7 +117,7 @@ const renderAppListPage = async (req, res) => {
 };
 
 /**
- * (SUA) Hien thi trang Thung Rac
+ * Hien thi trang Thung Rac
  */
 const renderTrashPage = async (req, res) => {
   try {
@@ -131,10 +128,10 @@ const renderTrashPage = async (req, res) => {
         title: 'Thùng rác - App đã xoá',
         page: 'trash'
       },
-      savedApps: apps, // Doi ten bien
+      savedApps: apps,
       pagination: pagination,
       search: search,
-      baseUrl: '/trash' // Cho phan trang
+      baseUrl: '/trash'
     });
   } catch (err) {
     console.error("Loi render trang Thung Rac:", err);
@@ -142,8 +139,7 @@ const renderTrashPage = async (req, res) => {
   }
 };
 
-
-// --- (Cac ham API (handleDeleteApps, handleRestoreApps) giu nguyen) ---
+// --- CAC HAM API XU LY APP ---
 
 const handleDeleteApps = async (req, res) => {
   const { appIds, deleteAll } = req.body;
@@ -173,7 +169,6 @@ const handleDeleteApps = async (req, res) => {
   }
 };
 
-// --- 1. SỬA HÀM KHÔI PHỤC (handleRestoreApps) ---
 const handleRestoreApps = async (req, res) => {
   const { appIds, restoreAll } = req.body;
   try {
@@ -181,14 +176,11 @@ const handleRestoreApps = async (req, res) => {
     let whereClause = {};
 
     if (restoreAll) {
-      // Nếu chọn tất cả: Phải lọc theo Search (nếu có) VÀ chỉ những thằng đang trong thùng rác
       const search = req.body.search || '';
-      
-      // Logic tạo điều kiện tìm kiếm
       if (search) {
         whereClause = {
             [Op.and]: [
-                { deletedAt: { [Op.not]: null } }, // QUAN TRỌNG: Chỉ lấy thằng đã xóa
+                { deletedAt: { [Op.not]: null } },
                 {
                     [Op.or]: [
                         { appId: { [Op.like]: `%${search}%` } },
@@ -198,21 +190,15 @@ const handleRestoreApps = async (req, res) => {
             ]
         };
       } else {
-        // Nếu không search, chỉ cần điều kiện đã xóa
         whereClause = { deletedAt: { [Op.not]: null } };
       }
-
-      // Thực hiện khôi phục
       numRestored = await App.restore({ where: whereClause, paranoid: false });
-
     } else if (appIds && Array.isArray(appIds) && appIds.length > 0) {
-      // Nếu chọn lẻ tẻ: Chỉ cần where theo ID
       whereClause = { appId: appIds };
       numRestored = await App.restore({ where: whereClause, paranoid: false });
     } else {
       return res.status(400).json({ success: false, message: 'Chưa chọn app nào để khôi phục.' });
     }
-
     return res.status(200).json({ 
       success: true, 
       message: `Đã khôi phục ${numRestored} app${numRestored > 1 ? 's' : ''}.`,
@@ -224,7 +210,6 @@ const handleRestoreApps = async (req, res) => {
   }
 };
 
-// --- 2. SỬA HÀM XÓA VĨNH VIỄN (handleForceDeleteApps) ---
 const handleForceDeleteApps = async (req, res) => {
   const { appIds, deleteAll } = req.body;
   try {
@@ -233,13 +218,11 @@ const handleForceDeleteApps = async (req, res) => {
     let appIdsToDelete = []; 
 
     if (deleteAll) {
-      // Tương tự, phải lọc chỉ những thằng trong thùng rác
       const search = req.body.search || '';
-      
       if (search) {
         whereClause = {
             [Op.and]: [
-                { deletedAt: { [Op.not]: null } }, // QUAN TRỌNG: Chỉ lấy thằng đã xóa
+                { deletedAt: { [Op.not]: null } },
                 {
                     [Op.or]: [
                         { appId: { [Op.like]: `%${search}%` } },
@@ -251,15 +234,12 @@ const handleForceDeleteApps = async (req, res) => {
       } else {
         whereClause = { deletedAt: { [Op.not]: null } };
       }
-      
-      // Tim ID để xóa file ảnh trước
       const apps = await App.findAll({ where: whereClause, attributes: ['appId'], paranoid: false });
       appIdsToDelete = apps.map(app => app.appId);
 
     } else if (appIds && Array.isArray(appIds) && appIds.length > 0) {
       whereClause = { appId: appIds };
       appIdsToDelete = [...appIds];
-      
     } else {
       return res.status(400).json({ success: false, message: 'Chưa chọn app nào để xoá vĩnh viễn.' });
     }
@@ -272,10 +252,8 @@ const handleForceDeleteApps = async (req, res) => {
       });
     }
 
-    // Xoa trong DB
     numDeleted = await App.destroy({ where: whereClause, force: true, paranoid: false });
 
-    // Xoa hinh anh
     if (numDeleted > 0) {
       console.log(`[Job Delete] Bat dau xoa ${appIdsToDelete.length} thu muc anh...`);
       const deletePromises = appIdsToDelete.map(id => deleteAppImages(id));
@@ -297,15 +275,11 @@ const handleForceDeleteApps = async (req, res) => {
 
 
 // ---------------------------------------------------
-// +++ MOI: CAC HAM XU LY CHO WORDPRESS SITES
+// CAC HAM XU LY CHO WORDPRESS SITES
 // ---------------------------------------------------
 
-/**
- * (MOI) Hien thi trang Quan ly WP Sites
- */
 const renderWpSitesPage = async (req, res) => {
   try {
-    // Khong can phan trang, lay het site ra
     const sites = await WpSite.findAll({ order: [['siteName', 'ASC']] });
     
     res.render('pages/wpSites', {
@@ -313,7 +287,7 @@ const renderWpSitesPage = async (req, res) => {
         title: 'Quản lý Wordpress Sites',
         page: 'wpSites' 
       },
-      wpSites: sites // Truyen bien nay vao EJS
+      wpSites: sites 
     });
   } catch (err) {
     console.error("Loi render trang WP Sites:", err);
@@ -321,9 +295,6 @@ const renderWpSitesPage = async (req, res) => {
   }
 };
 
-/**
- * (MOI) API: Lay tat ca WP Sites
- */
 const handleGetWpSites = async (req, res) => {
   try {
     const sites = await WpSite.findAll({ order: [['siteName', 'ASC']] });
@@ -334,11 +305,9 @@ const handleGetWpSites = async (req, res) => {
   }
 };
 
-/**
- * (MOI) API: Tao WP Site moi
- */
+// +++ (CAP NHAT) THEM BIEN 'language' +++
 const handleCreateWpSite = async (req, res) => {
-  const { siteName, siteUrl, apiKey } = req.body;
+  const { siteName, siteUrl, apiKey, language } = req.body;
   
   if (!siteName || !siteUrl || !apiKey) {
     return res.status(400).json({ success: false, message: 'Nhập thiếu rồi Bro. Cần Tên, URL, và API Key.' });
@@ -348,7 +317,8 @@ const handleCreateWpSite = async (req, res) => {
     const newSite = await WpSite.create({
       siteName,
       siteUrl,
-      apiKey
+      apiKey,
+      language: language || 'vi'
     });
     return res.status(201).json({ success: true, message: 'Đã thêm site mới ngon lành!', site: newSite });
   } catch (err) {
@@ -360,12 +330,10 @@ const handleCreateWpSite = async (req, res) => {
   }
 };
 
-/**
- * (MOI) API: Cap nhat WP Site
- */
+// +++ (CAP NHAT) THEM BIEN 'language' +++
 const handleUpdateWpSite = async (req, res) => {
   const { id } = req.params;
-  const { siteName, siteUrl, apiKey } = req.body;
+  const { siteName, siteUrl, apiKey, language } = req.body;
 
   if (!siteName || !siteUrl || !apiKey) {
     return res.status(400).json({ success: false, message: 'Nhập thiếu rồi Bro. Cần Tên, URL, và API Key.' });
@@ -380,6 +348,7 @@ const handleUpdateWpSite = async (req, res) => {
     site.siteName = siteName;
     site.siteUrl = siteUrl;
     site.apiKey = apiKey;
+    site.language = language || 'vi'; // Cap nhat language
     
     await site.save();
     
@@ -393,9 +362,6 @@ const handleUpdateWpSite = async (req, res) => {
   }
 };
 
-/**
- * (MOI) API: Xoa WP Site
- */
 const handleDeleteWpSite = async (req, res) => {
   const { id } = req.params;
   try {
@@ -403,9 +369,7 @@ const handleDeleteWpSite = async (req, res) => {
     if (!site) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy site này, Bro.' });
     }
-
     await site.destroy();
-    
     return res.status(200).json({ success: true, message: 'Đã xoá site vĩnh viễn.' });
   } catch (err) {
     console.error("Loi API Delete WP Site:", err);
@@ -421,8 +385,6 @@ module.exports = {
   handleDeleteApps,
   handleRestoreApps,
   handleForceDeleteApps,
-  
-  // +++ MOI: Export cac ham moi +++
   renderWpSitesPage,
   handleGetWpSites,
   handleCreateWpSite,
