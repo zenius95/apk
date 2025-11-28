@@ -25,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const siteIdInput = document.getElementById('wp-site-id');
     const siteNameInput = document.getElementById('wp-site-name');
     const siteUrlInput = document.getElementById('wp-site-url');
-    const siteLangInput = document.getElementById('wp-site-lang');
     const apiKeyInput = document.getElementById('wp-api-key');
     
     const submitButton = document.getElementById('wp-form-submit');
@@ -68,13 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Table Logic ---
     function buildRow(site) {
-        const flags = {
-            'vi': '🇻🇳', 'en': '🇺🇸', 'ja': '🇯🇵', 'ko': '🇰🇷',
-            'zh': '🇨🇳', 'fr': '🇫🇷', 'de': '🇩🇪', 'es': '🇪🇸',
-            'ru': '🇷🇺', 'pt': '🇵🇹', 'it': '🇮🇹', 'id': '🇮🇩',
-            'th': '🇹🇭', 'hi': '🇮🇳'
-        };
-        const flag = flags[site.language] || '🏳️'; 
 
         return `
             <tr data-site-id="${site.id}" class="hover:bg-slate-800/30 transition-colors">
@@ -86,11 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <a href="${site.siteUrl}" target="_blank" class="hover:text-emerald-400 truncate block max-w-[250px] transition-colors">
                         ${site.siteUrl} <i class="ri-external-link-line text-xs ml-1 opacity-50"></i>
                     </a>
-                </td>
-                <td class="px-3 py-4 text-sm text-center">
-                    <span class="inline-flex items-center rounded-md bg-slate-700/50 px-2.5 py-1 text-xs font-medium text-slate-200 ring-1 ring-inset ring-slate-600/50">
-                        <span class="mr-1.5 text-base">${flag}</span> ${site.language || 'vi'}
-                    </span>
                 </td>
                 <td class="py-4 pl-3 pr-4 sm:pr-6 text-center w-32">
                     <div class="flex justify-center items-center space-x-2">
@@ -120,7 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetForm() {
         form.reset();
         siteIdInput.value = ''; 
-        siteLangInput.value = 'vi';
         
         // Set UI ve che do "Them moi"
         formTitle.innerHTML = '<i class="ri-add-line mr-2 text-emerald-400"></i> Thêm Site Mới';
@@ -134,7 +120,6 @@ document.addEventListener('DOMContentLoaded', () => {
         siteIdInput.value = site.id;
         siteNameInput.value = site.siteName;
         siteUrlInput.value = site.siteUrl;
-        siteLangInput.value = site.language || 'vi';
         apiKeyInput.value = site.apiKey; 
         
         // Set UI ve che do "Sua"

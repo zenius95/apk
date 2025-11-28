@@ -25,13 +25,6 @@ const WpSite = sequelize.define('WpSite', {
     allowNull: false,
     comment: 'API Key de ket noi (vd: mot chuoi bi mat)'
   },
-  // +++ MOI: Them cot ngon ngu +++
-  language: {
-    type: DataTypes.STRING(10),
-    allowNull: false,
-    defaultValue: 'vi', // Mac dinh la Tieng Viet
-    comment: 'Ma ngon ngu (vi, en, fr...)'
-  }
 }, {
   tableName: 'wp_sites',
   timestamps: true // Giu lai created/updated de biet them luc nao
