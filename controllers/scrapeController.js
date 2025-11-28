@@ -1,6 +1,8 @@
 const scraperService = require('../services/scraperService');
 const { default: gplay } = require('google-play-scraper');
 const App = require('../models/app');
+const fs = require('fs');
+const path = require('path');
 
 // --- GLOBAL STATE (Luu trong RAM server) ---
 let jobState = {
@@ -11,16 +13,42 @@ let jobState = {
   stats: { success: 0, failed: 0, total: 0 }
 };
 
+// Ham ghi log ra file (Append)
+const writeLogToFile = (logEntry) => {
+  try {
+    const dateStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const logDir = path.join(__dirname, '..', 'logs');
+    const logFile = path.join(logDir, `scrape-${dateStr}.log`);
+
+    // Tao thu muc logs neu chua co
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir);
+    }
+
+    const logLine = `[${logEntry.time}] [${logEntry.type}] ${logEntry.message}\n`;
+    
+    // Ghi bat dong bo cho no nhe dau
+    fs.appendFile(logFile, logLine, (err) => {
+      if (err) console.error("Loi ghi log ra file:", err);
+    });
+  } catch (e) {
+    console.error("Exception khi ghi log:", e);
+  }
+};
+
 // Ham them log va ban socket
 const addLog = (io, type, message) => {
   const timestamp = new Date().toLocaleTimeString('vi-VN');
   const logEntry = { time: timestamp, type, message };
   
-  // Luu vao RAM (Gioi han 1000 dong de khong tran RAM)
+  // 1. Luu vao RAM (Giu it thoi, 100 dong du de UI load lai roi)
   jobState.logs.push(logEntry);
-  if (jobState.logs.length > 1000) jobState.logs.shift();
+  if (jobState.logs.length > 100) jobState.logs.shift();
 
-  // Ban ra UI
+  // 2. Ghi ra file (Luu vinh vien)
+  writeLogToFile(logEntry);
+
+  // 3. Ban ra UI
   io.emit('job:log', logEntry);
 };
 
@@ -33,7 +61,7 @@ async function runScrapingJob(appIds, concurrency, delay, io) {
   jobState.stats = { success: 0, failed: 0, total: appIds.length };
   jobState.queue = [...appIds];
   
-  // Xoa log cu khi chay job moi (hoac giu lai tuy Bro)
+  // Xoa log cu trong RAM khi chay job moi
   jobState.logs = []; 
 
   addLog(io, 'INFO', `🚀 BẮT ĐẦU JOB! Tổng số: ${appIds.length} apps.`);
@@ -109,24 +137,19 @@ const handleScrapeRequest = async (req, res) => {
   }
 
   const { scrapeMode, appIdsList, category, collection, num, concurrency, delay } = req.body;
-  // ... (Logic loc App ID giu nguyen nhu cu) ...
   
-  // (Minh gian luoc doan check DB de tap trung vao logic Log, Bro copy lai doan logic loc ID cu vao day nhe)
-  // GIA DU la da co danh sach finalAppIds
   let appIdsToScrape = [];
   
   try {
-      // --- TAI SU DUNG LOGIC CU DE LAY ID ---
       if (scrapeMode === 'by_id') {
         if (!appIdsList) throw new Error("Thiếu danh sách ID.");
         appIdsToScrape = [...new Set(appIdsList.split('\n').map(id => id.trim()).filter(Boolean))];
       } else {
-         // Logic lay theo list giong cu...
          const listResults = await gplay.list({ category, collection, num: parseInt(num) || 50 });
          appIdsToScrape = listResults.map(app => app.appId);
       }
 
-      // Loc app da co (Copy tu file cu sang)
+      // Loc app da co
       const existingApps = await App.findAll({ where: { appId: appIdsToScrape }, attributes: ['appId'] });
       const existingAppIds = new Set(existingApps.map(app => app.appId));
       const newAppIds = appIdsToScrape.filter(id => !existingAppIds.has(id));
@@ -157,7 +180,7 @@ const handleScrapeRequest = async (req, res) => {
 const getJobStatus = (req, res) => {
   res.status(200).json({
     isRunning: jobState.isRunning,
-    logs: jobState.logs, // Tra ve toan bo log trong RAM
+    logs: jobState.logs, // Tra ve log trong RAM (100 dong cuoi)
     stats: jobState.stats
   });
 };
@@ -170,7 +193,6 @@ const handleStopJob = (req, res) => {
     return res.status(400).json({ message: "Có Job nào đang chạy đâu mà dừng Bro?" });
   }
   jobState.isStopping = true;
-  // Log ngay lap tuc
   addLog(req.io, 'WARN', '⚠️ Đang gửi lệnh dừng... Đợi các worker hoàn thành nốt task hiện tại.');
   return res.status(200).json({ message: "Đang dừng Job..." });
 };
@@ -178,5 +200,5 @@ const handleStopJob = (req, res) => {
 module.exports = {
   handleScrapeRequest,
   getJobStatus,
-  handleStopJob // Export them ham nay
+  handleStopJob
 };

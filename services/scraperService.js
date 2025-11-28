@@ -1,23 +1,19 @@
 const { default: gplay } = require('google-play-scraper');
 const App = require('../models/app');
-const axios = require('axios'); // +++ MOI
-const fs = require('fs-extra'); // +++ MOI
-const path = require('path'); // +++ MOI
+const axios = require('axios');
+const fs = require('fs-extra');
+const path = require('path');
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
- * +++ MOI: Ham helper de download 1 file anh
- * @param {string} url Link anh
- * @param {string} filepath Duong dan de luu file
+ * Ham helper de download 1 file anh
  */
 async function downloadImage(url, filepath) {
-  if (!url) return Promise.resolve(null); // Bo qua neu URL rong
+  if (!url) return Promise.resolve(null); 
 
   try {
-    // Dam bao thu muc chua file ton tai
     await fs.ensureDir(path.dirname(filepath));
-
     const writer = fs.createWriteStream(filepath);
     const response = await axios({
       url,
@@ -31,18 +27,17 @@ async function downloadImage(url, filepath) {
       writer.on('finish', resolve);
       writer.on('error', (err) => {
         console.error(`[Service] Loi pipe/write image ${filepath}: ${err.message}`);
-        reject(err); // Bao loi de Promise.allSettled biet
+        reject(err);
       });
     });
   } catch (err) {
     console.error(`[Service] Loi download image ${url}: ${err.message}`);
-    return Promise.reject(err); // Bao loi de Promise.allSettled biet
+    return Promise.reject(err);
   }
 }
 
 /**
- * Lay du lieu chi tiet cua 1 app va luu vao DB (DA CAP NHAT)
- * @returns {Promise<object>} Ket qua { success, data (appInstance), created, error }
+ * Lay du lieu chi tiet cua 1 app va luu vao DB
  */
 async function scrapeAndSave(appId) {
   console.log(`[Service] Bat dau lay du lieu cho: ${appId}`);
@@ -50,9 +45,10 @@ async function scrapeAndSave(appId) {
     // 1. Goi API lay du lieu goc
     const appData = await gplay.app({ appId: appId });
 
-    // --- 2. MOI: DOWNLOAD & XU LY ANH ---
+    // --- 2. DOWNLOAD & XU LY ANH (TOI UU) ---
     const appImgDir = path.join(__dirname, '..', 'public', 'images', 'apps', appId);
-    const tasks = [];
+    
+    const imageTasks = [];
     const localPaths = {
         icon: null,
         headerImage: null,
@@ -62,42 +58,41 @@ async function scrapeAndSave(appId) {
     // Task cho Icon
     if (appData.icon) {
         const iconPath = path.join(appImgDir, 'icon.png');
-        tasks.push(downloadImage(appData.icon, iconPath)
-            .then(() => { localPaths.icon = `/images/apps/${appId}/icon.png`; })
-            .catch(() => {}) // Neu loi thi bo qua
-        );
+        const p = downloadImage(appData.icon, iconPath)
+            .then(() => { localPaths.icon = `/images/apps/${appId}/icon.png`; });
+        imageTasks.push(p);
     }
 
     // Task cho Header
     if (appData.headerImage) {
         const headerPath = path.join(appImgDir, 'header.jpg');
-        tasks.push(downloadImage(appData.headerImage, headerPath)
-            .then(() => { localPaths.headerImage = `/images/apps/${appId}/header.jpg`; })
-            .catch(() => {})
-        );
+        const p = downloadImage(appData.headerImage, headerPath)
+            .then(() => { localPaths.headerImage = `/images/apps/${appId}/header.jpg`; });
+        imageTasks.push(p);
     }
 
     // Task cho Screenshots
     if (appData.screenshots && appData.screenshots.length > 0) {
-        let ssTasks = appData.screenshots.map((ssUrl, i) => {
+        // Khoi tao mang screenshots voi kich thuoc dung
+        localPaths.screenshots = new Array(appData.screenshots.length).fill(null);
+        
+        appData.screenshots.forEach((ssUrl, i) => {
             const ssName = `ss-${i + 1}.jpg`;
             const ssPath = path.join(appImgDir, ssName);
-            const localSsPath = `/images/apps/${appId}/${ssName}`;
-
-            return downloadImage(ssUrl, ssPath)
-                .then(() => localSsPath) // Tra ve local path neu thanh cong
-                .catch(() => null); // Tra ve null neu loi
+            const p = downloadImage(ssUrl, ssPath)
+                .then(() => { 
+                    localPaths.screenshots[i] = `/images/apps/${appId}/${ssName}`; 
+                });
+            imageTasks.push(p);
         });
-        // Gan ket qua vao localPaths.screenshots
-        tasks.push(
-            Promise.all(ssTasks).then(paths => {
-                localPaths.screenshots = paths.filter(Boolean); // Loc bo cac cai null (loi)
-            })
-        );
     }
 
-    // Cho tat ca cac task (download + gan path) hoan tat
-    await Promise.all(tasks);
+    // CHAY DONG LOAT (Dung allSettled de 1 anh chet khong lam chet ca job)
+    await Promise.allSettled(imageTasks);
+    
+    // Loc bo cac phan tu null trong screenshots (neu co anh loi hoac mang thua)
+    localPaths.screenshots = localPaths.screenshots.filter(Boolean);
+
     console.log(`[Service] 🖼️  Da xu ly xong download anh cho ${appId}.`);
     // --- KET THUC XU LY ANH ---
 
@@ -106,20 +101,18 @@ async function scrapeAndSave(appId) {
     const appType = appData.genreId && appData.genreId.startsWith('GAME') ? 'GAME' : 'APP';
 
     // 4. Chuan bi du lieu de luu
-
-    // +++ CAP NHAT appData goc voi local paths +++
     if (localPaths.icon) appData.icon = localPaths.icon;
     if (localPaths.headerImage) appData.headerImage = localPaths.headerImage;
-    appData.screenshots = localPaths.screenshots; // Gan mang da loc
+    appData.screenshots = localPaths.screenshots;
 
     const dataToSave = {
       appId: appData.appId,
       title: appData.title,
       appType: appType,
-      fullData: appData // appData bay gio da chua local URLs
+      fullData: appData
     };
 
-    // 5. Luu vao DB (Upsert)
+    // 5. Luu vao DB
     const [appInstance, created] = await App.upsert(dataToSave);
 
     if (created) {

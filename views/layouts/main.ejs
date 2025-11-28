@@ -10,7 +10,7 @@
     
     <style>
       body { 
-        font-family: 'Inter', system-ui, sans-serif; 
+        font-family: 'Inter', system-ui, sans-serif;
         -webkit-font-smoothing: antialiased; 
         -moz-osx-font-smoothing: grayscale; 
         background-color: #0f172a; /* slate-900 */
@@ -29,7 +29,8 @@
       #modal-body-scroll::-webkit-scrollbar-thumb:hover { background: #64748b; }
     </style>
 </head>
-<body class="text-slate-300 h-full"> <div class="flex h-screen">
+<body class="text-slate-300 h-full"> 
+    <div class="flex h-screen">
         
         <aside class="w-64 bg-slate-900/60 backdrop-blur-xl border-r border-slate-100/10 flex flex-col flex-shrink-0">
             <div class="p-5 border-b border-slate-100/10">
@@ -41,8 +42,6 @@
                 <% 
                   const inactiveClass = "flex items-center p-3 rounded-lg text-slate-400 hover:bg-slate-800/50 hover:text-white border-l-4 border-transparent hover:border-emerald-400/50 transition-all duration-200 group";
                   const activeClass = "flex items-center p-3 rounded-lg text-white font-medium bg-emerald-500/10 border-l-4 border-emerald-400";
-                  
-                  // +++ MOI: Cap nhat logic active cho 'appList'
                   const appListActive = (data.page === 'appList' || data.page === 'trash');
                 %>
                 
@@ -120,7 +119,7 @@
                                 </div>
                             </div>
                             <div class="flex items-center text-sm">
-                                 <i class="ri-price-tag-3-line w-6 text-slate-400 mr-2 flex-shrink-0"></i>
+                                <i class="ri-price-tag-3-line w-6 text-slate-400 mr-2 flex-shrink-0"></i>
                                 <div>
                                     <span class="text-slate-400">Giá:</span>
                                     <span id="modal-price" class="font-medium text-white ml-1">N/A</span>
@@ -161,7 +160,7 @@
                                     <span id="modal-rating" class="font-medium text-white ml-1">N/A</span>
                                 </div>
                             </div>
-                         </div>
+                        </div>
                     </div>
                     <div class="md:col-span-2 space-y-6">
                         <div>
@@ -185,6 +184,8 @@
     
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/main.js"></script>
+    <script src="/js/appModal.js"></script>
     <script src="/js/listManager.js"></script>
-    <script src="/js/wpSitesManager.js"></script> </body>
+    <script src="/js/wpSitesManager.js"></script> 
+</body>
 </html>
