@@ -3,7 +3,7 @@
     <header class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 pb-4 border-b border-slate-700">
         <div>
             <h1 class="text-3xl font-bold text-white tracking-tight">Thùng rác</h1>
-            <p class="text-slate-400 mt-1">Các app đã xoá (<%= pagination.totalItems %> app)</p>
+            <p class="text-slate-400 mt-1">Các ứng dụng đã xóa (<%= pagination.totalItems %> ứng dụng)</p>
         </div>
         <a href="/app-list" class="inline-flex items-center justify-center rounded-md bg-slate-800 px-3.5 py-2 text-sm 
 font-medium text-white shadow-sm hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-all mt-4 sm:mt-0">
@@ -22,7 +22,7 @@ font-medium text-white shadow-sm hover:bg-slate-700 border border-slate-700 hove
                     </div>
                     <input type="text" name="search" class="block 
 w-full rounded-md border-0 bg-slate-800/60 py-2.5 pl-10 text-white ring-1 ring-inset ring-white/10 placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm"
-                           placeholder="Tìm trong thùng rác..."
+                           placeholder="Tìm kiếm trong thùng rác..."
                            value="<%= typeof search !== 'undefined' ?
 search : '' %>">
                 </div>
@@ -30,10 +30,10 @@ search : '' %>">
         </div>
         
         <div id="selection-controls" class="hidden items-center justify-end flex-wrap gap-4">
-            <span id="selection-count" class="text-sm font-medium text-slate-300">Đã chọn 0 app</span>
+            <span id="selection-count" class="text-sm font-medium text-slate-300">Đã chọn 0 ứng dụng</span>
             <button id="btn-select-all-db" class="text-sm text-emerald-400 hover:text-emerald-300 font-medium hidden">
   
-              Chọn tất cả <span class="font-bold"><%= pagination.totalItems %></span> app
+              Chọn tất cả <span class="font-bold"><%= pagination.totalItems %></span> ứng dụng
             </button>
             <div class="flex space-x-3">
                 <button id="btn-restore-selected" class="inline-flex items-center justify-center rounded-md bg-emerald-600/90 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -44,7 +44,7 @@ search : '' %>">
                 <button id="btn-force-delete-selected" class="inline-flex items-center justify-center rounded-md bg-red-800/90 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-900 disabled:opacity-50 disabled:cursor-not-allowed">
                     <i class="ri-delete-bin-2-line -ml-1 mr-2"></i>
         
-            Xoá vĩnh viễn
+            Xóa vĩnh viễn
                 </button>
             </div>
         </div>
@@ -60,11 +60,11 @@ search : '' %>">
                             <input type="checkbox" id="select-all-page" class="h-4 w-4 rounded border-slate-600 bg-slate-700 text-emerald-500 focus:ring-emerald-600">
          
                </th>
-                        <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white w-3/5">App</th>
-                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Loại</th>
+                        <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white w-3/5">Ứng dụng</th>
+                        <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Phân loại</th>
                       
-  <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Ngày xoá</th>
-                        <th class="py-3.5 pl-3 pr-4 sm:pr-6 w-32 text-center text-sm font-semibold text-white">Hành động</th>
+  <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Ngày xóa</th>
+                        <th class="py-3.5 pl-3 pr-4 sm:pr-6 w-32 text-center text-sm font-semibold text-white">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody id="app-table-body" class="divide-y divide-slate-800">

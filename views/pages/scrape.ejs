@@ -1,8 +1,8 @@
 <body data-page-mode="scrape">
 
     <header class="mb-8 pb-4 border-b border-slate-700">
-        <h1 class="text-3xl font-bold text-white tracking-tight">Lấy dữ liệu</h1>
-        <p class="text-slate-400 mt-1">Bắt đầu "cào" data từ Google Play</p>
+        <h1 class="text-3xl font-bold text-white tracking-tight">Thu thập Dữ liệu</h1>
+        <p class="text-slate-400 mt-1">Bắt đầu quá trình thu thập dữ liệu từ Google Play</p>
     </header>
 
 
@@ -15,21 +15,21 @@
             <div class="bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg">
                 <div class="p-6 space-y-6">
                     <div>
-                        <label class="block text-sm font-medium text-slate-300 mb-2">Chế độ lấy dữ liệu</label>
+                        <label class="block text-sm font-medium text-slate-300 mb-2">Chế độ thu thập</label>
                         <div class="mt-2 grid grid-cols-2 gap-2 rounded-lg bg-slate-900/70 p-1.5">
                             <button id="btn-mode-by-id" class="btn-mode relative flex items-center justify-center rounded-md py-2.5 px-3 text-sm font-semibold text-white bg-emerald-500 shadow-md">
                                 <i class="ri-keyboard-line mr-2 text-lg"></i>
-                                Thủ công (Theo ID)
+                                Thủ công (Theo App ID)
                             </button>
                             <button id="btn-mode-by-list" class="btn-mode relative flex items-center justify-center rounded-md py-2.5 px-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white">
                                 <i class="ri-list-check-2 mr-2 text-lg"></i>
-                                Tự động (Theo D/s)
+                                Tự động (Theo Danh sách)
                             </button>
                         </div>
                     </div>
                     
                     <div id="panel-by-id">
-                        <label for="appIdsList" class="block text-sm font-medium text-slate-300 mb-2">Danh sách App ID (Mỗi ID một dòng)</label>
+                        <label for="appIdsList" class="block text-sm font-medium text-slate-300 mb-2">Danh sách App ID (Mỗi ID trên một dòng)</label>
                         <textarea id="appIdsList" name="appIdsList" rows="12" class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 transition"></textarea>
                     </div>
                     
@@ -61,7 +61,7 @@
                     <button id="startScrapeBtn" class="w-full flex justify-center items-center p-3 bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700 text-white font-bold rounded-lg shadow-lg transform hover:scale-[1.02] transition-all duration-300 disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed">
                         <i id="loading-spinner" class="ri-loader-4-line animate-spin text-2xl -ml-1 mr-2 hidden"></i>
                         <i id="btn-icon" class="ri-play-fill text-2xl -ml-1 mr-2"></i>
-                        <span id="btn-text" class="text-lg">Bắt đầu lấy dữ liệu</span>
+                        <span id="btn-text" class="text-lg">Bắt đầu Thu thập</span>
                     </button>
                 </div>
             </div>
@@ -69,17 +69,17 @@
             <div class="bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg p-6 space-y-6 sticky top-10">
                 <h3 class="text-lg font-semibold text-white border-b border-slate-700 pb-3 flex items-center">
                     <i class="ri-settings-3-line mr-2 text-cyan-400"></i>
-                    Cấu hình Job
+                    Cấu hình Tác vụ
                 </h3>
                 <div>
-                    <label for="concurrency" class="block text-sm font-medium text-slate-300 mb-2">Số luồng (Concurrency)</label>
+                    <label for="concurrency" class="block text-sm font-medium text-slate-300 mb-2">Số luồng đồng thời (Concurrency)</label>
                     <input type="number" id="concurrency" name="concurrency" class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 transition" value="5" min="1" max="50">
-                    <p class="text-xs text-slate-500 mt-1">Chạy song song bao nhiêu app.</p>
+                    <p class="text-xs text-slate-500 mt-1">Số lượng ứng dụng xử lý đồng thời.</p>
                 </div>
                 <div>
-                    <label for="delay" class="block text-sm font-medium text-slate-300 mb-2">Delay (miligiây)</label>
+                    <label for="delay" class="block text-sm font-medium text-slate-300 mb-2">Độ trễ (mili giây)</label>
                     <input type="number" id="delay" name="delay" class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 transition" value="1000" min="0">
-                    <p class="text-xs text-slate-500 mt-1">Nghỉ giữa mỗi lượt lấy (ms).</p>
+                    <p class="text-xs text-slate-500 mt-1">Thời gian chờ giữa các yêu cầu (ms).</p>
                 </div>
             </div>
         </div> </div>
@@ -99,7 +99,7 @@
                 </div>
                 
                 <button id="btn-stop-job" class="hidden px-3 py-1 bg-red-900/50 hover:bg-red-800 text-red-200 text-xs font-bold rounded border border-red-700/50 transition-all">
-                    <i class="ri-stop-circle-line mr-1"></i> DỪNG LẠI
+                    <i class="ri-stop-circle-line mr-1"></i> Dừng tác vụ
                 </button>
             </div>
         </div>

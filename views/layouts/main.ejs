@@ -34,7 +34,7 @@
         <aside class="w-64 bg-slate-900/60 backdrop-blur-xl border-r border-slate-100/10 flex flex-col flex-shrink-0">
             <div class="p-5 border-b border-slate-100/10">
                 <h1 class="text-2xl font-bold text-white">GPlay<span class="text-emerald-400">Scraper</span></h1>
-                <p class="text-slate-400 text-sm">Panel cua Bro</p>
+                <p class="text-slate-400 text-sm">Bảng điều khiển</p>
             </div>
             
             <nav class="flex-1 p-4 space-y-2">
@@ -48,23 +48,23 @@
                 
                 <a href="/" class="<%= (data.page === 'scrape') ? activeClass : inactiveClass %>">
                     <i class="ri-download-cloud-2-line w-6 text-xl mr-3 <%= (data.page === 'scrape') ? 'text-emerald-400' : 'text-slate-500 group-hover:text-emerald-400' %>"></i>
-                    <span>Lấy dữ liệu</span>
+                    <span>Thu thập Dữ liệu</span>
                 </a>
                 
                 <a href="/app-list" class="<%= appListActive ? activeClass : inactiveClass %>">
                     <i class="ri-database-2-line w-6 text-xl mr-3 <%= appListActive ? 'text-emerald-400' : 'text-slate-500 group-hover:text-emerald-400' %>"></i>
-                    <span>Danh sách APP</span>
+                    <span>Danh sách Ứng dụng</span>
                 </a>
 
                 <a href="/wp-sites" class="<%= (data.page === 'wpSites') ? activeClass : inactiveClass %>">
                     <i class="ri-wordpress-line w-6 text-xl mr-3 <%= (data.page === 'wpSites') ? 'text-emerald-400' : 'text-slate-500 group-hover:text-emerald-400' %>"></i>
-                    <span>Wordpress Sites</span>
+                    <span>Quản lý Wordpress</span>
                 </a>
 
             </nav>
             
             <div class="admin-sidebar-footer p-4 border-t border-slate-100/10 text-center text-xs text-slate-500">
-                Lam boi "AI cua Bro" ;)
+                Phát triển bởi Gemini
             </div>
         </aside>
 
@@ -82,7 +82,7 @@
          <div class="relative w-full max-w-5xl max-h-[90vh] bg-slate-800/80 backdrop-blur-lg ring-1 ring-white/10 rounded-lg shadow-xl overflow-hidden flex flex-col">
             
             <div class="flex-shrink-0 p-4 border-b border-slate-700/50 flex items-center justify-between">
-                <h3 id="modal-header-title" class="text-xl font-semibold text-white truncate">Chi tiết App</h3>
+                <h3 id="modal-header-title" class="text-xl font-semibold text-white truncate">Chi tiết Ứng dụng</h3>
                 <button id="modalCloseBtn" class="text-slate-400 hover:text-white transition-colors">
                      <i class="ri-close-line text-2xl"></i>
                 </button>
@@ -157,7 +157,7 @@
                             <div class="flex items-center text-sm">
                                 <i class="ri-shield-user-line w-6 text-slate-400 mr-2 flex-shrink-0"></i>
                                 <div>
-                                    <span class="text-slate-400">Rating:</span>
+                                    <span class="text-slate-400">Xếp hạng:</span>
                                     <span id="modal-rating" class="font-medium text-white ml-1">N/A</span>
                                 </div>
                             </div>
