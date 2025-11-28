@@ -5,13 +5,11 @@
             <h1 class="text-3xl font-bold text-white tracking-tight">Danh sách Ứng dụng</h1>
             <p class="text-slate-400 mt-1">Quản lý các ứng dụng đã tải (<%= pagination.totalItems %> ứng dụng)</p>
         </div>
-        <a href="/trash" class="inline-flex items-center justify-center rounded-md 
-bg-slate-800 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-all mt-4 sm:mt-0">
+        <a href="/trash" class="inline-flex items-center justify-center rounded-md bg-slate-800 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-all mt-4 sm:mt-0">
             <i class="ri-delete-bin-line -ml-1 mr-2"></i>
             Thùng rác
             <% if (typeof trashCount !== 'undefined' && trashCount > 0) { %>
                 <span class="ml-2 inline-flex items-center rounded-full bg-red-800/80 px-2.5 py-0.5 text-xs font-medium text-red-100">
-          
           <%= trashCount %>
                 </span>
             <% } %>
@@ -21,16 +19,13 @@ bg-slate-800 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate
     <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
         <div class="w-full max-w-sm">
             <form method="GET" action="/app-list">
-           
-     <div class="relative">
+                <div class="relative">
                     <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                         <i class="ri-search-line text-slate-400"></i>
                     </div>
-                    <input 
-type="text" name="search" class="block w-full rounded-md border-0 bg-slate-800/60 py-2.5 pl-10 text-white ring-1 ring-inset ring-white/10 placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm"
+                    <input type="text" name="search" class="block w-full rounded-md border-0 bg-slate-800/60 py-2.5 pl-10 text-white ring-1 ring-inset ring-white/10 placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm"
                            placeholder="Tìm kiếm theo Tên hoặc App ID..."
-                           value="<%= typeof search !== 'undefined' ?
-search : '' %>">
+                           value="<%= typeof search !== 'undefined' ? search : '' %>">
                 </div>
             </form>
         </div>
@@ -38,14 +33,88 @@ search : '' %>">
         <div id="selection-controls" class="hidden items-center justify-end flex-wrap gap-4">
             <span id="selection-count" class="text-sm font-medium text-slate-300">Đã chọn 0 ứng dụng</span>
             <button id="btn-select-all-db" class="text-sm text-emerald-400 hover:text-emerald-300 font-medium hidden">
-  
               Chọn tất cả <span class="font-bold"><%= pagination.totalItems %></span> ứng dụng
             </button>
             <button id="btn-delete-selected" class="inline-flex items-center justify-center rounded-md bg-red-600/90 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
                 <i class="ri-delete-bin-line -ml-1 mr-2"></i>
                 Chuyển vào thùng rác
-   
-         </button>
+            </button>
+        </div>
+    </div>
+
+    <div id="ai-gen-panel" class="mb-6 bg-slate-900/50 border border-purple-500/20 ring-1 ring-white/5 rounded-xl p-5 shadow-2xl transition-all duration-300"> 
+        
+        <div class="flex items-center gap-2 mb-4">
+            <i class="ri-sparkling-2-fill text-purple-400 text-lg"></i>
+            <h3 class="text-white font-bold text-sm tracking-wide uppercase">Bộ Tạo Nội Dung AI</h3>
+        </div>
+
+        <div class="space-y-4">
+            
+            <div class="relative group">
+                <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1.5 ml-1">1. Chọn Sites Đăng Bài</label>
+                <div class="relative">
+                    <% if(typeof wpSites !== 'undefined' && wpSites.length > 0) { %>
+                        <select id="ai-sites-select" multiple="multiple" class="w-full">
+                            <% wpSites.forEach(site => { %>
+                                <option value="<%= site.id %>"><%= site.siteName %></option>
+                            <% }); %>
+                        </select>
+                    <% } else { %>
+                        <div class="text-xs text-slate-500 italic p-3 border border-slate-700 rounded bg-slate-900/50 text-center">
+                            Chưa có site nào. <a href="/wp-sites" class="text-emerald-400 underline hover:text-emerald-300">Thêm ngay</a>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-4">
+                
+                <div class="flex-[3] min-w-[200px]">
+                    <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1.5 ml-1">2. OpenAI API Key</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="ri-key-2-line text-slate-500"></i>
+                        </div>
+                        <input type="password" id="ai-openai-key" class="w-full bg-slate-800 border border-slate-600 rounded-lg py-2.5 pl-9 pr-3 text-sm text-white placeholder-slate-500 focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all shadow-inner" placeholder="sk-...">
+                    </div>
+                </div>
+
+                <div class="flex-1 flex gap-3 min-w-[180px]">
+                    <div class="flex-1">
+                        <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1.5 ml-1 text-center">Luồng</label>
+                        <input type="number" id="ai-concurrency" value="1" min="1" max="5" class="w-full bg-slate-800 border border-slate-600 rounded-lg py-2.5 px-2 text-sm text-white focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none text-center shadow-inner">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1.5 ml-1 text-center">Delay(ms)</label>
+                        <input type="number" id="ai-delay" value="2000" min="500" step="500" class="w-full bg-slate-800 border border-slate-600 rounded-lg py-2.5 px-2 text-sm text-white focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none text-center shadow-inner">
+                    </div>
+                </div>
+
+                <div class="flex-none flex flex-col justify-end min-w-[140px]">
+                    <button id="btn-start-ai" disabled class="w-full h-[42px] flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-6 rounded-lg font-bold transition-all text-sm shadow-lg shadow-purple-900/30 opacity-50 cursor-not-allowed transform active:scale-95 border border-purple-500/50">
+                        <i class="ri-play-fill text-xl"></i> 
+                        <span>CHẠY NGAY</span>
+                    </button>
+                    
+                    <button id="btn-stop-ai" class="hidden w-full h-[42px] flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 border border-slate-600 text-red-400 px-6 rounded-lg font-bold transition-all text-sm shadow-lg">
+                        <i class="ri-stop-circle-line text-xl animate-pulse"></i> 
+                        <span>DỪNG LẠI</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="ai-progress-container" class="mt-5 pt-4 border-t border-slate-700/50 hidden">
+            <div class="flex justify-between text-xs text-slate-300 mb-2">
+                <span id="ai-status-text" class="flex items-center font-medium"><i class="ri-loader-4-line animate-spin mr-2 text-purple-400"></i> Đang khởi tạo tiến trình...</span>
+                <span id="ai-progress-text" class="font-mono text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">0 / 0</span>
+            </div>
+            <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden ring-1 ring-white/5">
+                <div id="ai-progress-bar" class="bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 h-full rounded-full transition-all duration-300 shadow-[0_0_15px_rgba(168,85,247,0.6)] relative" style="width: 0%">
+                    <div class="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -54,23 +123,19 @@ search : '' %>">
             <table class="min-w-full">
                 <thead class="bg-slate-900/50 sticky top-0">
                     <tr>
-       
-                 <th class="py-3.5 px-4 sm:px-6 w-12">
+                        <th class="py-3.5 px-4 sm:px-6 w-12">
                             <input type="checkbox" id="select-all-page" class="h-4 w-4 rounded border-slate-600 bg-slate-700 text-emerald-500 focus:ring-emerald-600">
                         </th>
-                  
-      <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white w-3/5">Ứng dụng</th>
+                        <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white w-3/5">Ứng dụng</th>
                         <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Phân loại</th>
                         <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Cập nhật lần cuối</th>
-                      
-  <th class="py-3.5 pl-3 pr-4 sm:pr-6 w-32 text-center text-sm font-semibold text-white">Thao tác</th>
+                        <th class="py-3.5 pl-3 pr-4 sm:pr-6 w-32 text-center text-sm font-semibold text-white">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody id="app-table-body" class="divide-y divide-slate-800">
                     </tbody>
             </table>
- 
-           
+            
             <div id="table-placeholder" class="hidden">
                 </div>
         </div>
@@ -79,8 +144,7 @@ search : '' %>">
     </div>
 
     <script>
-        var initialData = <%- JSON.stringify(savedApps ||
-[]) %>;
+        var initialData = <%- JSON.stringify(savedApps || []) %>;
         var paginationData = <%- JSON.stringify(pagination || {}) %>;
     </script>
 </body>

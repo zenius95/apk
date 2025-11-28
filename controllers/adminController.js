@@ -5,9 +5,6 @@ const { Op } = require('sequelize');
 const fs = require('fs-extra'); 
 const path = require('path'); 
 
-/**
- * (MOI) Ham helper de xoa thu muc anh cua app
- */
 async function deleteAppImages(appId) {
   const imgDir = path.join(__dirname, '..', 'public', 'images', 'apps', appId);
   try {
@@ -18,9 +15,6 @@ async function deleteAppImages(appId) {
   }
 }
 
-/**
- * (MOI) Ham helper de lay data, tranh lap code
- */
 async function getPagedApps(req, isTrashView = false) {
     const page = parseInt(req.query.page, 10) || 1;
     const limit = 20; 
@@ -64,9 +58,6 @@ async function getPagedApps(req, isTrashView = false) {
     return { apps, pagination, search };
 }
 
-/**
- * Hien thi trang Scrape chinh (/)
- */
 const renderScrapePage = async (req, res) => {
   try {
     const categories = gplay.category;
@@ -87,9 +78,6 @@ const renderScrapePage = async (req, res) => {
   }
 };
 
-/**
- * Hien thi trang Danh Sach App
- */
 const renderAppListPage = async (req, res) => {
   try {
     const { apps, pagination, search } = await getPagedApps(req, false);
@@ -97,6 +85,11 @@ const renderAppListPage = async (req, res) => {
     const trashCount = await App.count({
         where: { deletedAt: { [Op.not]: null } },
         paranoid: false
+    });
+
+    const wpSites = await WpSite.findAll({ 
+        attributes: ['id', 'siteName'],
+        order: [['siteName', 'ASC']]
     });
 
     res.render('pages/appList', {
@@ -108,6 +101,7 @@ const renderAppListPage = async (req, res) => {
       pagination: pagination,
       search: search,
       trashCount: trashCount,
+      wpSites: wpSites, 
       baseUrl: '/app-list'
     });
   } catch (err) {
@@ -116,9 +110,6 @@ const renderAppListPage = async (req, res) => {
   }
 };
 
-/**
- * Hien thi trang Thung Rac
- */
 const renderTrashPage = async (req, res) => {
   try {
     const { apps, pagination, search } = await getPagedApps(req, true);
@@ -138,8 +129,6 @@ const renderTrashPage = async (req, res) => {
     res.status(500).send("Loi server roi Bro oi.");
   }
 };
-
-// --- CAC HAM API XU LY APP ---
 
 const handleDeleteApps = async (req, res) => {
   const { appIds, deleteAll } = req.body;
@@ -273,11 +262,6 @@ const handleForceDeleteApps = async (req, res) => {
   }
 };
 
-
-// ---------------------------------------------------
-// CAC HAM XU LY CHO WORDPRESS SITES
-// ---------------------------------------------------
-
 const renderWpSitesPage = async (req, res) => {
   try {
     const sites = await WpSite.findAll({ order: [['siteName', 'ASC']] });
@@ -305,9 +289,8 @@ const handleGetWpSites = async (req, res) => {
   }
 };
 
-// +++ (CAP NHAT) THEM BIEN 'language' +++
 const handleCreateWpSite = async (req, res) => {
-  const { siteName, siteUrl, apiKey, language } = req.body;
+  const { siteName, siteUrl, apiKey, aiPrompt } = req.body;
   
   if (!siteName || !siteUrl || !apiKey) {
     return res.status(400).json({ success: false, message: 'Nhập thiếu rồi Bro. Cần Tên, URL, và API Key.' });
@@ -318,7 +301,7 @@ const handleCreateWpSite = async (req, res) => {
       siteName,
       siteUrl,
       apiKey,
-      language: language || 'vi'
+      aiPrompt: aiPrompt || '' 
     });
     return res.status(201).json({ success: true, message: 'Đã thêm site mới ngon lành!', site: newSite });
   } catch (err) {
@@ -326,14 +309,17 @@ const handleCreateWpSite = async (req, res) => {
     if (err.name === 'SequelizeValidationError') {
       return res.status(400).json({ success: false, message: `URL không hợp lệ: ${err.errors[0].message}` });
     }
+    // +++ MOI: Bat loi trung URL +++
+    if (err.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ success: false, message: 'URL này đã tồn tại trong hệ thống rồi Bro.' });
+    }
     return res.status(500).json({ success: false, message: 'Lỗi server khi tạo site.' });
   }
 };
 
-// +++ (CAP NHAT) THEM BIEN 'language' +++
 const handleUpdateWpSite = async (req, res) => {
   const { id } = req.params;
-  const { siteName, siteUrl, apiKey, language } = req.body;
+  const { siteName, siteUrl, apiKey, aiPrompt } = req.body;
 
   if (!siteName || !siteUrl || !apiKey) {
     return res.status(400).json({ success: false, message: 'Nhập thiếu rồi Bro. Cần Tên, URL, và API Key.' });
@@ -348,7 +334,7 @@ const handleUpdateWpSite = async (req, res) => {
     site.siteName = siteName;
     site.siteUrl = siteUrl;
     site.apiKey = apiKey;
-    site.language = language || 'vi'; // Cap nhat language
+    site.aiPrompt = aiPrompt || ''; 
     
     await site.save();
     
@@ -357,6 +343,10 @@ const handleUpdateWpSite = async (req, res) => {
     console.error("Loi API Update WP Site:", err);
     if (err.name === 'SequelizeValidationError') {
       return res.status(400).json({ success: false, message: `URL không hợp lệ: ${err.errors[0].message}` });
+    }
+    // +++ MOI: Bat loi trung URL +++
+    if (err.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ success: false, message: 'URL này đã tồn tại trong hệ thống rồi Bro.' });
     }
     return res.status(500).json({ success: false, message: 'Lỗi server khi cập nhật site.' });
   }
@@ -376,7 +366,6 @@ const handleDeleteWpSite = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Lỗi server khi xoá site.' });
   }
 };
-
 
 module.exports = {
   renderScrapePage,

@@ -8,6 +8,8 @@
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
     <style>
       body { 
         font-family: 'Inter', system-ui, sans-serif;
@@ -22,11 +24,61 @@
       
       .tab-panel.hidden { display: none; }
 
-      /* +++ MOI: Custom scrollbar cho Modal body +++ */
       #modal-body-scroll::-webkit-scrollbar { width: 5px; }
       #modal-body-scroll::-webkit-scrollbar-track { background: #1e293b; }
       #modal-body-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
       #modal-body-scroll::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+      /* +++ MOI: Custom CSS cho Select2 Dark Mode +++ */
+      .select2-container--default .select2-selection--multiple {
+          background-color: rgba(15, 23, 42, 0.5) !important; /* slate-900/50 */
+          border: 1px solid #334155 !important; /* slate-700 */
+          border-radius: 0.5rem !important;
+          min-height: 38px;
+      }
+      .select2-container--default.select2-container--focus .select2-selection--multiple {
+          border-color: #a855f7 !important; /* purple-500 */
+          box-shadow: 0 0 0 1px #a855f7;
+      }
+      .select2-container--default .select2-selection--multiple .select2-selection__choice {
+          background-color: #3b0764 !important; /* purple-950 */
+          border: 1px solid #6b21a8 !important; /* purple-800 */
+          color: #e9d5ff !important; /* purple-200 */
+          border-radius: 4px;
+          padding-left: 25px; /* Cho cho dau x */
+          position: relative;
+      }
+      .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+          color: #e9d5ff !important;
+          border-right: 1px solid #6b21a8 !important;
+          position: absolute;
+          left: 0;
+          height: 100%;
+          width: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+      }
+      .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+          background-color: #6b21a8 !important;
+          color: white !important;
+      }
+      .select2-dropdown {
+          background-color: #1e293b !important; /* slate-800 */
+          border: 1px solid #334155 !important;
+          color: #cbd5e1;
+      }
+      .select2-search__field {
+          background-color: transparent !important;
+          color: #cbd5e1 !important;
+      }
+      .select2-results__option[aria-selected=true] {
+          background-color: #334155 !important;
+      }
+      .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+          background-color: #a855f7 !important; /* purple-500 */
+          color: white !important;
+      }
     </style>
 </head>
 <body class="text-slate-300 h-full"> 
@@ -182,9 +234,12 @@
         </div>
     </div>
     
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/main.js"></script>
-    <script src="/js/appModal.js"></script>
+    <script src="/js/appModal.js"></script> 
     <script src="/js/listManager.js"></script>
     <script src="/js/wpSitesManager.js"></script> 
 </body>

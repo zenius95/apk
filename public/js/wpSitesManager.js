@@ -4,11 +4,9 @@
  */
 document.addEventListener('DOMContentLoaded', () => {
 
-    // --- 1. Kiem tra trang ---
     const pageMode = document.body.dataset.pageMode;
     if (pageMode !== 'wpSites') return;
 
-    // --- 2. Lay linh kien UI ---
     const tableBody = document.getElementById('wp-sites-table-body');
     const placeholder = document.getElementById('wp-table-placeholder');
     const alertContainer = document.getElementById('alert-container-wp');
@@ -26,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const siteNameInput = document.getElementById('wp-site-name');
     const siteUrlInput = document.getElementById('wp-site-url');
     const apiKeyInput = document.getElementById('wp-api-key');
+    const aiPromptInput = document.getElementById('wp-ai-prompt'); // Field Prompt
     
     const submitButton = document.getElementById('wp-form-submit');
     const submitButtonIcon = document.getElementById('wp-btn-icon');
@@ -35,8 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Data
     let sites = (typeof initialWpSites !== 'undefined') ? initialWpSites : [];
 
-    // --- 3. Helper Functions ---
-
+    // --- Helper Functions ---
     function showAlert(message, isError = false) { 
         alertContainer.innerHTML = ''; 
         if (!message) return;
@@ -54,20 +52,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Modal Logic ---
     function openModal() {
         wpSiteModal.classList.remove('hidden');
-        // Animation nhe
         setTimeout(() => {
-            wpSiteModal.firstHZElementChild?.classList.remove('scale-95', 'opacity-0'); // Neu co animation
+            wpSiteModal.firstElementChild?.classList.remove('scale-95', 'opacity-0');
         }, 10);
     }
 
     function closeModal() {
         wpSiteModal.classList.add('hidden');
-        resetForm(); // Reset form khi dong
+        resetForm();
     }
 
     // --- Table Logic ---
     function buildRow(site) {
-
         return `
             <tr data-site-id="${site.id}" class="hover:bg-slate-800/30 transition-colors">
                 <td class="py-4 pl-4 pr-3 text-sm sm:pl-6">
@@ -107,8 +103,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetForm() {
         form.reset();
         siteIdInput.value = ''; 
+        aiPromptInput.value = ''; 
         
-        // Set UI ve che do "Them moi"
         formTitle.innerHTML = '<i class="ri-add-line mr-2 text-emerald-400"></i> Thêm Site Mới';
         submitButtonIcon.className = 'ri-add-line text-xl mr-2';
         submitButtonText.textContent = 'Thêm Site';
@@ -121,8 +117,8 @@ document.addEventListener('DOMContentLoaded', () => {
         siteNameInput.value = site.siteName;
         siteUrlInput.value = site.siteUrl;
         apiKeyInput.value = site.apiKey; 
+        aiPromptInput.value = site.aiPrompt || ''; 
         
-        // Set UI ve che do "Sua"
         formTitle.innerHTML = '<i class="ri-pencil-line mr-2 text-cyan-400"></i> Sửa Site';
         submitButtonIcon.className = 'ri-save-line text-xl mr-2';
         submitButtonText.textContent = 'Lưu Thay Đổi';
@@ -163,11 +159,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             sites.sort((a, b) => a.siteName.localeCompare(b.siteName));
             buildTable(); 
-            closeModal(); // Dong modal sau khi thanh cong
+            closeModal(); 
 
         } catch (err) {
             showAlert(err.message, true);
-            // Neu loi thi giu modal de user sua
         } finally {
             submitButton.disabled = false;
             submitButtonText.textContent = isUpdating ? 'Lưu Thay Đổi' : 'Thêm Site';
@@ -183,8 +178,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const id = btnEdit.dataset.id;
             const siteToEdit = sites.find(s => s.id == id);
             if (siteToEdit) {
-                setEditMode(siteToEdit); // Dien data vao form
-                openModal(); // Mo modal len
+                setEditMode(siteToEdit);
+                openModal();
             }
         }
 
@@ -195,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const confirmResult = await Swal.fire({
                 title: 'Xoá site này?',
-                text: `Bạn có chắc muốn xoá "${siteToDelete.siteName}"? Hành động này không thể hoàn tác.`,
+                text: `Bạn có chắc muốn xoá "${siteToDelete.siteName}"?`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Xoá luôn!',
@@ -222,10 +217,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- 4. Gan Su Kien ---
     form.addEventListener('submit', handleSubmit);
     
-    // Modal triggers
     btnOpenAddModal.addEventListener('click', () => {
         resetForm();
         openModal();
@@ -237,6 +230,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     tableBody.addEventListener('click', handleTableClick);
 
-    // --- 5. Chay lan dau ---
     buildTable();
 });

@@ -1,105 +1,124 @@
 /*
  * File: public/js/appModal.js
- * Xu ly rieng cho App Detail Modal
+ * Phien ban "Bat tu": Khong crash khi thieu element hoac data
  */
-document.addEventListener('DOMContentLoaded', () => {
-    // Lay linh kien Modal
-    const appDetailModal = document.getElementById('appDetailModal');
-    if (!appDetailModal) return;
 
-    const modalBackdrop = document.getElementById('modalBackdrop');
-    const modalCloseBtn = document.getElementById('modalCloseBtn');
+// Dinh nghia ham global ngay lap tuc, khong cho DOMContentLoaded
+window.showAppDetailModal = function(data) {
+    console.log("🚀 Gọi Modal với data:", data); // Debug xem data vao chua
+
+    // 1. Lay Modal (bat buoc phai co)
+    const appDetailModal = document.getElementById('appDetailModal');
+    if (!appDetailModal) {
+        console.error("❌ Lỗi: Không tìm thấy element #appDetailModal trong HTML");
+        alert("Lỗi giao diện: Thiếu Modal HTML. Hãy kiểm tra file main.ejs");
+        return;
+    }
+
     const modalBodyScroll = document.getElementById('modal-body-scroll');
 
-    // Placeholders
-    const modalHeaderTitle = document.getElementById('modal-header-title');
-    const modalIcon = document.getElementById('modal-icon');
-    const modalTitle = document.getElementById('modal-title');
-    const modalDeveloper = document.getElementById('modal-developer');
-    const modalPlayLink = document.getElementById('modal-play-link');
-    
-    const modalScore = document.getElementById('modal-score');
-    const modalReviews = document.getElementById('modal-reviews');
-    const modalInstalls = document.getElementById('modal-installs');
-    const modalPrice = document.getElementById('modal-price');
-    const modalGenre = document.getElementById('modal-genre');
-    const modalSize = document.getElementById('modal-size');
-    const modalVersion = document.getElementById('modal-version');
-    const modalUpdated = document.getElementById('modal-updated');
-    const modalRating = document.getElementById('modal-rating');
+    // 2. Ham helper an toan de gan text
+    const setText = (id, value, fallback = 'N/A') => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = (value !== null && value !== undefined && value !== '') ? value : fallback;
+        } else {
+            console.warn(`⚠️ Cảnh báo: Không tìm thấy ID #${id} trong HTML`);
+        }
+    };
 
-    const modalHeaderImage = document.getElementById('modal-header-image');
-    const modalScreenshots = document.getElementById('modal-screenshots');
-    const modalDescription = document.getElementById('modal-description');
+    // 3. Ham helper an toan de gan anh
+    const setImg = (id, src) => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (src) {
+                el.src = src;
+                el.classList.remove('hidden');
+            } else {
+                el.classList.add('hidden'); // An neu khong co anh
+            }
+        }
+    };
 
-    // Helper format
+    // 4. Format so & ngay thang
     const formatNumber = (num) => {
-        if (typeof num !== 'number') return num;
-        return new Intl.NumberFormat('en-US').format(num);
+        return (typeof num === 'number') ? new Intl.NumberFormat('en-US').format(num) : num;
+    };
+    
+    const formatDate = (ts) => {
+        if (!ts) return 'N/A';
+        const d = new Date(ts);
+        return isNaN(d.getTime()) ? ts : d.toLocaleDateString('vi-VN');
     };
 
-    const formatDate = (timestamp) => {
-        if (!timestamp) return 'N/A';
-        const date = new Date(timestamp);
-        if (isNaN(date.getTime())) return timestamp;
-        return date.toLocaleDateString('vi-VN');
-    };
+    // --- BAT DAU BOM DATA ---
+    try {
+        setText('modal-header-title', data.title, 'Chi tiết App');
+        setText('modal-title', data.title);
+        setText('modal-developer', data.developer);
+        setText('modal-score', data.scoreText);
+        setText('modal-reviews', `(${formatNumber(data.reviews) || '0'} reviews)`);
+        setText('modal-installs', data.installs);
+        setText('modal-price', data.priceText, 'Free');
+        setText('modal-genre', data.genre);
+        setText('modal-size', data.size);
+        setText('modal-version', data.version);
+        setText('modal-updated', formatDate(data.updated));
+        setText('modal-rating', data.contentRating);
 
-    // Ham hien thi Modal (Global)
-    window.showAppDetailModal = (data) => {
-        if (!data) return;
+        // Xu ly Link
+        const playLinkEl = document.getElementById('modal-play-link');
+        if (playLinkEl) playLinkEl.href = data.url || '#';
 
-        // Bom data vao modal
-        modalHeaderTitle.textContent = data.title || 'Chi tiết App';
-        modalIcon.src = data.icon || '';
-        modalTitle.textContent = data.title || 'N/A';
-        modalDeveloper.textContent = data.developer || 'N/A';
-        modalPlayLink.href = data.url || '#';
-        
-        modalScore.textContent = data.scoreText || 'N/A';
-        modalReviews.textContent = `(${formatNumber(data.reviews) || 'N/A'} reviews)`;
-        modalInstalls.textContent = data.installs || 'N/A';
-        modalPrice.textContent = data.priceText || 'N/A';
-        modalGenre.textContent = data.genre || 'N/A';
-        modalSize.textContent = data.size || 'N/A';
-        modalVersion.textContent = data.version || 'N/A';
-        modalUpdated.textContent = formatDate(data.updated);
-        modalRating.textContent = data.contentRating || 'N/A';
+        // Xu ly Icon
+        setImg('modal-icon', data.icon || 'https://placehold.co/100x100?text=No+Icon');
 
-        // Mo ta
-        modalDescription.innerHTML = data.description || '<p class="text-slate-500">Không có mô tả.</p>';
-        
-        // Header Image
-        if (data.headerImage) {
-            modalHeaderImage.src = data.headerImage;
-            modalHeaderImage.classList.remove('hidden');
-        } else {
-            modalHeaderImage.classList.add('hidden');
+        // Xu ly Header Image
+        setImg('modal-header-image', data.headerImage);
+
+        // Xu ly Description (HTML)
+        const descEl = document.getElementById('modal-description');
+        if (descEl) {
+            descEl.innerHTML = data.description || '<p class="text-slate-500 italic">Chưa có mô tả.</p>';
         }
 
-        // Screenshots
-        modalScreenshots.innerHTML = '';
-        if (data.screenshots && data.screenshots.length > 0) {
-            data.screenshots.forEach(ssUrl => {
-                const img = document.createElement('img');
-                img.src = ssUrl;
-                img.className = 'h-40 rounded-md flex-shrink-0';
-                modalScreenshots.appendChild(img);
-            });
-        } else {
-            modalScreenshots.innerHTML = '<p class="text-sm text-slate-500">Không có ảnh chụp màn hình.</p>';
+        // Xu ly Screenshots
+        const ssContainer = document.getElementById('modal-screenshots');
+        if (ssContainer) {
+            ssContainer.innerHTML = ''; // Xoa cu
+            if (data.screenshots && Array.isArray(data.screenshots) && data.screenshots.length > 0) {
+                data.screenshots.forEach(ssUrl => {
+                    const img = document.createElement('img');
+                    img.src = ssUrl;
+                    img.className = 'h-40 rounded-md flex-shrink-0 border border-slate-700/50 cursor-pointer hover:opacity-90 transition';
+                    // Click vao anh de xem to (neu thich lam sau)
+                    ssContainer.appendChild(img);
+                });
+            } else {
+                ssContainer.innerHTML = '<p class="text-sm text-slate-500 italic p-2 w-full text-center">Không có ảnh chụp màn hình.</p>';
+            }
         }
 
-        // Hien modal
+        // Hien Modal
         appDetailModal.classList.remove('hidden');
-        modalBodyScroll.scrollTop = 0;
+        if (modalBodyScroll) modalBodyScroll.scrollTop = 0;
+
+    } catch (err) {
+        console.error("❌ CRASH khi render modal:", err);
+        alert("Có lỗi khi hiển thị dữ liệu app này. Check Console đi Bro.");
+    }
+};
+
+// Gan su kien dong Modal (chay khi DOM load xong)
+document.addEventListener('DOMContentLoaded', () => {
+    const appDetailModal = document.getElementById('appDetailModal');
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+    const closeModal = () => {
+        if(appDetailModal) appDetailModal.classList.add('hidden');
     };
 
-    const closeAppModal = () => {
-        appDetailModal.classList.add('hidden');
-    };
-
-    // Events
-    modalCloseBtn.addEventListener('click', closeAppModal);
-    modalBackdrop.addEventListener('click', closeAppModal);
+    if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeModal);
+    if (modalBackdrop) modalBackdrop.addEventListener('click', closeModal);
 });

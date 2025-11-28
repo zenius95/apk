@@ -15,6 +15,7 @@ const WpSite = sequelize.define('WpSite', {
   siteUrl: {
     type: DataTypes.STRING,
     allowNull: false,
+    unique: true, // +++ MOI: Khong cho phep trung URL +++
     validate: {
       isUrl: true
     },
@@ -25,9 +26,14 @@ const WpSite = sequelize.define('WpSite', {
     allowNull: false,
     comment: 'API Key de ket noi (vd: mot chuoi bi mat)'
   },
+  aiPrompt: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Prompt mau de tao noi dung AI cho site nay'
+  }
 }, {
   tableName: 'wp_sites',
-  timestamps: true // Giu lai created/updated de biet them luc nao
+  timestamps: true 
 });
 
 module.exports = WpSite;

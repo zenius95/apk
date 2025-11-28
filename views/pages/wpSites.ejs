@@ -77,6 +77,18 @@
                         </div>
                     </div>
 
+                    <div>
+                        <label for="wp-ai-prompt" class="block text-sm font-medium text-slate-300 mb-2">Prompt AI (Tùy chọn)</label>
+                        <textarea id="wp-ai-prompt" name="aiPrompt" rows="4" class="w-full p-3 bg-slate-900/50 border border-slate-600 rounded-lg text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition font-mono text-sm" placeholder="Vd: Viết một bài đánh giá hấp dẫn về trò chơi {title}. Tóm tắt: {summary}..."></textarea>
+                        <p class="text-xs text-slate-500 mt-2">
+                            <i class="ri-information-line mr-1"></i>
+                            Shortcode hỗ trợ: 
+                            <span class="text-emerald-400 font-mono bg-emerald-400/10 px-1 rounded">{title}</span>, 
+                            <span class="text-emerald-400 font-mono bg-emerald-400/10 px-1 rounded">{summary}</span>, 
+                            <span class="text-emerald-400 font-mono bg-emerald-400/10 px-1 rounded">{description}</span>
+                        </p>
+                    </div>
+
                     <div class="flex items-center gap-3 pt-4 border-t border-slate-700 mt-6">
                         <button id="wp-form-cancel" type="button" class="flex-1 py-3 px-4 bg-slate-700 hover:bg-slate-600 text-slate-300 font-medium rounded-lg transition-all duration-200">
                             Hủy
