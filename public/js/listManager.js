@@ -1,17 +1,19 @@
 /*
  * File: public/js/listManager.js
  * "Não" chung cho cả trang App List và Trash
- * Fix: Socket Listener for AI Job Completion
+ * Fix: Re-structure code to prevent ReferenceError
  */
 document.addEventListener('DOMContentLoaded', () => {
     
-    const socket = io(); // +++ DAM BAO SOCKET DUOC KHOI TAO +++
-
+    // ==========================================
+    // 1. KHOI TAO BIEN & ELEMENTS
+    // ==========================================
     const pageMode = document.body.dataset.pageMode;
     const searchTerm = document.body.dataset.searchTerm || '';
 
     if (pageMode !== 'list' && pageMode !== 'trash') return; 
 
+    // Table Elements
     const tableBody = document.getElementById('app-table-body');
     const placeholder = document.getElementById('table-placeholder');
     const selectAllPageCheckbox = document.getElementById('select-all-page');
@@ -19,7 +21,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectionCount = document.getElementById('selection-count');
     const btnSelectAllDb = document.getElementById('btn-select-all-db');
 
-    // +++ AI Panel Elements +++
+    // Action Buttons
+    let btnDeleteSelected, btnRestoreSelected, btnForceDeleteSelected;
+    if (pageMode === 'list') {
+        btnDeleteSelected = document.getElementById('btn-delete-selected');
+    } else {
+        btnRestoreSelected = document.getElementById('btn-restore-selected');
+        btnForceDeleteSelected = document.getElementById('btn-force-delete-selected');
+    }
+
+    // AI Panel Elements
     const btnStartAi = document.getElementById('btn-start-ai');
     const btnStopAi = document.getElementById('btn-stop-ai');
     const aiProgressContainer = document.getElementById('ai-progress-container');
@@ -31,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const siteCheckboxes = document.querySelectorAll('.site-checkbox'); 
     const btnSelectAllSites = document.getElementById('btn-select-all-sites');
     
-    // +++ Result Modal Elements +++
+    // Result Modal Elements
     const aiResultModal = document.getElementById('aiResultModal');
     const aiResultBackdrop = document.getElementById('aiResultBackdrop');
     const aiResultCloseBtn = document.getElementById('aiResultCloseBtn');
@@ -39,45 +50,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiResultTabContent = document.getElementById('ai-result-tab-content'); 
     const aiResultAppName = document.getElementById('ai-result-app-name');
     const aiResultCopyBtn = document.getElementById('aiResultCopyBtn');
-
-    let btnDeleteSelected, btnRestoreSelected, btnForceDeleteSelected;
-    if (pageMode === 'list') {
-        btnDeleteSelected = document.getElementById('btn-delete-selected');
-    } else {
-        btnRestoreSelected = document.getElementById('btn-restore-selected');
-        btnForceDeleteSelected = document.getElementById('btn-force-delete-selected');
-    }
     
+    // Data
     const itemsOnPage = (typeof initialData !== 'undefined') ? initialData : [];
     const totalItemsInDb = (typeof paginationData !== 'undefined') ? paginationData.totalItems : 0;
-
     let selectedAppIds = new Set();
     let isSelectingAllDb = false;
 
-    // +++ LISTENER: JOB DONE (FIX LOI KET LOADING) +++
-    socket.on('ai_job:done', (stats) => {
-        resetAiUi();
-        Swal.fire({
-            title: 'Hoàn tất!',
-            html: `Đã chạy xong Job!<br>Success: <b class="text-green-500">${stats.success}</b> | Fail: <b class="text-red-500">${stats.failed}</b> | Skipped: <b class="text-yellow-500">${stats.skipped}</b>`,
-            icon: 'success',
-            background: '#1e293b',
-            color: '#e2e8f0',
-            confirmButtonColor: '#10b981'
-        });
-    });
+    // Initialize Socket
+    const socket = typeof io !== 'undefined' ? io() : null;
 
-    // --- SELECT ALL SITES LOGIC ---
-    if(btnSelectAllSites) {
-        btnSelectAllSites.addEventListener('click', () => {
-            const allChecked = Array.from(siteCheckboxes).every(cb => cb.checked);
-            siteCheckboxes.forEach(cb => cb.checked = !allChecked);
-            btnSelectAllSites.textContent = !allChecked ? "Bỏ chọn hết" : "Chọn tất cả";
-            updateAiButtonState();
-        });
-    }
+    // ==========================================
+    // 2. DINH NGHIA HAM (FUNCTIONS)
+    // ==========================================
 
-    // --- Helper Functions (Giu nguyen) ---
+    // --- Helper: Safe Data ---
     const getSafeAppData = (app) => {
         let data = app.fullData;
         if (typeof data === 'string') {
@@ -92,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     };
 
+    // --- UI: Build Row ---
     function buildRow(app) {
         const isSelected = selectedAppIds.has(app.appId);
         const appData = getSafeAppData(app);
@@ -147,6 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
+    // --- UI: Build Table ---
     function buildTable() {
         if (itemsOnPage.length === 0) { 
             const placeholderEl = document.getElementById('table-placeholder');
@@ -158,34 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- AI LOGIC: Check trang thai nut Start ---
-    function updateAiButtonState() {
-        if (!btnStartAi) return;
-        
-        const hasSelectedApps = selectedAppIds.size > 0;
-        const checkedSites = document.querySelectorAll('.site-checkbox:checked');
-        const hasSelectedSites = checkedSites.length > 0;
-        const hasKey = aiOpenAiKey && aiOpenAiKey.value.trim().length > 0;
-
-        if (hasSelectedApps && hasSelectedSites && hasKey) {
-            btnStartAi.disabled = false;
-            btnStartAi.classList.remove('bg-slate-800', 'text-slate-500', 'border-slate-700', 'cursor-not-allowed');
-            btnStartAi.classList.add('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'hover:shadow-lg', 'hover:shadow-purple-900/30', 'border-transparent', 'transform', 'active:scale-95', 'cursor-pointer');
-            
-            btnStartAi.querySelector('span').textContent = "BẮT ĐẦU";
-            const iconDiv = btnStartAi.querySelector('div');
-            if(iconDiv) iconDiv.classList.replace('bg-slate-700', 'bg-white/20');
-        } else {
-            btnStartAi.disabled = true;
-            btnStartAi.classList.add('bg-slate-800', 'text-slate-500', 'border-slate-700', 'cursor-not-allowed');
-            btnStartAi.classList.remove('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'hover:shadow-lg', 'hover:shadow-purple-900/30', 'border-transparent', 'transform', 'active:scale-95', 'cursor-pointer');
-            
-            btnStartAi.querySelector('span').textContent = "BẮT ĐẦU";
-            const iconDiv = btnStartAi.querySelector('div');
-            if(iconDiv) iconDiv.classList.replace('bg-white/20', 'bg-slate-700');
-        }
-    }
-
+    // --- UI: Update Controls ---
     function updateSelectionControls() {
         const count = selectedAppIds.size;
         
@@ -225,6 +187,47 @@ document.addEventListener('DOMContentLoaded', () => {
         updateAiButtonState();
     }
 
+    // --- AI: Check Button State ---
+    function updateAiButtonState() {
+        if (!btnStartAi) return;
+        
+        const hasSelectedApps = selectedAppIds.size > 0;
+        const checkedSites = document.querySelectorAll('.site-checkbox:checked');
+        const hasSelectedSites = checkedSites.length > 0;
+        const hasKey = aiOpenAiKey && aiOpenAiKey.value.trim().length > 0;
+
+        if (hasSelectedApps && hasSelectedSites && hasKey) {
+            btnStartAi.disabled = false;
+            btnStartAi.classList.remove('bg-slate-800', 'text-slate-500', 'border-slate-700', 'cursor-not-allowed');
+            btnStartAi.classList.add('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'hover:shadow-lg', 'hover:shadow-purple-900/30', 'border-transparent', 'transform', 'active:scale-95', 'cursor-pointer');
+        } else {
+            btnStartAi.disabled = true;
+            btnStartAi.classList.add('bg-slate-800', 'text-slate-500', 'border-slate-700', 'cursor-not-allowed');
+            btnStartAi.classList.remove('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'hover:shadow-lg', 'hover:shadow-purple-900/30', 'border-transparent', 'transform', 'active:scale-95', 'cursor-pointer');
+        }
+    }
+
+    // --- AI: Reset UI ---
+    function resetAiUi() {
+        btnStartAi.classList.remove('hidden');
+        btnStartAi.disabled = false;
+        // Reset content button
+        btnStartAi.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center group-hover:scale-110 transition-transform"><i class="ri-play-fill text-lg"></i></div><span class="tracking-wide">BẮT ĐẦU</span>`;
+        
+        updateAiButtonState(); 
+        
+        btnStopAi.classList.add('hidden');
+        aiProgressContainer.classList.add('hidden', 'opacity-0', 'translate-y-[-10px]');
+        
+        if(aiConcurrency) aiConcurrency.disabled = false;
+        if(aiDelay) aiDelay.disabled = false;
+        if(aiOpenAiKey) aiOpenAiKey.disabled = false;
+        if(aiDemoMode) aiDemoMode.disabled = false;
+        
+        siteCheckboxes.forEach(cb => cb.disabled = false);
+    }
+
+    // --- Settings: Save/Load ---
     function loadSettings() {
         if(aiOpenAiKey) {
             const savedKey = localStorage.getItem('ai_openai_key');
@@ -246,111 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(aiDelay) localStorage.setItem('ai_delay', aiDelay.value);
     }
 
-    loadSettings();
-
-    if(aiOpenAiKey) {
-        aiOpenAiKey.addEventListener('input', updateAiButtonState);
-        aiOpenAiKey.addEventListener('change', saveSettings);
-    }
-    if(aiConcurrency) aiConcurrency.addEventListener('change', saveSettings);
-    if(aiDelay) aiDelay.addEventListener('change', saveSettings);
-    
-    siteCheckboxes.forEach(cb => {
-        cb.addEventListener('change', updateAiButtonState);
-    });
-
-    // Xu ly Nut Bam Start AI
-    if (btnStartAi) {
-        btnStartAi.addEventListener('click', async () => {
-            const isDemo = aiDemoMode.checked;
-            
-            btnStartAi.classList.add('hidden');
-            if (!isDemo) {
-                btnStopAi.classList.remove('hidden');
-                aiProgressContainer.classList.remove('hidden');
-                aiProgressContainer.classList.remove('opacity-0', 'translate-y-[-10px]');
-                aiStatusText.innerHTML = `<i class="ri-loader-4-line animate-spin mr-2 text-purple-400"></i> Đang khởi tạo...`;
-            } else {
-                btnStartAi.classList.remove('hidden'); 
-                btnStartAi.disabled = true;
-                btnStartAi.innerHTML = `<div class="w-full flex justify-center"><i class="ri-loader-4-line animate-spin text-xl"></i></div>`;
-            }
-            
-            if(aiConcurrency) aiConcurrency.disabled = true;
-            if(aiDelay) aiDelay.disabled = true;
-            if(aiOpenAiKey) aiOpenAiKey.disabled = true;
-            if(aiDemoMode) aiDemoMode.disabled = true;
-            
-            siteCheckboxes.forEach(cb => cb.disabled = true);
-
-            const selectedSiteIds = Array.from(document.querySelectorAll('.site-checkbox:checked')).map(cb => cb.value);
-
-            const payload = {
-                appIds: Array.from(selectedAppIds),
-                siteIds: selectedSiteIds,
-                openAiKey: aiOpenAiKey.value,
-                concurrency: aiConcurrency.value,
-                delay: aiDelay.value,
-                isDemo: isDemo
-            };
-
-            try {
-                const res = await fetch('/api/ai/start', { 
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                
-                if(!res.ok) throw new Error(data.message);
-                
-                if (data.isDemo) {
-                    showAiResultModal(data.appName, data.results);
-                    resetAiUi();
-                } else {
-                    aiStatusText.innerHTML = `<i class="ri-robot-2-line animate-pulse mr-2 text-emerald-400"></i> AI đang viết bài...`;
-                }
-
-            } catch (err) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Lỗi',
-                    text: err.message,
-                    background: '#1e293b',
-                    color: '#e2e8f0'
-                });
-                resetAiUi();
-            }
-        });
-    }
-
-    function resetAiUi() {
-        btnStartAi.classList.remove('hidden');
-        btnStartAi.disabled = false;
-        btnStartAi.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center group-hover:scale-110 transition-transform"><i class="ri-play-fill text-lg"></i></div><span class="tracking-wide">BẮT ĐẦU</span>`;
-        
-        updateAiButtonState(); 
-        
-        btnStopAi.classList.add('hidden');
-        aiProgressContainer.classList.add('hidden', 'opacity-0', 'translate-y-[-10px]');
-        
-        if(aiConcurrency) aiConcurrency.disabled = false;
-        if(aiDelay) aiDelay.disabled = false;
-        if(aiOpenAiKey) aiOpenAiKey.disabled = false;
-        if(aiDemoMode) aiDemoMode.disabled = false;
-        
-        siteCheckboxes.forEach(cb => cb.disabled = false);
-    }
-
-    if (btnStopAi) {
-        btnStopAi.addEventListener('click', async () => {
-            if(!confirm('Dừng tác vụ hiện tại?')) return;
-            try { await fetch('/api/ai/stop', { method: 'POST' }); } catch(e) {}
-            resetAiUi();
-        });
-    }
-
-    // --- Vertical Tab Logic ---
+    // --- Modal: Show Result ---
     function showAiResultModal(appName, results) {
         if (!results || results.length === 0) return;
         
@@ -379,12 +278,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         : `
                         <div class="space-y-2">
                             <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2"><i class="ri-prompt-line text-purple-400"></i> Prompt</label>
-                            <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-800/80 group hover:border-purple-500/30 transition-colors"><pre class="text-slate-400 font-mono text-xs whitespace-pre-wrap leading-relaxed">${res.prompt}</pre></div>
+                            <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-800/80 group hover:border-purple-500/30 transition-colors"><pre class="text-slate-400 font-mono text-xs whitespace-pre-wrap leading-relaxed select-text">${res.prompt}</pre></div>
                         </div>
                         <div class="border-t border-slate-800"></div>
                         <div class="space-y-2">
                             <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2"><i class="ri-file-text-line text-emerald-400"></i> Kết quả AI</label>
-                            <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-800/80 group hover:border-emerald-500/30 transition-colors"><pre class="result-content text-emerald-100 font-mono text-sm whitespace-pre-wrap leading-relaxed">${res.content}</pre></div>
+                            <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-800/80 group hover:border-emerald-500/30 transition-colors"><pre class="result-content text-emerald-100 font-mono text-sm whitespace-pre-wrap leading-relaxed select-text">${res.content}</pre></div>
                         </div>
                         `
                     }
@@ -395,7 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
         aiResultTabs.innerHTML = tabButtonsHtml;
         aiResultTabContent.innerHTML = tabContentsHtml;
         
-        // Click Event
+        // Click Event for Tabs
         const tabs = aiResultTabs.querySelectorAll('.tab-btn');
         const panes = aiResultTabContent.querySelectorAll('.tab-pane');
         
@@ -426,16 +325,163 @@ document.addEventListener('DOMContentLoaded', () => {
         aiResultModal.classList.add('hidden');
     }
 
+
+    // ==========================================
+    // 3. ACTION HANDLER (DELETE / RESTORE)
+    // ==========================================
+    async function performAction(actionType, appIds) {
+        let endpoint, method, confirmTitle, confirmButtonText, confirmButtonColor;
+        const count = isSelectingAllDb ? totalItemsInDb : appIds.length;
+
+        switch(actionType) {
+            case 'delete': 
+                endpoint = '/api/apps'; method = 'DELETE'; 
+                confirmTitle = `Vứt ${count} app?`; confirmButtonColor = '#dc2626'; confirmButtonText = 'Xoá'; 
+                break;
+            case 'restore': 
+                endpoint = '/api/apps/restore'; method = 'POST'; 
+                confirmTitle = `Khôi phục ${count} app?`; confirmButtonColor = '#10b981'; confirmButtonText = 'Khôi phục'; 
+                break;
+            case 'force_delete': 
+                endpoint = '/api/apps/permanent'; method = 'DELETE'; 
+                confirmTitle = `XOÁ VĨNH VIỄN ${count} app?`; confirmButtonColor = '#dc2626'; confirmButtonText = 'Xoá vĩnh viễn'; 
+                break;
+        }
+
+        const res = await Swal.fire({ 
+            title: confirmTitle, icon: 'warning', showCancelButton: true, 
+            confirmButtonText, confirmButtonColor, background: '#1e293b', color: '#e2e8f0' 
+        });
+
+        if (!res.isConfirmed) return;
+
+        Swal.fire({ title: 'Đang xử lý...', didOpen: () => Swal.showLoading(), background: '#1e293b', color: '#e2e8f0' });
+
+        try {
+            const payload = {
+                appIds: isSelectingAllDb ? null : appIds,
+                [actionType === 'restore' ? 'restoreAll' : 'deleteAll']: isSelectingAllDb,
+                search: (isSelectingAllDb && searchTerm) ? searchTerm : null
+            };
+            const response = await fetch(endpoint, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!response.ok) throw new Error((await response.json()).message);
+            Swal.fire({ title: 'Xong!', icon: 'success', timer: 1000, showConfirmButton: false, background: '#1e293b', color: '#e2e8f0' });
+            setTimeout(() => window.location.reload(), 1000);
+        } catch (err) {
+            Swal.fire({ title: 'Lỗi', text: err.message, icon: 'error', background: '#1e293b', color: '#e2e8f0' });
+        }
+    }
+
+
+    // ==========================================
+    // 4. GAN SU KIEN (EVENT LISTENERS)
+    // ==========================================
+
+    // -- Load Settings Init --
+    loadSettings();
+
+    // -- Settings Change Events --
+    if(aiOpenAiKey) {
+        aiOpenAiKey.addEventListener('input', updateAiButtonState);
+        aiOpenAiKey.addEventListener('change', saveSettings);
+    }
+    if(aiConcurrency) aiConcurrency.addEventListener('change', saveSettings);
+    if(aiDelay) aiDelay.addEventListener('change', saveSettings);
+
+    // -- Site Checkboxes --
+    siteCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateAiButtonState);
+    });
+
+    // -- Select All Sites --
+    if(btnSelectAllSites) {
+        btnSelectAllSites.addEventListener('click', () => {
+            const allChecked = Array.from(siteCheckboxes).every(cb => cb.checked);
+            siteCheckboxes.forEach(cb => cb.checked = !allChecked);
+            btnSelectAllSites.textContent = !allChecked ? "Bỏ chọn hết" : "Chọn tất cả";
+            updateAiButtonState();
+        });
+    }
+
+    // -- Start AI Button --
+    if (btnStartAi) {
+        btnStartAi.addEventListener('click', async () => {
+            const isDemo = aiDemoMode.checked;
+            
+            // UI Loading
+            btnStartAi.classList.add('hidden');
+            if (!isDemo) {
+                btnStopAi.classList.remove('hidden');
+                aiProgressContainer.classList.remove('hidden');
+                aiProgressContainer.classList.remove('opacity-0', 'translate-y-[-10px]');
+                aiStatusText.innerHTML = `<i class="ri-loader-4-line animate-spin mr-2 text-purple-400"></i> Đang khởi tạo...`;
+            } else {
+                // Demo Loading: Show button but disabled with spinner
+                btnStartAi.classList.remove('hidden'); 
+                btnStartAi.disabled = true;
+                btnStartAi.innerHTML = `<div class="w-full flex justify-center"><i class="ri-loader-4-line animate-spin text-xl"></i></div>`;
+            }
+            
+            // Disable Inputs
+            if(aiConcurrency) aiConcurrency.disabled = true;
+            if(aiDelay) aiDelay.disabled = true;
+            if(aiOpenAiKey) aiOpenAiKey.disabled = true;
+            if(aiDemoMode) aiDemoMode.disabled = true;
+            siteCheckboxes.forEach(cb => cb.disabled = true);
+
+            // Payload
+            const selectedSiteIds = Array.from(document.querySelectorAll('.site-checkbox:checked')).map(cb => cb.value);
+            const payload = {
+                appIds: Array.from(selectedAppIds),
+                siteIds: selectedSiteIds,
+                openAiKey: aiOpenAiKey.value,
+                concurrency: aiConcurrency.value,
+                delay: aiDelay.value,
+                isDemo: isDemo
+            };
+
+            try {
+                const res = await fetch('/api/ai/start', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if(!res.ok) throw new Error(data.message);
+                
+                if (data.isDemo) {
+                    showAiResultModal(data.appName, data.results);
+                    resetAiUi();
+                } else {
+                    aiStatusText.innerHTML = `<i class="ri-robot-2-line animate-pulse mr-2 text-emerald-400"></i> AI đang viết bài...`;
+                }
+
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'Lỗi', text: err.message, background: '#1e293b', color: '#e2e8f0' });
+                resetAiUi();
+            }
+        });
+    }
+
+    // -- Stop AI Button --
+    if (btnStopAi) {
+        btnStopAi.addEventListener('click', async () => {
+            if(!confirm('Dừng tác vụ hiện tại?')) return;
+            try { await fetch('/api/ai/stop', { method: 'POST' }); } catch(e) {}
+            resetAiUi();
+        });
+    }
+
+    // -- Modal Events --
     if(aiResultCloseBtn) aiResultCloseBtn.addEventListener('click', closeAiResultModal);
     if(aiResultBackdrop) aiResultBackdrop.addEventListener('click', closeAiResultModal);
-    
     if(aiResultCopyBtn) {
         aiResultCopyBtn.addEventListener('click', () => {
             const activePane = aiResultTabContent.querySelector('.tab-pane:not(.hidden)');
             if(!activePane) return;
             const contentPre = activePane.querySelector('.result-content');
             if(!contentPre) return;
-
             navigator.clipboard.writeText(contentPre.textContent).then(() => {
                 const orgHtml = aiResultCopyBtn.innerHTML;
                 aiResultCopyBtn.innerHTML = '<i class="ri-check-line text-lg"></i> <span>Đã Copy!</span>';
@@ -450,7 +496,22 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Events Delegation
+    // -- Socket Listener --
+    if(socket) {
+        socket.on('ai_job:done', (stats) => {
+            resetAiUi();
+            Swal.fire({
+                title: 'Hoàn tất!',
+                html: `Đã chạy xong Job!<br>Success: <b class="text-green-500">${stats.success}</b> | Fail: <b class="text-red-500">${stats.failed}</b> | Skipped: <b class="text-yellow-500">${stats.skipped}</b>`,
+                icon: 'success',
+                background: '#1e293b',
+                color: '#e2e8f0',
+                confirmButtonColor: '#10b981'
+            });
+        });
+    }
+
+    // -- Table Delegation --
     tableBody.addEventListener('click', (e) => {
         const target = e.target;
         if (target.closest('.app-title-link')) {
@@ -495,7 +556,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnRestoreSelected) btnRestoreSelected.onclick = () => performAction('restore', Array.from(selectedAppIds));
     if (btnForceDeleteSelected) btnForceDeleteSelected.onclick = () => performAction('force_delete', Array.from(selectedAppIds));
 
-    // Init
+    // 5. INIT
     buildTable();
     updateAiButtonState(); 
 });
