@@ -15,10 +15,8 @@ const WpSite = sequelize.define('WpSite', {
   siteUrl: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true, // +++ MOI: Khong cho phep trung URL +++
-    validate: {
-      isUrl: true
-    },
+    unique: true,
+    // validate: { isUrl: true }, <--- DA BO: De ho tro localhost
     comment: 'URL day du cua site Wordpress (vd: https://blog.example.com)'
   },
   apiKey: {

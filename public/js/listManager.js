@@ -1,10 +1,12 @@
 /*
  * File: public/js/listManager.js
- * "Não" chung cho ca trang App List va Trash
+ * "Não" chung cho cả trang App List và Trash
+ * Fix: Socket Listener for AI Job Completion
  */
 document.addEventListener('DOMContentLoaded', () => {
     
-    // --- 1. Xac dinh che do & "Linh kien" ---
+    const socket = io(); // +++ DAM BAO SOCKET DUOC KHOI TAO +++
+
     const pageMode = document.body.dataset.pageMode;
     const searchTerm = document.body.dataset.searchTerm || '';
 
@@ -17,12 +19,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectionCount = document.getElementById('selection-count');
     const btnSelectAllDb = document.getElementById('btn-select-all-db');
 
-    // +++ MOI: AI Panel Elements +++
+    // +++ AI Panel Elements +++
     const btnStartAi = document.getElementById('btn-start-ai');
     const btnStopAi = document.getElementById('btn-stop-ai');
     const aiProgressContainer = document.getElementById('ai-progress-container');
     const aiStatusText = document.getElementById('ai-status-text');
-    // +++ END +++
+    const aiOpenAiKey = document.getElementById('ai-openai-key'); 
+    const aiConcurrency = document.getElementById('ai-concurrency');
+    const aiDelay = document.getElementById('ai-delay');
+    const aiDemoMode = document.getElementById('ai-demo-mode'); 
+    const siteCheckboxes = document.querySelectorAll('.site-checkbox'); 
+    const btnSelectAllSites = document.getElementById('btn-select-all-sites');
+    
+    // +++ Result Modal Elements +++
+    const aiResultModal = document.getElementById('aiResultModal');
+    const aiResultBackdrop = document.getElementById('aiResultBackdrop');
+    const aiResultCloseBtn = document.getElementById('aiResultCloseBtn');
+    const aiResultTabs = document.getElementById('ai-result-tabs');         
+    const aiResultTabContent = document.getElementById('ai-result-tab-content'); 
+    const aiResultAppName = document.getElementById('ai-result-app-name');
+    const aiResultCopyBtn = document.getElementById('aiResultCopyBtn');
 
     let btnDeleteSelected, btnRestoreSelected, btnForceDeleteSelected;
     if (pageMode === 'list') {
@@ -38,22 +54,30 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedAppIds = new Set();
     let isSelectingAllDb = false;
 
-    // --- KHOI TAO SELECT2 (Neu co) ---
-    if ($('#ai-sites-select').length) {
-        $('#ai-sites-select').select2({
-            placeholder: "Chọn site đăng bài...",
-            width: '100%',
-            closeOnSelect: false,
-            allowClear: true
+    // +++ LISTENER: JOB DONE (FIX LOI KET LOADING) +++
+    socket.on('ai_job:done', (stats) => {
+        resetAiUi();
+        Swal.fire({
+            title: 'Hoàn tất!',
+            html: `Đã chạy xong Job!<br>Success: <b class="text-green-500">${stats.success}</b> | Fail: <b class="text-red-500">${stats.failed}</b> | Skipped: <b class="text-yellow-500">${stats.skipped}</b>`,
+            icon: 'success',
+            background: '#1e293b',
+            color: '#e2e8f0',
+            confirmButtonColor: '#10b981'
         });
+    });
 
-        // Lang nghe su kien change cua Select2
-        $('#ai-sites-select').on('change', function() {
+    // --- SELECT ALL SITES LOGIC ---
+    if(btnSelectAllSites) {
+        btnSelectAllSites.addEventListener('click', () => {
+            const allChecked = Array.from(siteCheckboxes).every(cb => cb.checked);
+            siteCheckboxes.forEach(cb => cb.checked = !allChecked);
+            btnSelectAllSites.textContent = !allChecked ? "Bỏ chọn hết" : "Chọn tất cả";
             updateAiButtonState();
         });
     }
 
-    // --- Helper: Parse Safe Data ---
+    // --- Helper Functions (Giu nguyen) ---
     const getSafeAppData = (app) => {
         let data = app.fullData;
         if (typeof data === 'string') {
@@ -68,108 +92,113 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     };
 
-    // --- 2. Build Row ---
     function buildRow(app) {
-        const row = document.createElement('tr');
-        row.setAttribute('data-app-id', app.appId);
-        row.classList.toggle('bg-slate-700/50', selectedAppIds.has(app.appId));
-
+        const isSelected = selectedAppIds.has(app.appId);
         const appData = getSafeAppData(app);
-
+        
         const typeLabel = app.appType === 'GAME'
-          ? `<span class="inline-flex items-center rounded-md bg-purple-700/80 px-2 py-1 text-xs font-medium text-purple-200"><i class="ri-gamepad-line mr-1.5"></i>GAME</span>`
-          : `<span class="inline-flex items-center rounded-md bg-sky-700/80 px-2 py-1 text-xs font-medium text-sky-200"><i class="ri-app-store-line mr-1.5"></i>APP</span>`;
+          ? `<span class="inline-flex items-center rounded-md bg-purple-500/10 px-2 py-1 text-xs font-medium text-purple-400 ring-1 ring-inset ring-purple-500/20"><i class="ri-gamepad-line mr-1.5"></i>GAME</span>`
+          : `<span class="inline-flex items-center rounded-md bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-400 ring-1 ring-inset ring-blue-500/20"><i class="ri-app-store-line mr-1.5"></i>APP</span>`;
 
-        const colCheck = `
-            <td class="px-4 sm:px-6 py-4">
-                <input type="checkbox" class="app-checkbox h-4 w-4 rounded border-slate-600 bg-slate-700 text-emerald-500 focus:ring-emerald-600" value="${app.appId}" ${selectedAppIds.has(app.appId) ? 'checked' : ''}>
-            </td>`;
-        
-        const colApp = `
-            <td class="py-4 pl-4 pr-3 text-sm">
-                <div class="flex items-center">
-                    <div class="h-10 w-10 flex-shrink-0"><img class="h-10 w-10 rounded-lg object-cover" src="${appData.icon}" alt="" onerror="this.src='https://placehold.co/100x100?text=Err'"></div>
-                    <div class="ml-4">
-                        <div class="font-medium text-white">
-                            <a href="#" class="app-title-link hover:text-emerald-400 transition-colors">${appData.title}</a>
-                        </div>
-                        <div class="text-slate-400 text-xs font-mono mt-0.5">${app.appId}</div>
-                    </div>
-                </div>
-            </td>`;
-        
-        const colType = `<td class="px-3 py-4 text-sm">${typeLabel}</td>`;
-        
-        let colDate, colActions;
-        
+        let actionButtons = '';
         if (pageMode === 'list') {
-            colDate = `<td class="px-3 py-4 text-sm text-slate-400">${new Date(app.lastScrapedAt).toLocaleDateString('vi-VN')}</td>`;
-            colActions = `
-                <td class="py-4 pl-3 pr-4 sm:pr-6 text-center w-32">
-                    <button class="btn-delete-single p-2 rounded hover:bg-slate-700 text-red-500 hover:text-red-400 transition" data-app-id="${app.appId}" title="Vứt vào thùng rác">
-                        <i class="ri-delete-bin-line text-lg"></i>
-                    </button>
-                </td>`;
-        } else { 
-            colDate = `<td class="px-3 py-4 text-sm text-slate-400">${new Date(app.deletedAt).toLocaleDateString('vi-VN')}</td>`;
-            colActions = `
-                <td class="py-4 pl-3 pr-4 sm:pr-6 text-center w-32">
-                    <div class="flex justify-center items-center space-x-2">
-                        <button class="btn-restore-single p-2 rounded hover:bg-slate-700 text-emerald-500 hover:text-emerald-400 transition" data-app-id="${app.appId}" title="Khôi phục">
-                            <i class="ri-arrow-go-back-line text-lg"></i>
-                        </button>
-                        <button class="btn-force-delete-single p-2 rounded hover:bg-slate-700 text-red-500 hover:text-red-400 transition" data-app-id="${app.appId}" title="Xoá vĩnh viễn">
-                            <i class="ri-delete-bin-2-line text-lg"></i>
-                        </button>
-                    </div>
-                </td>`;
+            actionButtons = `
+                <button class="btn-delete-single group p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-all" data-app-id="${app.appId}" title="Vứt vào thùng rác">
+                    <i class="ri-delete-bin-line text-lg"></i>
+                </button>`;
+        } else {
+            actionButtons = `
+                <button class="btn-restore-single p-2 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-400/10 transition-all" data-app-id="${app.appId}" title="Khôi phục">
+                    <i class="ri-arrow-go-back-line text-lg"></i>
+                </button>
+                <button class="btn-force-delete-single p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-all" data-app-id="${app.appId}" title="Xoá vĩnh viễn">
+                    <i class="ri-delete-bin-2-line text-lg"></i>
+                </button>`;
         }
-        
-        row.innerHTML = colCheck + colApp + colType + colDate + colActions;
-        return row;
+
+        return `
+            <tr data-app-id="${app.appId}" class="group transition-colors border-b border-slate-800/50 hover:bg-slate-800/30 ${isSelected ? 'bg-slate-800/50' : ''}">
+                <td class="px-4 sm:px-6 py-4">
+                    <input type="checkbox" class="app-checkbox h-4 w-4 rounded border-slate-600 bg-slate-700 text-emerald-500 focus:ring-emerald-500 cursor-pointer" value="${app.appId}" ${isSelected ? 'checked' : ''}>
+                </td>
+                <td class="py-4 pl-4 pr-3 text-sm">
+                    <div class="flex items-center">
+                        <div class="h-10 w-10 flex-shrink-0 relative group-hover:scale-105 transition-transform">
+                            <img class="h-10 w-10 rounded-lg object-cover ring-1 ring-white/10" src="${appData.icon}" alt="" onerror="this.src='https://placehold.co/100x100?text=Err'">
+                        </div>
+                        <div class="ml-4 max-w-[200px] sm:max-w-xs">
+                            <div class="font-medium text-white truncate">
+                                <a href="#" class="app-title-link hover:text-emerald-400 transition-colors cursor-pointer">${appData.title}</a>
+                            </div>
+                            <div class="text-slate-500 text-xs font-mono mt-0.5 truncate">${app.appId}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-3 py-4 text-sm">${typeLabel}</td>
+                <td class="px-3 py-4 text-sm text-slate-400 font-mono text-xs">
+                    ${pageMode === 'list' ? new Date(app.lastScrapedAt).toLocaleDateString('vi-VN') : new Date(app.deletedAt).toLocaleDateString('vi-VN')}
+                </td>
+                <td class="py-4 pl-3 pr-4 sm:pr-6 text-center w-32">
+                    <div class="flex justify-center items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        ${actionButtons}
+                    </div>
+                </td>
+            </tr>
+        `;
     }
 
     function buildTable() {
-        tableBody.innerHTML = '';
         if (itemsOnPage.length === 0) { 
-            placeholder.classList.remove('hidden');
-            let message = (pageMode === 'trash') ? 'Thùng rác trống.' : 'Chưa có app nào.';
-            if (searchTerm) message = `Không tìm thấy app khớp với "${searchTerm}".`;
-            placeholder.innerHTML = `<div class="p-12 text-center text-slate-500"><i class="ri-database-2-line text-5xl"></i><p class="mt-4 text-lg">${message}</p></div>`;
+            const placeholderEl = document.getElementById('table-placeholder');
+            placeholderEl.classList.remove('hidden');
+            tableBody.innerHTML = '';
         } else {
-            placeholder.classList.add('hidden');
-            itemsOnPage.forEach(app => {
-                tableBody.appendChild(buildRow(app));
-            });
+            document.getElementById('table-placeholder').classList.add('hidden');
+            tableBody.innerHTML = itemsOnPage.map(buildRow).join('');
         }
     }
 
-    // +++ MOI: Ham check trang thai nut Start AI +++
+    // --- AI LOGIC: Check trang thai nut Start ---
     function updateAiButtonState() {
         if (!btnStartAi) return;
         
         const hasSelectedApps = selectedAppIds.size > 0;
-        
-        // Lay gia tri tu Select2
-        const selectedSites = $('#ai-sites-select').val(); // Tra ve mang ID hoac null
-        const hasSelectedSites = selectedSites && selectedSites.length > 0;
+        const checkedSites = document.querySelectorAll('.site-checkbox:checked');
+        const hasSelectedSites = checkedSites.length > 0;
+        const hasKey = aiOpenAiKey && aiOpenAiKey.value.trim().length > 0;
 
-        if (hasSelectedApps && hasSelectedSites) {
+        if (hasSelectedApps && hasSelectedSites && hasKey) {
             btnStartAi.disabled = false;
-            btnStartAi.classList.remove('opacity-50', 'cursor-not-allowed');
-            btnStartAi.classList.add('hover:scale-[1.02]');
+            btnStartAi.classList.remove('bg-slate-800', 'text-slate-500', 'border-slate-700', 'cursor-not-allowed');
+            btnStartAi.classList.add('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'hover:shadow-lg', 'hover:shadow-purple-900/30', 'border-transparent', 'transform', 'active:scale-95', 'cursor-pointer');
+            
+            btnStartAi.querySelector('span').textContent = "BẮT ĐẦU";
+            const iconDiv = btnStartAi.querySelector('div');
+            if(iconDiv) iconDiv.classList.replace('bg-slate-700', 'bg-white/20');
         } else {
             btnStartAi.disabled = true;
-            btnStartAi.classList.add('opacity-50', 'cursor-not-allowed');
-            btnStartAi.classList.remove('hover:scale-[1.02]');
+            btnStartAi.classList.add('bg-slate-800', 'text-slate-500', 'border-slate-700', 'cursor-not-allowed');
+            btnStartAi.classList.remove('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'hover:shadow-lg', 'hover:shadow-purple-900/30', 'border-transparent', 'transform', 'active:scale-95', 'cursor-pointer');
+            
+            btnStartAi.querySelector('span').textContent = "BẮT ĐẦU";
+            const iconDiv = btnStartAi.querySelector('div');
+            if(iconDiv) iconDiv.classList.replace('bg-white/20', 'bg-slate-700');
         }
     }
 
     function updateSelectionControls() {
         const count = selectedAppIds.size;
-        tableBody.querySelectorAll('tr').forEach(row => {
+        
+        const rows = tableBody.querySelectorAll('tr');
+        rows.forEach(row => {
             const appId = row.dataset.appId;
-            row.classList.toggle('bg-slate-700/50', selectedAppIds.has(appId));
+            if (selectedAppIds.has(appId)) {
+                row.classList.add('bg-slate-800/50');
+                row.querySelector('.app-checkbox').checked = true;
+            } else {
+                row.classList.remove('bg-slate-800/50');
+                row.querySelector('.app-checkbox').checked = false;
+            }
         });
         
         if (count === 0) {
@@ -193,136 +222,252 @@ document.addEventListener('DOMContentLoaded', () => {
                 selectAllPageCheckbox.indeterminate = true;
             }
         }
-        
-        // +++ MOI: Cap nhat nut AI moi khi doi app selection +++
         updateAiButtonState();
     }
 
-    // Xu ly Nut Bam AI
+    function loadSettings() {
+        if(aiOpenAiKey) {
+            const savedKey = localStorage.getItem('ai_openai_key');
+            if(savedKey) aiOpenAiKey.value = savedKey;
+        }
+        if(aiConcurrency) {
+            const savedThreads = localStorage.getItem('ai_concurrency');
+            if(savedThreads) aiConcurrency.value = savedThreads;
+        }
+        if(aiDelay) {
+            const savedDelay = localStorage.getItem('ai_delay');
+            if(savedDelay) aiDelay.value = savedDelay;
+        }
+    }
+
+    function saveSettings() {
+        if(aiOpenAiKey) localStorage.setItem('ai_openai_key', aiOpenAiKey.value);
+        if(aiConcurrency) localStorage.setItem('ai_concurrency', aiConcurrency.value);
+        if(aiDelay) localStorage.setItem('ai_delay', aiDelay.value);
+    }
+
+    loadSettings();
+
+    if(aiOpenAiKey) {
+        aiOpenAiKey.addEventListener('input', updateAiButtonState);
+        aiOpenAiKey.addEventListener('change', saveSettings);
+    }
+    if(aiConcurrency) aiConcurrency.addEventListener('change', saveSettings);
+    if(aiDelay) aiDelay.addEventListener('change', saveSettings);
+    
+    siteCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateAiButtonState);
+    });
+
+    // Xu ly Nut Bam Start AI
     if (btnStartAi) {
-        btnStartAi.addEventListener('click', () => {
-            btnStartAi.classList.add('hidden');
-            btnStopAi.classList.remove('hidden');
-            aiProgressContainer.classList.remove('hidden');
-            aiStatusText.innerHTML = `<i class="ri-loader-4-line animate-spin mr-2 text-purple-400"></i> Đang khởi tạo...`;
+        btnStartAi.addEventListener('click', async () => {
+            const isDemo = aiDemoMode.checked;
             
-            document.getElementById('ai-concurrency').disabled = true;
-            document.getElementById('ai-delay').disabled = true;
-            // Disable Select2
-            $('#ai-sites-select').prop('disabled', true);
+            btnStartAi.classList.add('hidden');
+            if (!isDemo) {
+                btnStopAi.classList.remove('hidden');
+                aiProgressContainer.classList.remove('hidden');
+                aiProgressContainer.classList.remove('opacity-0', 'translate-y-[-10px]');
+                aiStatusText.innerHTML = `<i class="ri-loader-4-line animate-spin mr-2 text-purple-400"></i> Đang khởi tạo...`;
+            } else {
+                btnStartAi.classList.remove('hidden'); 
+                btnStartAi.disabled = true;
+                btnStartAi.innerHTML = `<div class="w-full flex justify-center"><i class="ri-loader-4-line animate-spin text-xl"></i></div>`;
+            }
+            
+            if(aiConcurrency) aiConcurrency.disabled = true;
+            if(aiDelay) aiDelay.disabled = true;
+            if(aiOpenAiKey) aiOpenAiKey.disabled = true;
+            if(aiDemoMode) aiDemoMode.disabled = true;
+            
+            siteCheckboxes.forEach(cb => cb.disabled = true);
+
+            const selectedSiteIds = Array.from(document.querySelectorAll('.site-checkbox:checked')).map(cb => cb.value);
+
+            const payload = {
+                appIds: Array.from(selectedAppIds),
+                siteIds: selectedSiteIds,
+                openAiKey: aiOpenAiKey.value,
+                concurrency: aiConcurrency.value,
+                delay: aiDelay.value,
+                isDemo: isDemo
+            };
+
+            try {
+                const res = await fetch('/api/ai/start', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if(!res.ok) throw new Error(data.message);
+                
+                if (data.isDemo) {
+                    showAiResultModal(data.appName, data.results);
+                    resetAiUi();
+                } else {
+                    aiStatusText.innerHTML = `<i class="ri-robot-2-line animate-pulse mr-2 text-emerald-400"></i> AI đang viết bài...`;
+                }
+
+            } catch (err) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: err.message,
+                    background: '#1e293b',
+                    color: '#e2e8f0'
+                });
+                resetAiUi();
+            }
         });
+    }
+
+    function resetAiUi() {
+        btnStartAi.classList.remove('hidden');
+        btnStartAi.disabled = false;
+        btnStartAi.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center group-hover:scale-110 transition-transform"><i class="ri-play-fill text-lg"></i></div><span class="tracking-wide">BẮT ĐẦU</span>`;
+        
+        updateAiButtonState(); 
+        
+        btnStopAi.classList.add('hidden');
+        aiProgressContainer.classList.add('hidden', 'opacity-0', 'translate-y-[-10px]');
+        
+        if(aiConcurrency) aiConcurrency.disabled = false;
+        if(aiDelay) aiDelay.disabled = false;
+        if(aiOpenAiKey) aiOpenAiKey.disabled = false;
+        if(aiDemoMode) aiDemoMode.disabled = false;
+        
+        siteCheckboxes.forEach(cb => cb.disabled = false);
     }
 
     if (btnStopAi) {
-        btnStopAi.addEventListener('click', () => {
-            if(!confirm('Dừng tạo nội dung?')) return;
-            
-            btnStartAi.classList.remove('hidden');
-            btnStopAi.classList.add('hidden');
-            aiProgressContainer.classList.add('hidden');
-            
-            document.getElementById('ai-concurrency').disabled = false;
-            document.getElementById('ai-delay').disabled = false;
-            // Enable Select2
-            $('#ai-sites-select').prop('disabled', false);
+        btnStopAi.addEventListener('click', async () => {
+            if(!confirm('Dừng tác vụ hiện tại?')) return;
+            try { await fetch('/api/ai/stop', { method: 'POST' }); } catch(e) {}
+            resetAiUi();
         });
     }
-    // +++ END AI LOGIC +++
 
-    // --- Action Handler ---
-    async function performAction(actionType, appIds) {
-        let endpoint, method, confirmTitle, confirmText, confirmButtonText, confirmButtonColor;
-        const count = isSelectingAllDb ? totalItemsInDb : appIds.length;
-
-        switch(actionType) {
-            case 'delete':
-                endpoint = '/api/apps'; method = 'DELETE';
-                confirmTitle = `Vứt ${count} app vào rác?`;
-                confirmButtonText = 'Vứt luôn'; confirmButtonColor = '#dc2626';
-                break;
-            case 'restore':
-                endpoint = '/api/apps/restore'; method = 'POST';
-                confirmTitle = `Khôi phục ${count} app?`;
-                confirmButtonText = 'Khôi phục'; confirmButtonColor = '#10b981';
-                break;
-            case 'force_delete':
-                endpoint = '/api/apps/permanent'; method = 'DELETE';
-                confirmTitle = `XOÁ VĨNH VIỄN ${count} app?`;
-                confirmText = 'Không thể hoàn tác!';
-                confirmButtonText = 'Xoá vĩnh viễn'; confirmButtonColor = '#dc2626';
-                break;
-        }
-
-        const res = await Swal.fire({
-            title: confirmTitle, text: confirmText, icon: 'warning',
-            showCancelButton: true, confirmButtonText, confirmButtonColor, cancelButtonText: 'Huỷ',
-            background: '#1e293b', color: '#e2e8f0'
+    // --- Vertical Tab Logic ---
+    function showAiResultModal(appName, results) {
+        if (!results || results.length === 0) return;
+        
+        aiResultAppName.textContent = `App: ${appName}`;
+        
+        let tabButtonsHtml = '';
+        let tabContentsHtml = '';
+        
+        results.forEach((res, index) => {
+            const isActive = index === 0;
+            const tabId = `tab-${index}`;
+            
+            // Vertical Tab Button
+            tabButtonsHtml += `
+                <button class="tab-btn w-full text-left px-4 py-3 text-sm font-medium border-l-2 transition-all flex items-center justify-between group ${isActive ? 'border-emerald-500 bg-slate-800 text-emerald-400' : 'border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'}" data-target="${tabId}">
+                    <span class="truncate mr-2">${res.siteName}</span>
+                    ${res.error ? '<i class="ri-error-warning-fill text-red-500"></i>' : '<i class="ri-check-double-line text-emerald-500 opacity-0 group-hover:opacity-50 ' + (isActive ? 'opacity-100' : '') + '"></i>'}
+                </button>
+            `;
+            
+            // Content Pane
+            tabContentsHtml += `
+                <div id="${tabId}" class="tab-pane space-y-6 ${isActive ? '' : 'hidden'} animate-fade-in">
+                    ${res.error 
+                        ? `<div class="p-4 bg-red-900/20 border border-red-500/30 rounded text-red-400 text-sm"><i class="ri-error-warning-line mr-2"></i>${res.error}</div>`
+                        : `
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2"><i class="ri-prompt-line text-purple-400"></i> Prompt</label>
+                            <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-800/80 group hover:border-purple-500/30 transition-colors"><pre class="text-slate-400 font-mono text-xs whitespace-pre-wrap leading-relaxed">${res.prompt}</pre></div>
+                        </div>
+                        <div class="border-t border-slate-800"></div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2"><i class="ri-file-text-line text-emerald-400"></i> Kết quả AI</label>
+                            <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-800/80 group hover:border-emerald-500/30 transition-colors"><pre class="result-content text-emerald-100 font-mono text-sm whitespace-pre-wrap leading-relaxed">${res.content}</pre></div>
+                        </div>
+                        `
+                    }
+                </div>
+            `;
         });
-
-        if (!res.isConfirmed) return;
-
-        Swal.fire({ title: 'Đang xử lý...', didOpen: () => Swal.showLoading(), background: '#1e293b', color: '#e2e8f0' });
-
-        try {
-            const payload = {
-                appIds: isSelectingAllDb ? null : appIds,
-                [actionType === 'restore' ? 'restoreAll' : 'deleteAll']: isSelectingAllDb,
-                search: (isSelectingAllDb && searchTerm) ? searchTerm : null
-            };
-            const response = await fetch(endpoint, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+        
+        aiResultTabs.innerHTML = tabButtonsHtml;
+        aiResultTabContent.innerHTML = tabContentsHtml;
+        
+        // Click Event
+        const tabs = aiResultTabs.querySelectorAll('.tab-btn');
+        const panes = aiResultTabContent.querySelectorAll('.tab-pane');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Reset style
+                tabs.forEach(t => {
+                    t.classList.remove('border-emerald-500', 'bg-slate-800', 'text-emerald-400');
+                    t.classList.add('border-transparent', 'text-slate-400');
+                    t.querySelector('i.ri-check-double-line')?.classList.add('opacity-0');
+                });
+                panes.forEach(p => p.classList.add('hidden'));
+                
+                // Set Active
+                tab.classList.remove('border-transparent', 'text-slate-400');
+                tab.classList.add('border-emerald-500', 'bg-slate-800', 'text-emerald-400');
+                tab.querySelector('i.ri-check-double-line')?.classList.remove('opacity-0');
+                
+                const targetId = tab.dataset.target;
+                document.getElementById(targetId).classList.remove('hidden');
             });
-            
-            const result = await response.json();
-            if (!response.ok) throw new Error(result.message);
-            
-            Swal.fire({ title: 'Xong!', icon: 'success', timer: 1000, showConfirmButton: false, background: '#1e293b', color: '#e2e8f0' });
-            setTimeout(() => window.location.reload(), 1000);
-        } catch (err) {
-            Swal.fire({ title: 'Lỗi', text: err.message, icon: 'error', background: '#1e293b', color: '#e2e8f0' });
-        }
+        });
+
+        aiResultModal.classList.remove('hidden');
     }
 
-    // --- Events Delegation ---
+    function closeAiResultModal() {
+        aiResultModal.classList.add('hidden');
+    }
+
+    if(aiResultCloseBtn) aiResultCloseBtn.addEventListener('click', closeAiResultModal);
+    if(aiResultBackdrop) aiResultBackdrop.addEventListener('click', closeAiResultModal);
+    
+    if(aiResultCopyBtn) {
+        aiResultCopyBtn.addEventListener('click', () => {
+            const activePane = aiResultTabContent.querySelector('.tab-pane:not(.hidden)');
+            if(!activePane) return;
+            const contentPre = activePane.querySelector('.result-content');
+            if(!contentPre) return;
+
+            navigator.clipboard.writeText(contentPre.textContent).then(() => {
+                const orgHtml = aiResultCopyBtn.innerHTML;
+                aiResultCopyBtn.innerHTML = '<i class="ri-check-line text-lg"></i> <span>Đã Copy!</span>';
+                aiResultCopyBtn.classList.add('bg-emerald-600', 'border-emerald-500');
+                aiResultCopyBtn.classList.remove('bg-purple-600', 'border-purple-500/50');
+                setTimeout(() => {
+                    aiResultCopyBtn.innerHTML = orgHtml;
+                    aiResultCopyBtn.classList.remove('bg-emerald-600', 'border-emerald-500');
+                    aiResultCopyBtn.classList.add('bg-purple-600', 'border-purple-500/50');
+                }, 2000);
+            });
+        });
+    }
+
+    // Events Delegation
     tableBody.addEventListener('click', (e) => {
         const target = e.target;
-        
-        // 1. Click vao Link Title -> Mo Modal
         if (target.closest('.app-title-link')) {
             e.preventDefault();
             const row = target.closest('tr');
             const appId = row.dataset.appId;
-            
-            console.log("🖱️ Click vao app:", appId);
-
             const app = itemsOnPage.find(a => a.appId === appId);
-            if (app) {
-                const safeData = getSafeAppData(app);
-                if (typeof window.showAppDetailModal === 'function') {
-                    window.showAppDetailModal(safeData);
-                } else {
-                    console.error("❌ Error: window.showAppDetailModal missing.");
-                }
-            }
+            if (app && window.showAppDetailModal) window.showAppDetailModal(getSafeAppData(app));
             return;
         }
-
-        // 2. Cac nut Action khac
-        const btnDelete = target.closest('.btn-delete-single');
-        const btnRestore = target.closest('.btn-restore-single');
-        const btnForce = target.closest('.btn-force-delete-single');
         const row = target.closest('tr');
-        
         if (!row) return;
-
-        if (btnDelete) performAction('delete', [row.dataset.appId]);
-        if (btnRestore) performAction('restore', [row.dataset.appId]);
-        if (btnForce) performAction('force_delete', [row.dataset.appId]);
+        if (target.closest('.btn-delete-single')) performAction('delete', [row.dataset.appId]);
+        if (target.closest('.btn-restore-single')) performAction('restore', [row.dataset.appId]);
+        if (target.closest('.btn-force-delete-single')) performAction('force_delete', [row.dataset.appId]);
     });
 
-    // Checkbox events
     selectAllPageCheckbox.addEventListener('change', () => {
         const checked = selectAllPageCheckbox.checked;
         isSelectingAllDb = false;
@@ -346,12 +491,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Bulk actions
     if (btnDeleteSelected) btnDeleteSelected.onclick = () => performAction('delete', Array.from(selectedAppIds));
     if (btnRestoreSelected) btnRestoreSelected.onclick = () => performAction('restore', Array.from(selectedAppIds));
     if (btnForceDeleteSelected) btnForceDeleteSelected.onclick = () => performAction('force_delete', Array.from(selectedAppIds));
 
     // Init
     buildTable();
-    updateAiButtonState(); // Check trang thai ban dau
+    updateAiButtonState(); 
 });

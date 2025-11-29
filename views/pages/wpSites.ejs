@@ -11,8 +11,7 @@
         </button>
     </header>
 
-    <div id="alert-container-wp" class="mb-6">
-    </div>
+    <div id="alert-container-wp" class="mb-6"></div>
 
     <div class="w-full">
         <div class="bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg overflow-hidden">
@@ -55,6 +54,11 @@
             </div>
 
             <div class="p-6">
+                <div id="modal-alert-container" class="hidden mb-4 p-3 rounded bg-red-900/50 border border-red-500/50 text-red-200 text-sm flex items-start">
+                    <i class="ri-error-warning-fill mr-2 mt-0.5"></i>
+                    <span id="modal-alert-msg">Lỗi rồi Bro!</span>
+                </div>
+
                 <form id="wp-site-form" class="space-y-5">
                     <input type="hidden" id="wp-site-id" name="id" value="">
 
@@ -65,27 +69,24 @@
                     
                     <div>
                         <label for="wp-site-url" class="block text-sm font-medium text-slate-300 mb-2">URL Trang</label>
-                        <input type="url" id="wp-site-url" name="siteUrl" class="w-full p-3 bg-slate-900/50 border border-slate-600 rounded-lg text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" placeholder="https://blog.example.com" required>
-                        <p class="text-xs text-slate-500 mt-1">Yêu cầu bao gồm https://</p>
+                        <input type="text" id="wp-site-url" name="siteUrl" class="w-full p-3 bg-slate-900/50 border border-slate-600 rounded-lg text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition" placeholder="https://blog.example.com hoặc http://localhost/wp" required>
+                        <p class="text-xs text-slate-500 mt-1">Bao gồm http:// hoặc https://</p>
                     </div>
   
                     <div>
                         <label for="wp-api-key" class="block text-sm font-medium text-slate-300 mb-2">API Key</label>
                         <div class="relative">
-                            <input type="password" id="wp-api-key" name="apiKey" class="w-full p-3 bg-slate-900/50 border border-slate-600 rounded-lg text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition pr-10" placeholder="Nhập API Key của bạn" required>
+                            <input type="text" id="wp-api-key" name="apiKey" class="w-full p-3 bg-slate-900/50 border border-slate-600 rounded-lg text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition pr-10" placeholder="user:pass (Application Password)" required>
                             <i class="ri-key-2-line absolute right-3 top-3.5 text-slate-500"></i>
                         </div>
                     </div>
 
                     <div>
                         <label for="wp-ai-prompt" class="block text-sm font-medium text-slate-300 mb-2">Prompt AI (Tùy chọn)</label>
-                        <textarea id="wp-ai-prompt" name="aiPrompt" rows="4" class="w-full p-3 bg-slate-900/50 border border-slate-600 rounded-lg text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition font-mono text-sm" placeholder="Vd: Viết một bài đánh giá hấp dẫn về trò chơi {title}. Tóm tắt: {summary}..."></textarea>
+                        <textarea id="wp-ai-prompt" name="aiPrompt" rows="4" class="w-full p-3 bg-slate-900/50 border border-slate-600 rounded-lg text-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition font-mono text-sm" placeholder="Vd: Viết bài review game {title}..."></textarea>
                         <p class="text-xs text-slate-500 mt-2">
                             <i class="ri-information-line mr-1"></i>
-                            Shortcode hỗ trợ: 
-                            <span class="text-emerald-400 font-mono bg-emerald-400/10 px-1 rounded">{title}</span>, 
-                            <span class="text-emerald-400 font-mono bg-emerald-400/10 px-1 rounded">{summary}</span>, 
-                            <span class="text-emerald-400 font-mono bg-emerald-400/10 px-1 rounded">{description}</span>
+                            Shortcode: <span class="text-emerald-400 font-mono bg-emerald-400/10 px-1 rounded">{title}</span>, <span class="text-emerald-400 font-mono bg-emerald-400/10 px-1 rounded">{summary}</span>, <span class="text-emerald-400 font-mono bg-emerald-400/10 px-1 rounded">{description}</span>
                         </p>
                     </div>
 

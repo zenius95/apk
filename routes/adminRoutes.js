@@ -34,4 +34,6 @@ router.get('/trash', adminController.renderTrashPage);
  */
 router.get('/wp-sites', adminController.renderWpSitesPage); // +++ MOI +++
 
+router.get('/guide', adminController.renderGuidePage); // +++ MOI +++
+
 module.exports = router;

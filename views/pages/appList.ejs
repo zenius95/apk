@@ -42,76 +42,106 @@
         </div>
     </div>
 
-    <div id="ai-gen-panel" class="mb-6 bg-slate-900/50 border border-purple-500/20 ring-1 ring-white/5 rounded-xl p-5 shadow-2xl transition-all duration-300"> 
-        
-        <div class="flex items-center gap-2 mb-4">
-            <i class="ri-sparkling-2-fill text-purple-400 text-lg"></i>
-            <h3 class="text-white font-bold text-sm tracking-wide uppercase">Bộ Tạo Nội Dung AI</h3>
+    <div id="ai-gen-panel" class="mb-6 bg-slate-900/80 border border-purple-500/20 ring-1 ring-white/5 rounded-xl p-6 shadow-2xl backdrop-blur-sm transition-all duration-300">
+        <div class="flex items-center justify-between mb-5 pb-4 border-b border-slate-800">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-lg shadow-lg shadow-purple-900/20">
+                    <i class="ri-openai-fill text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h3 class="text-white font-bold text-base tracking-wide flex items-center gap-2">
+                        AI WRITER CENTER
+                        <span class="px-2 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-400 border border-purple-500/20">AUTO</span>
+                    </h3>
+                    <p class="text-slate-500 text-xs">Tự động hóa nội dung & đăng bài vệ tinh</p>
+                </div>
+            </div>
+            
+            <label class="flex items-center cursor-pointer relative group bg-slate-800/50 px-4 py-2 rounded-full border border-slate-700/50 hover:border-emerald-500/30 transition-all select-none">
+                <span class="mr-3 text-xs font-bold text-slate-400 group-hover:text-emerald-400 transition-colors">CHẾ ĐỘ DEMO</span>
+                <input type="checkbox" id="ai-demo-mode" class="sr-only peer">
+                <div class="relative w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 shadow-inner"></div>
+            </label>
         </div>
 
-        <div class="space-y-4">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            <div class="relative group">
-                <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1.5 ml-1">1. Chọn Sites Đăng Bài</label>
-                <div class="relative">
+            <div class="lg:col-span-4 space-y-4">
+                <div>
+                    <label class="flex justify-between text-[10px] text-slate-400 uppercase font-bold mb-1.5 ml-1">
+                        <span>OpenAI API Key</span>
+                    </label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="ri-key-2-line text-slate-500 group-focus-within:text-purple-400 transition-colors"></i>
+                        </div>
+                        <input type="text" id="ai-openai-key" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2.5 pl-9 pr-3 text-sm text-white placeholder-slate-600 focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all shadow-inner" placeholder="sk-...">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1.5 ml-1">Luồng</label>
+                        <input type="number" id="ai-concurrency" value="1" min="1" max="5" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm text-white focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all text-center">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1.5 ml-1">Delay (ms)</label>
+                        <input type="number" id="ai-delay" value="2000" min="500" step="500" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm text-white focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all text-center">
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5 flex flex-col">
+                <div class="flex justify-between items-end mb-1.5">
+                    <label class="block text-[10px] text-slate-400 uppercase font-bold ml-1">Chọn Sites Đăng Bài</label>
+                    <button id="btn-select-all-sites" class="text-[10px] text-purple-400 hover:text-purple-300 font-bold uppercase tracking-wider hover:underline">Chọn tất cả</button>
+                </div>
+                <div class="bg-slate-950 border border-slate-700 rounded-lg p-2 h-[132px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800 shadow-inner">
                     <% if(typeof wpSites !== 'undefined' && wpSites.length > 0) { %>
-                        <select id="ai-sites-select" multiple="multiple" class="w-full">
+                        <div class="space-y-1">
                             <% wpSites.forEach(site => { %>
-                                <option value="<%= site.id %>"><%= site.siteName %></option>
+                                <label class="flex items-center p-2 rounded hover:bg-slate-800/80 cursor-pointer transition-colors group">
+                                    <input type="checkbox" value="<%= site.id %>" class="site-checkbox w-4 h-4 rounded border-slate-600 bg-slate-800 text-purple-500 focus:ring-purple-500/50 cursor-pointer transition-all">
+                                    <span class="ml-3 text-sm text-slate-300 group-hover:text-white select-none truncate"><%= site.siteName %></span>
+                                </label>
                             <% }); %>
-                        </select>
+                        </div>
                     <% } else { %>
-                        <div class="text-xs text-slate-500 italic p-3 border border-slate-700 rounded bg-slate-900/50 text-center">
-                            Chưa có site nào. <a href="/wp-sites" class="text-emerald-400 underline hover:text-emerald-300">Thêm ngay</a>
+                        <div class="h-full flex flex-col items-center justify-center text-center">
+                            <i class="ri-globe-line text-2xl text-slate-600 mb-2"></i>
+                            <p class="text-xs text-slate-500 italic">Chưa có site nào.</p>
+                            <a href="/wp-sites" class="text-xs text-emerald-400 hover:underline mt-1">Thêm ngay</a>
                         </div>
                     <% } %>
                 </div>
             </div>
 
-            <div class="flex flex-col lg:flex-row gap-4">
-                
-                <div class="flex-[3] min-w-[200px]">
-                    <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1.5 ml-1">2. OpenAI API Key</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="ri-key-2-line text-slate-500"></i>
+            <div class="lg:col-span-3 flex flex-col justify-end">
+                <div class="h-[50px] lg:h-[132px] flex items-end">
+                    <button id="btn-start-ai" disabled class="group w-full h-[50px] flex items-center justify-center gap-3 bg-slate-800 text-slate-500 border border-slate-700 rounded-xl font-bold transition-all duration-300 cursor-not-allowed shadow-lg">
+                        <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <i class="ri-play-fill text-lg"></i>
                         </div>
-                        <input type="password" id="ai-openai-key" class="w-full bg-slate-800 border border-slate-600 rounded-lg py-2.5 pl-9 pr-3 text-sm text-white placeholder-slate-500 focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all shadow-inner" placeholder="sk-...">
-                    </div>
-                </div>
-
-                <div class="flex-1 flex gap-3 min-w-[180px]">
-                    <div class="flex-1">
-                        <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1.5 ml-1 text-center">Luồng</label>
-                        <input type="number" id="ai-concurrency" value="1" min="1" max="5" class="w-full bg-slate-800 border border-slate-600 rounded-lg py-2.5 px-2 text-sm text-white focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none text-center shadow-inner">
-                    </div>
-                    <div class="flex-1">
-                        <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1.5 ml-1 text-center">Delay(ms)</label>
-                        <input type="number" id="ai-delay" value="2000" min="500" step="500" class="w-full bg-slate-800 border border-slate-600 rounded-lg py-2.5 px-2 text-sm text-white focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none text-center shadow-inner">
-                    </div>
-                </div>
-
-                <div class="flex-none flex flex-col justify-end min-w-[140px]">
-                    <button id="btn-start-ai" disabled class="w-full h-[42px] flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-6 rounded-lg font-bold transition-all text-sm shadow-lg shadow-purple-900/30 opacity-50 cursor-not-allowed transform active:scale-95 border border-purple-500/50">
-                        <i class="ri-play-fill text-xl"></i> 
-                        <span>CHẠY NGAY</span>
+                        <span class="tracking-wide">BẮT ĐẦU</span>
                     </button>
                     
-                    <button id="btn-stop-ai" class="hidden w-full h-[42px] flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 border border-slate-600 text-red-400 px-6 rounded-lg font-bold transition-all text-sm shadow-lg">
-                        <i class="ri-stop-circle-line text-xl animate-pulse"></i> 
-                        <span>DỪNG LẠI</span>
+                    <button id="btn-stop-ai" class="hidden w-full h-[50px] flex items-center justify-center gap-3 bg-red-900/20 hover:bg-red-900/30 border border-red-500/30 text-red-400 rounded-xl font-bold transition-all duration-300 hover:shadow-lg hover:shadow-red-900/20">
+                        <i class="ri-stop-circle-line text-2xl animate-pulse"></i> 
+                        <span class="tracking-wide">DỪNG LẠI</span>
                     </button>
                 </div>
             </div>
         </div>
         
-        <div id="ai-progress-container" class="mt-5 pt-4 border-t border-slate-700/50 hidden">
-            <div class="flex justify-between text-xs text-slate-300 mb-2">
-                <span id="ai-status-text" class="flex items-center font-medium"><i class="ri-loader-4-line animate-spin mr-2 text-purple-400"></i> Đang khởi tạo tiến trình...</span>
-                <span id="ai-progress-text" class="font-mono text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">0 / 0</span>
+        <div id="ai-progress-container" class="hidden border-t border-white/5 bg-slate-950 p-4 transition-all duration-300">
+            <div class="flex justify-between text-xs text-slate-400 mb-2">
+                <span id="ai-status-text" class="flex items-center font-mono text-purple-400">
+                    <i class="ri-loader-4-line animate-spin mr-2"></i> Initializing...
+                </span>
+                <span id="ai-progress-text" class="font-mono text-white">0 / 0</span>
             </div>
-            <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden ring-1 ring-white/5">
-                <div id="ai-progress-bar" class="bg-gradient-to-r from-purple-500 via-indigo-500 to-blue-500 h-full rounded-full transition-all duration-300 shadow-[0_0_15px_rgba(168,85,247,0.6)] relative" style="width: 0%">
+            <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                <div id="ai-progress-bar" class="bg-gradient-to-r from-purple-600 to-indigo-600 h-full rounded-full transition-all duration-300 relative" style="width: 0%">
                     <div class="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
                 </div>
             </div>
@@ -141,6 +171,42 @@
         </div>
         
         <%- include('../partials/_pagination', { pagination: pagination, baseUrl: baseUrl, search: search }) %>
+    </div>
+
+    <div id="aiResultModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div id="aiResultBackdrop" class="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"></div>
+        
+        <div class="relative w-full max-w-6xl h-[85vh] bg-slate-900 ring-1 ring-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col transform transition-all scale-100">
+            
+            <div class="flex-shrink-0 px-6 py-4 border-b border-slate-700 flex items-center justify-between bg-slate-800/50">
+                <div class="flex items-center gap-3">
+                    <i class="ri-magic-line text-2xl text-emerald-400"></i>
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Kết quả Demo AI</h3>
+                        <p class="text-xs text-slate-400 mt-0.5 font-mono" id="ai-result-app-name">App: ...</p>
+                    </div>
+                </div>
+                <button id="aiResultCloseBtn" class="text-slate-400 hover:text-white transition-colors bg-slate-700/50 hover:bg-slate-700 rounded-lg p-2">
+                    <i class="ri-close-line text-xl"></i>
+                </button>
+            </div>
+
+            <div class="flex flex-1 min-h-0 overflow-hidden">
+                
+                <div class="w-64 bg-slate-900 border-r border-slate-800 flex-shrink-0 overflow-y-auto p-2 space-y-1" id="ai-result-tabs">
+                    </div>
+
+                <div class="flex-1 bg-slate-950 overflow-y-auto p-6 relative" id="ai-result-tab-content">
+                    </div>
+            </div>
+
+            <div class="flex-shrink-0 px-6 py-4 border-t border-slate-700 bg-slate-800/30 flex justify-between items-center">
+                <span class="text-xs text-slate-500 italic">* Nội dung chưa được lưu vào DB.</span>
+                <button id="aiResultCopyBtn" class="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-5 py-2.5 rounded-lg font-bold transition-all text-sm shadow-lg border border-purple-500/50">
+                    <i class="ri-file-copy-line text-lg"></i> Copy Nội dung
+                </button>
+            </div>
+        </div>
     </div>
 
     <script>

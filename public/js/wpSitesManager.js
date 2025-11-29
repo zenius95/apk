@@ -1,6 +1,7 @@
 /*
  * File: public/js/wpSitesManager.js
- * "Não" chung cho trang Quan Ly WP Sites (Phien ban Modal)
+ * "Não" chung cho trang Quan Ly WP Sites
+ * Update: Hien thi loi trong Modal + Ho tro localhost
  */
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -9,13 +10,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const tableBody = document.getElementById('wp-sites-table-body');
     const placeholder = document.getElementById('wp-table-placeholder');
-    const alertContainer = document.getElementById('alert-container-wp');
+    const alertContainer = document.getElementById('alert-container-wp'); // Alert ngoai
     
     // Modal Elements
     const wpSiteModal = document.getElementById('wpSiteModal');
     const wpModalBackdrop = document.getElementById('wpModalBackdrop');
     const wpModalCloseBtn = document.getElementById('wpModalCloseBtn');
     const btnOpenAddModal = document.getElementById('btn-open-add-modal');
+    const modalAlertContainer = document.getElementById('modal-alert-container'); // +++ MOI +++
+    const modalAlertMsg = document.getElementById('modal-alert-msg'); // +++ MOI +++
 
     // Form Elements
     const form = document.getElementById('wp-site-form');
@@ -24,17 +27,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const siteNameInput = document.getElementById('wp-site-name');
     const siteUrlInput = document.getElementById('wp-site-url');
     const apiKeyInput = document.getElementById('wp-api-key');
-    const aiPromptInput = document.getElementById('wp-ai-prompt'); // Field Prompt
+    const aiPromptInput = document.getElementById('wp-ai-prompt');
     
     const submitButton = document.getElementById('wp-form-submit');
     const submitButtonIcon = document.getElementById('wp-btn-icon');
     const submitButtonText = document.getElementById('wp-btn-text');
     const cancelButton = document.getElementById('wp-form-cancel');
 
-    // Data
     let sites = (typeof initialWpSites !== 'undefined') ? initialWpSites : [];
 
     // --- Helper Functions ---
+
+    // Show Alert o ngoai trang (cho Delete hoac Success)
     function showAlert(message, isError = false) { 
         alertContainer.innerHTML = ''; 
         if (!message) return;
@@ -49,9 +53,20 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { alertContainer.innerHTML = ''; }, 5000);
     }
 
+    // Show Error TRONG Modal (cho Form Submit)
+    function showModalError(message) {
+        modalAlertMsg.textContent = message;
+        modalAlertContainer.classList.remove('hidden');
+    }
+    
+    function hideModalError() {
+        modalAlertContainer.classList.add('hidden');
+    }
+
     // --- Modal Logic ---
     function openModal() {
         wpSiteModal.classList.remove('hidden');
+        hideModalError(); // Reset error khi mo
         setTimeout(() => {
             wpSiteModal.firstElementChild?.classList.remove('scale-95', 'opacity-0');
         }, 10);
@@ -104,6 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
         form.reset();
         siteIdInput.value = ''; 
         aiPromptInput.value = ''; 
+        hideModalError();
         
         formTitle.innerHTML = '<i class="ri-add-line mr-2 text-emerald-400"></i> Thêm Site Mới';
         submitButtonIcon.className = 'ri-add-line text-xl mr-2';
@@ -126,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function handleSubmit(e) {
         e.preventDefault();
+        hideModalError(); // Reset loi truoc khi gui
         
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
@@ -148,6 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
             if (!response.ok) throw new Error(result.message || 'Lỗi không xác định');
 
+            // Thanh cong thi alert o ngoai va dong modal
             showAlert(result.message, false);
 
             if (isUpdating) {
@@ -162,7 +180,8 @@ document.addEventListener('DOMContentLoaded', () => {
             closeModal(); 
 
         } catch (err) {
-            showAlert(err.message, true);
+            // Loi thi hien TRONG modal
+            showModalError(err.message);
         } finally {
             submitButton.disabled = false;
             submitButtonText.textContent = isUpdating ? 'Lưu Thay Đổi' : 'Thêm Site';

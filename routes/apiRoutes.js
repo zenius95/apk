@@ -3,6 +3,7 @@ const router = express.Router();
 const scrapeController = require('../controllers/scrapeController');
 const adminController = require('../controllers/adminController'); //
 const adminAuth = require('../middleware/auth'); // Goi "bao ve"
+const aiController = require('../controllers/aiController'); // +++ MOI +++
 
 // Tat ca cac route trong file nay deu phai di qua "bao ve"
 router.use(adminAuth);
@@ -79,6 +80,11 @@ router.put('/wp-sites/:id', adminController.handleUpdateWpSite);
  * @access Private (Da qua Basic Auth)
  */
 router.delete('/wp-sites/:id', adminController.handleDeleteWpSite);
+
+
+// === AI Content Routes ===
+router.post('/ai/start', aiController.handleStartAiJob);
+router.post('/ai/stop', aiController.handleStopAiJob);
 
 
 module.exports = router;

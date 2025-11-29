@@ -1,0 +1,165 @@
+<body data-page-mode="guide">
+    
+    <header class="mb-8 pb-4 border-b border-slate-700">
+        <h1 class="text-3xl font-bold text-white tracking-tight">Hướng dẫn Sử dụng</h1>
+        <p class="text-slate-400 mt-1">Tài liệu chi tiết về cách vận hành hệ thống GPlay Scraper & AI Writer</p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        
+        <div class="lg:col-span-3 space-y-12">
+            
+            <section id="guide-scrape" class="space-y-4">
+                <h2 class="text-2xl font-bold text-emerald-400 flex items-center">
+                    <i class="ri-download-cloud-2-line mr-3"></i> 1. Thu thập Dữ liệu (Scrape)
+                </h2>
+                <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700 space-y-4 text-slate-300">
+                    <p>Đây là nơi bắt đầu quy trình. Bạn có 2 cách để lấy dữ liệu từ Google Play:</p>
+                    
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li>
+                            <strong class="text-white">Chế độ Thủ công (Theo App ID):</strong> 
+                            Dành cho khi bạn đã có sẵn danh sách ID. 
+                            <br><span class="text-sm text-slate-500">Ví dụ: com.facebook.katana, com.instagram.android... (Mỗi ID một dòng).</span>
+                        </li>
+                        <li>
+                            <strong class="text-white">Chế độ Tự động (Theo Danh sách):</strong> 
+                            Hệ thống sẽ tự động quét các bảng xếp hạng của Google (Top Free, Top Grossing...) theo danh mục bạn chọn (Game, Social, Tool...).
+                        </li>
+                    </ul>
+
+                    <div class="bg-blue-900/20 border border-blue-500/30 p-4 rounded-lg flex items-start gap-3">
+                        <i class="ri-information-line text-blue-400 text-xl mt-0.5"></i>
+                        <div>
+                            <strong class="text-blue-300">Mẹo tối ưu:</strong>
+                            <p class="text-sm mt-1">Nên để <strong>Số luồng (Concurrency)</strong> khoảng 5-10 và <strong>Độ trễ (Delay)</strong> khoảng 1000ms để tránh bị Google chặn IP.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="guide-apps" class="space-y-4">
+                <h2 class="text-2xl font-bold text-emerald-400 flex items-center">
+                    <i class="ri-database-2-line mr-3"></i> 2. Quản lý Ứng dụng
+                </h2>
+                <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700 space-y-4 text-slate-300">
+                    <p>Tại trang <strong>Danh sách Ứng dụng</strong>, bạn có thể xem lại toàn bộ data đã cào được.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-slate-900/50 p-4 rounded border border-slate-600">
+                            <h4 class="font-bold text-white mb-2"><i class="ri-delete-bin-line text-red-400 mr-2"></i>Xóa & Thùng rác</h4>
+                            <p class="text-sm">App khi xóa sẽ vào <strong>Thùng rác</strong> (chưa mất hẳn). Bạn có thể vào Thùng rác để khôi phục hoặc xóa vĩnh viễn.</p>
+                        </div>
+                        <div class="bg-slate-900/50 p-4 rounded border border-slate-600">
+                            <h4 class="font-bold text-white mb-2"><i class="ri-eye-line text-cyan-400 mr-2"></i>Xem chi tiết</h4>
+                            <p class="text-sm">Bấm vào tên App để xem đầy đủ thông tin: Mô tả, Icon, Ảnh chụp màn hình, Rating...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="guide-wp" class="space-y-4">
+                <h2 class="text-2xl font-bold text-emerald-400 flex items-center">
+                    <i class="ri-wordpress-line mr-3"></i> 3. Cấu hình WordPress
+                </h2>
+                <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700 space-y-4 text-slate-300">
+                    <p>Để tool có thể tự động đăng bài, bạn cần kết nối với website WordPress của mình.</p>
+                    
+                    <div class="space-y-4">
+                        <h3 class="text-lg font-bold text-white border-b border-slate-700 pb-2">Cách lấy API Key (Application Password)</h3>
+                        <ol class="list-decimal pl-5 space-y-2 text-sm">
+                            <li>Đăng nhập vào trang Admin WordPress của bạn (<code>/wp-admin</code>).</li>
+                            <li>Vào mục <strong>Thành viên (Users)</strong> -> <strong>Hồ sơ (Profile)</strong>.</li>
+                            <li>Kéo xuống dưới cùng tìm phần <strong>Application Passwords</strong>.</li>
+                            <li>Nhập tên (ví dụ: <code>Tool Auto</code>) và bấm <strong>Add New</strong>.</li>
+                            <li>Copy chuỗi mật khẩu vừa hiện ra (ví dụ: <code>abcd efgh ijkl mnop</code>).</li>
+                        </ol>
+                    </div>
+
+                    <div class="bg-yellow-900/20 border border-yellow-500/30 p-4 rounded-lg flex items-start gap-3">
+                        <i class="ri-alert-line text-yellow-400 text-xl mt-0.5"></i>
+                        <div>
+                            <strong class="text-yellow-300">Lưu ý quan trọng:</strong>
+                            <p class="text-sm mt-1">Khi nhập vào Tool, bạn phải nhập theo định dạng: <code>USERNAME:MẬT_KHẨU</code>.</p>
+                            <p class="text-sm font-mono bg-black/30 p-1 rounded mt-1 text-yellow-200">Ví dụ: admin:abcd efgh ijkl mnop</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <h3 class="text-lg font-bold text-white">Cấu hình Prompt (Câu lệnh AI)</h3>
+                        <p class="text-sm">Mỗi site có thể có một Prompt riêng. Sử dụng các <strong>Shortcode</strong> sau để AI tự điền thông tin App:</p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-1 bg-slate-700 rounded text-xs font-mono text-emerald-300">{title}</span>
+                            <span class="px-2 py-1 bg-slate-700 rounded text-xs font-mono text-emerald-300">{summary}</span>
+                            <span class="px-2 py-1 bg-slate-700 rounded text-xs font-mono text-emerald-300">{description}</span>
+                            <span class="px-2 py-1 bg-slate-700 rounded text-xs font-mono text-emerald-300">{developer}</span>
+                            <span class="px-2 py-1 bg-slate-700 rounded text-xs font-mono text-emerald-300">{score}</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="guide-ai" class="space-y-4">
+                <h2 class="text-2xl font-bold text-emerald-400 flex items-center">
+                    <i class="ri-openai-fill mr-3"></i> 4. AI Writer Center
+                </h2>
+                <div class="bg-slate-800/50 rounded-xl p-6 border border-slate-700 space-y-4 text-slate-300">
+                    <p>Khu vực "thần thánh" giúp bạn tạo nội dung hàng loạt.</p>
+                    
+                    <div class="space-y-3">
+                        <div class="flex gap-3">
+                            <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-white flex-shrink-0">1</div>
+                            <div>
+                                <h4 class="font-bold text-white">Chọn App & Site</h4>
+                                <p class="text-sm">Tích chọn các App muốn viết bài trong danh sách, sau đó chọn các Site vệ tinh muốn đăng lên ở cột giữa.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-white flex-shrink-0">2</div>
+                            <div>
+                                <h4 class="font-bold text-white">Nhập OpenAI Key</h4>
+                                <p class="text-sm">Key bắt đầu bằng <code>sk-...</code>. Hệ thống sẽ tự động lưu Key vào trình duyệt để bạn không phải nhập lại lần sau.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-white flex-shrink-0">3</div>
+                            <div>
+                                <h4 class="font-bold text-white">Chế độ Demo (Khuyên dùng)</h4>
+                                <p class="text-sm">Luôn bật <strong>Chế độ Demo</strong> trước để kiểm tra xem AI viết có hay không. Chế độ này KHÔNG đăng bài lên Web và KHÔNG tốn dung lượng lưu trữ, chỉ hiện kết quả để xem trước.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-3">
+                            <div class="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center font-bold text-white flex-shrink-0">4</div>
+                            <div>
+                                <h4 class="font-bold text-white">BẮT ĐẦU</h4>
+                                <p class="text-sm">Khi đã ưng ý, tắt Demo và bấm Bắt đầu để hệ thống tự động: Viết bài -> Upload ảnh -> Đăng bài lên WordPress.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <div class="hidden lg:block lg:col-span-1">
+            <div class="sticky top-6 space-y-6">
+                <div class="bg-slate-800/80 backdrop-blur rounded-lg p-5 border border-slate-700 shadow-lg">
+                    <h3 class="text-white font-bold mb-4 border-b border-slate-600 pb-2">Mục lục</h3>
+                    <nav class="space-y-2">
+                        <a href="#guide-scrape" class="block text-slate-400 hover:text-emerald-400 transition-colors text-sm py-1">1. Thu thập Dữ liệu</a>
+                        <a href="#guide-apps" class="block text-slate-400 hover:text-emerald-400 transition-colors text-sm py-1">2. Quản lý Ứng dụng</a>
+                        <a href="#guide-wp" class="block text-slate-400 hover:text-emerald-400 transition-colors text-sm py-1">3. Cấu hình WordPress</a>
+                        <a href="#guide-ai" class="block text-slate-400 hover:text-emerald-400 transition-colors text-sm py-1">4. AI Writer Center</a>
+                    </nav>
+                </div>
+
+                <div class="bg-gradient-to-br from-purple-900/50 to-slate-900 rounded-lg p-5 border border-purple-500/30">
+                    <h3 class="text-white font-bold mb-2 text-sm">Cần hỗ trợ?</h3>
+                    <p class="text-slate-400 text-xs mb-4">Nếu gặp lỗi hoặc cần tính năng mới, hãy liên hệ với Bro của bạn.</p>
+                    <a href="#" class="inline-flex items-center justify-center w-full px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded transition-colors">
+                        <i class="ri-github-fill mr-2 text-lg"></i> Báo lỗi
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>

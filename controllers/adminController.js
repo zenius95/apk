@@ -130,6 +130,7 @@ const renderTrashPage = async (req, res) => {
   }
 };
 
+
 const handleDeleteApps = async (req, res) => {
   const { appIds, deleteAll } = req.body;
   try {
@@ -367,6 +368,21 @@ const handleDeleteWpSite = async (req, res) => {
   }
 };
 
+// +++ MOI: Render Trang Huong Dan +++
+const renderGuidePage = async (req, res) => {
+  try {
+    res.render('pages/guide', {
+      data: {
+        title: 'Hướng dẫn sử dụng',
+        page: 'guide' // De active menu
+      }
+    });
+  } catch (err) {
+    console.error("Loi render trang Guide:", err);
+    res.status(500).send("Loi server.");
+  }
+};
+
 module.exports = {
   renderScrapePage,
   renderAppListPage,
@@ -378,5 +394,6 @@ module.exports = {
   handleGetWpSites,
   handleCreateWpSite,
   handleUpdateWpSite,
-  handleDeleteWpSite
+  handleDeleteWpSite,
+  renderGuidePage
 };
