@@ -1,8 +1,3 @@
-/*
- * File: public/js/wpSitesManager.js
- * "Não" chung cho trang Quan Ly WP Sites
- * Update: Hien thi loi trong Modal + Ho tro localhost
- */
 document.addEventListener('DOMContentLoaded', () => {
 
     const pageMode = document.body.dataset.pageMode;
@@ -10,15 +5,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const tableBody = document.getElementById('wp-sites-table-body');
     const placeholder = document.getElementById('wp-table-placeholder');
-    const alertContainer = document.getElementById('alert-container-wp'); // Alert ngoai
+    const alertContainer = document.getElementById('alert-container-wp'); 
     
     // Modal Elements
     const wpSiteModal = document.getElementById('wpSiteModal');
     const wpModalBackdrop = document.getElementById('wpModalBackdrop');
     const wpModalCloseBtn = document.getElementById('wpModalCloseBtn');
     const btnOpenAddModal = document.getElementById('btn-open-add-modal');
-    const modalAlertContainer = document.getElementById('modal-alert-container'); // +++ MOI +++
-    const modalAlertMsg = document.getElementById('modal-alert-msg'); // +++ MOI +++
+    const modalAlertContainer = document.getElementById('modal-alert-container');
+    const modalAlertMsg = document.getElementById('modal-alert-msg');
 
     // Form Elements
     const form = document.getElementById('wp-site-form');
@@ -27,7 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const siteNameInput = document.getElementById('wp-site-name');
     const siteUrlInput = document.getElementById('wp-site-url');
     const apiKeyInput = document.getElementById('wp-api-key');
+    
+    // Prompts
+    const aiPromptTitleInput = document.getElementById('wp-ai-prompt-title');
+    const aiPromptExcerptInput = document.getElementById('wp-ai-prompt-excerpt');
     const aiPromptInput = document.getElementById('wp-ai-prompt');
+    const aiPromptFooterInput = document.getElementById('wp-ai-prompt-footer'); // +++ MOI +++
     
     const submitButton = document.getElementById('wp-form-submit');
     const submitButtonIcon = document.getElementById('wp-btn-icon');
@@ -36,9 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let sites = (typeof initialWpSites !== 'undefined') ? initialWpSites : [];
 
-    // --- Helper Functions ---
-
-    // Show Alert o ngoai trang (cho Delete hoac Success)
     function showAlert(message, isError = false) { 
         alertContainer.innerHTML = ''; 
         if (!message) return;
@@ -53,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { alertContainer.innerHTML = ''; }, 5000);
     }
 
-    // Show Error TRONG Modal (cho Form Submit)
     function showModalError(message) {
         modalAlertMsg.textContent = message;
         modalAlertContainer.classList.remove('hidden');
@@ -63,10 +59,9 @@ document.addEventListener('DOMContentLoaded', () => {
         modalAlertContainer.classList.add('hidden');
     }
 
-    // --- Modal Logic ---
     function openModal() {
         wpSiteModal.classList.remove('hidden');
-        hideModalError(); // Reset error khi mo
+        hideModalError(); 
         setTimeout(() => {
             wpSiteModal.firstElementChild?.classList.remove('scale-95', 'opacity-0');
         }, 10);
@@ -77,7 +72,6 @@ document.addEventListener('DOMContentLoaded', () => {
         resetForm();
     }
 
-    // --- Table Logic ---
     function buildRow(site) {
         return `
             <tr data-site-id="${site.id}" class="hover:bg-slate-800/30 transition-colors">
@@ -100,8 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </button>
                     </div>
                 </td>
-            </tr>
-        `;
+            </tr>`;
     }
 
     function buildTable() {
@@ -114,17 +107,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Form Logic ---
     function resetForm() {
         form.reset();
         siteIdInput.value = ''; 
         aiPromptInput.value = ''; 
+        if(aiPromptTitleInput) aiPromptTitleInput.value = '';
+        if(aiPromptExcerptInput) aiPromptExcerptInput.value = '';
+        if(aiPromptFooterInput) aiPromptFooterInput.value = ''; // +++ Reset Footer +++
+        
         hideModalError();
         
-        formTitle.innerHTML = '<i class="ri-add-line mr-2 text-emerald-400"></i> Thêm Site Mới';
+        formTitle.innerHTML = '<i class="ri-add-line mr-2 text-emerald-400"></i> Thêm Trang Mới';
         submitButtonIcon.className = 'ri-add-line text-xl mr-2';
         submitButtonText.textContent = 'Thêm Site';
-        
         submitButton.disabled = false;
     }
 
@@ -135,6 +130,10 @@ document.addEventListener('DOMContentLoaded', () => {
         apiKeyInput.value = site.apiKey; 
         aiPromptInput.value = site.aiPrompt || ''; 
         
+        if(aiPromptTitleInput) aiPromptTitleInput.value = site.aiPromptTitle || '';
+        if(aiPromptExcerptInput) aiPromptExcerptInput.value = site.aiPromptExcerpt || '';
+        if(aiPromptFooterInput) aiPromptFooterInput.value = site.aiPromptFooter || ''; // +++ Fill Footer +++
+        
         formTitle.innerHTML = '<i class="ri-pencil-line mr-2 text-cyan-400"></i> Sửa Site';
         submitButtonIcon.className = 'ri-save-line text-xl mr-2';
         submitButtonText.textContent = 'Lưu Thay Đổi';
@@ -142,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function handleSubmit(e) {
         e.preventDefault();
-        hideModalError(); // Reset loi truoc khi gui
+        hideModalError(); 
         
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
@@ -165,7 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
             if (!response.ok) throw new Error(result.message || 'Lỗi không xác định');
 
-            // Thanh cong thi alert o ngoai va dong modal
             showAlert(result.message, false);
 
             if (isUpdating) {
@@ -180,7 +178,6 @@ document.addEventListener('DOMContentLoaded', () => {
             closeModal(); 
 
         } catch (err) {
-            // Loi thi hien TRONG modal
             showModalError(err.message);
         } finally {
             submitButton.disabled = false;

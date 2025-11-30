@@ -5,15 +5,11 @@
             <h1 class="text-3xl font-bold text-white tracking-tight">Danh sách Ứng dụng</h1>
             <p class="text-slate-400 mt-1">Quản lý các ứng dụng đã tải (<%= pagination.totalItems %> ứng dụng)</p>
         </div>
-        <a href="/trash" class="inline-flex items-center 
-justify-center rounded-md bg-slate-800 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-all mt-4 sm:mt-0">
+        <a href="/trash" class="inline-flex items-center justify-center rounded-md bg-slate-800 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-700 border border-slate-700 hover:border-slate-600 transition-all mt-4 sm:mt-0">
             <i class="ri-delete-bin-line -ml-1 mr-2"></i>
             Thùng rác
             <% if (typeof trashCount !== 'undefined' && trashCount > 0) { %>
-                <span class="ml-2 inline-flex items-center rounded-full bg-red-800/80 px-2.5 py-0.5 text-xs font-medium text-red-100">
-        
-  <%= trashCount %>
-                </span>
+                <span class="ml-2 inline-flex items-center rounded-full bg-red-800/80 px-2.5 py-0.5 text-xs font-medium text-red-100"><%= trashCount %></span>
             <% } %>
         </a>
     </header>
@@ -22,15 +18,10 @@ justify-center rounded-md bg-slate-800 px-3.5 py-2 text-sm font-medium text-whit
         <div class="w-full max-w-sm">
             <form method="GET" action="/app-list">
                 <div class="relative">
-  
                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                         <i class="ri-search-line text-slate-400"></i>
                     </div>
-                    <input type="text" name="search" class="block w-full rounded-md border-0 bg-slate-800/60 py-2.5 
-pl-10 text-white ring-1 ring-inset ring-white/10 placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm"
-                           placeholder="Tìm kiếm theo Tên hoặc App ID..."
-                           value="<%= typeof search !== 'undefined' ?
-search : '' %>">
+                    <input type="text" name="search" class="block w-full rounded-md border-0 bg-slate-800/60 py-2.5 pl-10 text-white ring-1 ring-inset ring-white/10 placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm" placeholder="Tìm kiếm theo Tên hoặc App ID..." value="<%= typeof search !== 'undefined' ? search : '' %>">
                 </div>
             </form>
         </div>
@@ -38,13 +29,11 @@ search : '' %>">
         <div id="selection-controls" class="hidden items-center justify-end flex-wrap gap-4">
             <span id="selection-count" class="text-sm font-medium text-slate-300">Đã chọn 0 ứng dụng</span>
             <button id="btn-select-all-db" class="text-sm text-emerald-400 hover:text-emerald-300 font-medium hidden">
- 
               Chọn tất cả <span class="font-bold"><%= pagination.totalItems %></span> ứng dụng
             </button>
             <button id="btn-delete-selected" class="inline-flex items-center justify-center rounded-md bg-red-600/90 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
                 <i class="ri-delete-bin-line -ml-1 mr-2"></i>
                 Chuyển vào thùng rác
-  
            </button>
         </div>
     </div>
@@ -53,125 +42,112 @@ search : '' %>">
         <div class="flex items-center justify-between mb-5 pb-4 border-b border-slate-800">
             <div class="flex items-center gap-3">
                 <div class="p-2 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-lg shadow-lg shadow-purple-900/20">
-        
-             <i class="ri-openai-fill text-2xl text-white"></i>
+                     <i class="ri-openai-fill text-2xl text-white"></i>
                 </div>
                 <div>
                     <h3 class="text-white font-bold text-base tracking-wide flex items-center gap-2">
-                        AI WRITER 
-CENTER
-                        <span class="px-2 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-400 border border-purple-500/20">AUTO</span>
+                         AI WRITER CENTER <span class="px-2 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-400 border border-purple-500/20">AUTO</span>
                     </h3>
                     <p class="text-slate-500 text-xs">Tự động hóa nội dung & đăng bài vệ tinh</p>
                 </div>
- 
            </div>
             
             <label class="flex items-center cursor-pointer relative group bg-slate-800/50 px-4 py-2 rounded-full border border-slate-700/50 hover:border-emerald-500/30 transition-all select-none">
                 <span class="mr-3 text-xs font-bold text-slate-400 group-hover:text-emerald-400 transition-colors">CHẾ ĐỘ DEMO</span>
                 <input type="checkbox" id="ai-demo-mode" class="sr-only peer">
-       
-         <div class="relative w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 shadow-inner"></div>
+                <div class="relative w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 shadow-inner"></div>
             </label>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
             <div class="lg:col-span-4 space-y-4">
-           
-     <div>
+                <div>
                     <label class="flex justify-between text-[10px] text-slate-400 uppercase font-bold mb-1.5 ml-1">
                         <span>OpenAI API Key</span>
                     </label>
-                    <div 
-class="relative group">
+                    <div class="relative group">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <i class="ri-key-2-line text-slate-500 group-focus-within:text-purple-400 transition-colors"></i>
                         </div>
-            
-             <input type="text" id="ai-openai-key" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2.5 pl-9 pr-3 text-sm text-white placeholder-slate-600 focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all shadow-inner" placeholder="sk-...">
+                        <input type="text" id="ai-openai-key" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2.5 pl-9 pr-3 text-sm text-white placeholder-slate-600 focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all shadow-inner" placeholder="sk-...">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
-             
-       <div>
+                    <div>
                         <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1.5 ml-1">Luồng</label>
                         <input type="number" id="ai-concurrency" value="1" min="1" max="5" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm text-white focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all text-center">
-                  
-   </div>
+                    </div>
                     <div>
                         <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1.5 ml-1">Delay (ms)</label>
                         <input type="number" id="ai-delay" value="2000" min="500" step="500" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm text-white focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all text-center">
-  
                    </div>
                 </div>
+
             </div>
 
             <div class="lg:col-span-5 flex flex-col">
                 <div class="flex justify-between items-end mb-1.5">
-                   
- <label class="block text-[10px] text-slate-400 uppercase font-bold ml-1">Chọn Sites Đăng Bài</label>
+                    <label class="block text-[10px] text-slate-400 uppercase font-bold ml-1">Chọn Sites Đăng Bài</label>
                     <button id="btn-select-all-sites" class="text-[10px] text-purple-400 hover:text-purple-300 font-bold uppercase tracking-wider hover:underline">Chọn tất cả</button>
                 </div>
-                <div class="bg-slate-950 border border-slate-700 rounded-lg p-2 h-[132px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800 shadow-inner">
-                 
-   <% if(typeof wpSites !== 'undefined' && wpSites.length > 0) { %>
+                <div class="bg-slate-950 border border-slate-700 rounded-lg p-2 h-[190px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800 shadow-inner">
+                   <% if(typeof wpSites !== 'undefined' && wpSites.length > 0) { %>
                         <div class="space-y-1">
                             <% wpSites.forEach(site => { %>
-                              
-   <label class="flex items-center p-2 rounded hover:bg-slate-800/80 cursor-pointer transition-colors group">
+                                <label class="flex items-center p-2 rounded hover:bg-slate-800/80 cursor-pointer transition-colors group">
                                     <input type="checkbox" value="<%= site.id %>" class="site-checkbox w-4 h-4 rounded border-slate-600 bg-slate-800 text-purple-500 focus:ring-purple-500/50 cursor-pointer transition-all">
-                                    <span class="ml-3 text-sm text-slate-300 
-group-hover:text-white select-none truncate"><%= site.siteName %></span>
+                                    <span class="ml-3 text-sm text-slate-300 group-hover:text-white select-none truncate"><%= site.siteName %></span>
                                 </label>
-                            <% });
-%>
+                            <% }); %>
                         </div>
                     <% } else { %>
                         <div class="h-full flex flex-col items-center justify-center text-center">
-                      
-       <i class="ri-globe-line text-2xl text-slate-600 mb-2"></i>
+                            <i class="ri-globe-line text-2xl text-slate-600 mb-2"></i>
                             <p class="text-xs text-slate-500 italic">Chưa có site nào.</p>
                             <a href="/wp-sites" class="text-xs text-emerald-400 hover:underline mt-1">Thêm ngay</a>
-                      
-   </div>
+                        </div>
                     <% } %>
                 </div>
             </div>
 
-            <div class="lg:col-span-3 flex flex-col justify-end">
-                <div class="h-[50px] lg:h-[132px] flex items-end">
-            
-         <button id="btn-start-ai" disabled class="group w-full h-[50px] flex items-center justify-center gap-3 bg-slate-800 text-slate-500 border border-slate-700 rounded-xl font-bold transition-all duration-300 cursor-not-allowed shadow-lg">
+            <div class="lg:col-span-3">
+
+                <div class="mb-3">
+                    <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1.5 ml-1">Trạng thái bài viết</label>
+                    <select id="ai-post-status" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm text-white focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all">
+                        <option value="publish" selected>🚀 Công khai (Publish)</option>
+                        <option value="draft">📝 Bản nháp (Draft)</option>
+                        <option value="pending">⏳ Chờ duyệt (Pending)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <button id="btn-start-ai" disabled class="group w-full h-[50px] flex items-center justify-center gap-3 bg-slate-800 text-slate-500 border border-slate-700 rounded-xl font-bold transition-all duration-300 cursor-not-allowed shadow-lg">
                         <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <i class="ri-play-fill text-lg"></i>
-          
-               </div>
+                        </div>
                         <span class="tracking-wide">BẮT ĐẦU</span>
                     </button>
                     
-                    
- <button id="btn-stop-ai" class="hidden w-full h-[50px] flex items-center justify-center gap-3 bg-red-900/20 hover:bg-red-900/30 border border-red-500/30 text-red-400 rounded-xl font-bold transition-all duration-300 hover:shadow-lg hover:shadow-red-900/20">
+                    <button id="btn-stop-ai" class="hidden w-full h-[50px] flex items-center justify-center gap-3 bg-red-900/20 hover:bg-red-900/30 border border-red-500/30 text-red-400 rounded-xl font-bold transition-all duration-300 hover:shadow-lg hover:shadow-red-900/20">
                         <i class="ri-stop-circle-line text-2xl animate-pulse"></i> 
                         <span class="tracking-wide">DỪNG LẠI</span>
                     </button>
-       
-         </div>
+                </div>
             </div>
         </div>
         
-        <div id="ai-progress-container" class="hidden border-t border-white/5 bg-slate-950 p-4 transition-all duration-300">
+        <div id="ai-progress-container" class="hidden border-t border-white/5 bg-slate-950 p-4 transition-all duration-300 mt-4 rounded-b-xl">
             <div class="flex justify-between text-xs text-slate-400 mb-2">
                 <span id="ai-status-text" class="flex items-center font-mono text-purple-400">
-         
-            <i class="ri-loader-4-line animate-spin mr-2"></i> Initializing...
+                    <i class="ri-loader-4-line animate-spin mr-2"></i> Initializing...
                 </span>
                 <span id="ai-progress-text" class="font-mono text-white">0 / 0</span>
             </div>
             <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                <div id="ai-progress-bar" class="bg-gradient-to-r 
-from-purple-600 to-indigo-600 h-full rounded-full transition-all duration-300 relative" style="width: 0%">
+                <div id="ai-progress-bar" class="bg-gradient-to-r from-purple-600 to-indigo-600 h-full rounded-full transition-all duration-300 relative" style="width: 0%">
                     <div class="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
                 </div>
             </div>
@@ -180,13 +156,11 @@ from-purple-600 to-indigo-600 h-full rounded-full transition-all duration-300 re
 
     <div class="bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg overflow-hidden">
         <div class="table-container">
-        
-     <table class="min-w-full">
+            <table class="min-w-full">
                 <thead class="bg-slate-900/50 sticky top-0">
                     <tr>
                         <th class="py-3.5 px-4 sm:px-6 w-12">
-                            
- <input type="checkbox" id="select-all-page" class="h-4 w-4 rounded border-slate-600 bg-slate-700 text-emerald-500 focus:ring-emerald-600">
+                            <input type="checkbox" id="select-all-page" class="h-4 w-4 rounded border-slate-600 bg-slate-700 text-emerald-500 focus:ring-emerald-600">
                         </th>
                         <th class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-white w-3/5">Ứng dụng</th>
                         <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Phân loại</th>
@@ -194,58 +168,46 @@ from-purple-600 to-indigo-600 h-full rounded-full transition-all duration-300 re
                         <th class="px-3 py-3.5 text-left text-sm font-semibold text-white w-1/5">Cập nhật lần cuối</th>
                         <th class="py-3.5 pl-3 pr-4 sm:pr-6 w-32 text-center text-sm font-semibold text-white">Thao tác</th>
                     </tr>
-              
-   </thead>
+                </thead>
                 <tbody id="app-table-body" class="divide-y divide-slate-800">
                     </tbody>
             </table>
             
             <div id="table-placeholder" class="hidden">
                 </div>
-     
-   </div>
+        </div>
         
         <%- include('../partials/_pagination', { pagination: pagination, baseUrl: baseUrl, search: search }) %>
     </div>
 
     <div id="aiResultModal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
         <div id="aiResultBackdrop" class="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"></div>
-        
         <div class="relative w-full max-w-6xl h-[85vh] bg-slate-900 ring-1 ring-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col transform transition-all scale-100">
-         
-    
             <div class="flex-shrink-0 px-6 py-4 border-b border-slate-700 flex items-center justify-between bg-slate-800/50">
                 <div class="flex items-center gap-3">
                     <i class="ri-magic-line text-2xl text-emerald-400"></i>
                     <div>
-              
-           <h3 class="text-lg font-bold text-white">Kết quả Demo AI</h3>
+                        <h3 class="text-lg font-bold text-white">Kết quả Demo AI</h3>
                         <p class="text-xs text-slate-400 mt-0.5 font-mono" id="ai-result-app-name">App: ...</p>
                     </div>
                 </div>
-                <button id="aiResultCloseBtn" 
-class="text-slate-400 hover:text-white transition-colors bg-slate-700/50 hover:bg-slate-700 rounded-lg p-2">
+                <button id="aiResultCloseBtn" class="text-slate-400 hover:text-white transition-colors bg-slate-700/50 hover:bg-slate-700 rounded-lg p-2">
                     <i class="ri-close-line text-xl"></i>
                 </button>
             </div>
 
             <div class="flex flex-1 min-h-0 overflow-hidden">
-                
-            
-     <div class="w-64 bg-slate-900 border-r border-slate-800 flex-shrink-0 overflow-y-auto p-2 space-y-1" id="ai-result-tabs">
-                    </div>
-
+                <div class="w-64 bg-slate-900 border-r border-slate-800 flex-shrink-0 overflow-y-auto p-2 space-y-1" id="ai-result-tabs">
+                </div>
                 <div class="flex-1 bg-slate-950 overflow-y-auto p-6 relative" id="ai-result-tab-content">
-                    </div>
+                </div>
             </div>
 
-            <div 
-class="flex-shrink-0 px-6 py-4 border-t border-slate-700 bg-slate-800/30 flex justify-between items-center">
+            <div class="flex-shrink-0 px-6 py-4 border-t border-slate-700 bg-slate-800/30 flex justify-between items-center">
                 <span class="text-xs text-slate-500 italic">* Nội dung chưa được lưu vào DB.</span>
                 <button id="aiResultCopyBtn" class="flex items-center gap-2 bg-purple-600 hover:bg-purple-500 text-white px-5 py-2.5 rounded-lg font-bold transition-all text-sm shadow-lg border border-purple-500/50">
                     <i class="ri-file-copy-line text-lg"></i> Copy Nội dung
-         
-       </button>
+               </button>
             </div>
         </div>
     </div>
@@ -266,7 +228,7 @@ class="flex-shrink-0 px-6 py-4 border-t border-slate-700 bg-slate-800/30 flex ju
                 <div class="mb-4">
                     <h4 class="text-xs font-bold text-slate-500 uppercase mb-2">Đã đăng lên (<span id="count-posted" class="text-emerald-400">0</span>)</h4>
                     <div id="list-posted" class="space-y-1 max-h-40 overflow-y-auto pr-1">
-                        </div>
+                    </div>
                 </div>
                 <div class="border-t border-slate-700 my-4"></div>
                 <div>
@@ -280,7 +242,6 @@ class="flex-shrink-0 px-6 py-4 border-t border-slate-700 bg-slate-800/30 flex ju
     <script>
         var initialData = <%- JSON.stringify(savedApps || []) %>;
         var paginationData = <%- JSON.stringify(pagination || {}) %>;
-        // +++ MOI: Truyen bien wpSites de JS dung +++
-        var allWpSites = <%- JSON.stringify(wpSites || []) %>; 
+        var allWpSites = <%- JSON.stringify(wpSites || []) %>;
     </script>
 </body>

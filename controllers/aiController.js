@@ -21,24 +21,15 @@ const getLocalPath = (relPath) => {
     return path.join(__dirname, '..', 'public', relPath);
 };
 
-// +++ HELPER: Parse JSON an toan cho Server Linux/MariaDB +++
 const getSafeAppData = (appRecord) => {
     let rawData = appRecord.fullData;
-    // Neu DB tra ve String (do driver MariaDB/MySQL cu), parse no ra
     if (typeof rawData === 'string') {
-        try {
-            rawData = JSON.parse(rawData);
-        } catch (e) {
-            console.error("❌ JSON Parse Error:", e.message);
-            rawData = {};
-        }
+        try { rawData = JSON.parse(rawData); } catch (e) { rawData = {}; }
     }
-    // Dam bao Title luon co (uu tien tu cot Title cua bang App)
     if (!rawData.title) rawData.title = appRecord.title;
     return rawData;
 };
 
-// +++ UPDATE: Them tham so postStatus +++
 async function processSingleItem(app, site, openAiKey, io, postStatus) {
     const appId = app.appId;
     const siteId = site.id;
@@ -53,13 +44,33 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
     addLog(io, 'INFO', `🤖 Đang xử lý: ${app.title} -> ${site.siteName}...`);
 
     try {
-        if (!site.aiPrompt) throw new Error("Site chưa cấu hình Prompt!");
+        if (!site.aiPrompt) throw new Error("Site chưa cấu hình Prompt Nội dung!");
         
-        // +++ FIX: Parse Data truoc khi dung +++
         const appData = getSafeAppData(app);
 
-        const generatedContent = await aiService.generateContent(openAiKey, site.aiPrompt, appData);
+        // --- 1. TITLE ---
+        let finalTitle = app.title;
+        if (site.aiPromptTitle && site.aiPromptTitle.trim()) {
+            finalTitle = await aiService.generateContent(openAiKey, site.aiPromptTitle, appData);
+            finalTitle = finalTitle.replace(/^"|"$/g, '').trim(); 
+        }
 
+        // --- 2. EXCERPT ---
+        let finalExcerpt = appData.summary || '';
+        if (site.aiPromptExcerpt && site.aiPromptExcerpt.trim()) {
+            finalExcerpt = await aiService.generateContent(openAiKey, site.aiPromptExcerpt, appData);
+        }
+
+        // --- 3. MAIN CONTENT ---
+        let generatedContent = await aiService.generateContent(openAiKey, site.aiPrompt, appData);
+
+        // --- 4. FOOTER (APPEND) CONTENT ---
+        if (site.aiPromptFooter && site.aiPromptFooter.trim()) {
+            const footerContent = await aiService.generateContent(openAiKey, site.aiPromptFooter, appData);
+            generatedContent += `\n\n${footerContent}`; // Noi vao cuoi
+        }
+
+        // --- MEDIA ---
         let wpFullData = JSON.parse(JSON.stringify(appData)); 
         let featuredMediaId = 0;
 
@@ -75,9 +86,7 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
         if (wpFullData.headerImage) {
             const localPath = getLocalPath(wpFullData.headerImage);
             const uploaded = await wpService.uploadMedia(site, localPath);
-            if (uploaded) {
-                wpFullData.headerImage = uploaded.url; 
-            }
+            if (uploaded) wpFullData.headerImage = uploaded.url; 
         }
 
         if (wpFullData.screenshots && wpFullData.screenshots.length > 0) {
@@ -90,6 +99,7 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
             wpFullData.screenshots = newScreenshots;
         }
 
+        // --- TERMS ---
         let categoryIds = [];
         if (appData.genre) {
             const catId = await wpService.ensureTerm(site, 'categories', appData.genre);
@@ -102,17 +112,16 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
             if (tagId) tagIds.push(tagId);
         }
 
+        // --- POSTING ---
         const postData = {
-            title: app.title,
+            title: finalTitle,
             content: generatedContent,
-            excerpt: appData.summary || '',
+            excerpt: finalExcerpt,
             status: postStatus || 'publish', 
             featured_media: featuredMediaId || undefined,
             categories: categoryIds, 
             tags: tagIds,            
-            meta: {
-                app_full_data: wpFullData 
-            }
+            meta: { app_full_data: wpFullData }
         };
 
         const wpPost = await wpService.createPost(site, postData);
@@ -125,7 +134,7 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
             aiContent: generatedContent 
         });
 
-        addLog(io, 'mW_OK', `✅ Đã đăng: ${app.title} (ID: ${wpPost.id})`);
+        addLog(io, 'mW_OK', `✅ Đã đăng: ${finalTitle} (ID: ${wpPost.id})`);
         aiJobState.stats.success++;
 
     } catch (err) {
@@ -139,36 +148,70 @@ const handleStartAiJob = async (req, res) => {
     const { appIds, siteIds, openAiKey, concurrency, delay, isDemo, postStatus } = req.body;
 
     if (!isDemo && aiJobState.isRunning) return res.status(400).json({ message: "Job đang chạy rồi!" });
-
     if (!appIds || !siteIds || !openAiKey) return res.status(400).json({ message: "Thiếu thông tin!" });
 
-    // +++ DEMO MODE +++
+    // === DEMO MODE ===
     if (isDemo) {
         try {
             const app = await App.findOne({ where: { appId: appIds[0] } }); 
             if (!app) return res.status(404).json({ message: "Không tìm thấy App." });
 
-            // +++ FIX: Parse Data cho Demo +++
             const appData = getSafeAppData(app);
-
             const sites = await WpSite.findAll({ where: { id: siteIds } });
             if (sites.length === 0) return res.status(404).json({ message: "Không tìm thấy Site." });
 
             const demoResults = await Promise.all(sites.map(async (site) => {
                 if (!site.aiPrompt) {
-                    return { siteName: site.siteName, error: "Chưa cấu hình Prompt." };
+                    return { siteName: site.siteName, error: "Chưa cấu hình Prompt Nội dung." };
                 }
                 try {
-                    // Fix regex shortcode o day neu can, nhung logic chinh nam o aiService
-                    const renderedPrompt = site.aiPrompt
+                    // 1. Title
+                    let demoTitle = app.title;
+                    let promptTitleUsed = null;
+                    if (site.aiPromptTitle && site.aiPromptTitle.trim()) {
+                        demoTitle = await aiService.generateContent(openAiKey, site.aiPromptTitle, appData);
+                        demoTitle = demoTitle.replace(/^"|"$/g, '').trim();
+                        promptTitleUsed = site.aiPromptTitle;
+                    }
+
+                    // 2. Excerpt
+                    let demoExcerpt = appData.summary || '';
+                    let promptExcerptUsed = null;
+                    if (site.aiPromptExcerpt && site.aiPromptExcerpt.trim()) {
+                        demoExcerpt = await aiService.generateContent(openAiKey, site.aiPromptExcerpt, appData);
+                        promptExcerptUsed = site.aiPromptExcerpt;
+                    }
+
+                    // 3. Content
+                    const renderedContentPrompt = site.aiPrompt
                         .replace(/{title}/gi, app.title || '')
                         .replace(/{summary}/gi, appData.summary || '')
                         .replace(/{description}/gi, appData.description || '')
                         .replace(/{developer}/gi, appData.developer || '')
                         .replace(/{score}/gi, appData.scoreText || '');
 
-                    const content = await aiService.generateContent(openAiKey, site.aiPrompt, appData);
-                    return { siteName: site.siteName, prompt: renderedPrompt, content: content };
+                    let content = await aiService.generateContent(openAiKey, site.aiPrompt, appData);
+                    
+                    // 4. Footer
+                    let demoFooter = '';
+                    let promptFooterUsed = null;
+                    if (site.aiPromptFooter && site.aiPromptFooter.trim()) {
+                        demoFooter = await aiService.generateContent(openAiKey, site.aiPromptFooter, appData);
+                        promptFooterUsed = site.aiPromptFooter;
+                        // Noi luon vao noi dung demo de view cho de
+                        content += `\n\n[FOOTER_APPEND]\n${demoFooter}`;
+                    }
+
+                    return { 
+                        siteName: site.siteName, 
+                        title: demoTitle,
+                        excerpt: demoExcerpt,
+                        content: content,
+                        promptTitle: promptTitleUsed,
+                        promptExcerpt: promptExcerptUsed,
+                        promptContent: renderedContentPrompt,
+                        promptFooter: promptFooterUsed // Tra ve de hien thi trong tab Prompt
+                    };
                 } catch (err) {
                     return { siteName: site.siteName, error: err.message };
                 }
@@ -180,7 +223,7 @@ const handleStartAiJob = async (req, res) => {
             return res.status(500).json({ message: "Lỗi Demo: " + err.message });
         }
     }
-    // +++ END DEMO +++
+    // === END DEMO ===
 
     const apps = await App.findAll({ where: { appId: appIds } });
     const sites = await WpSite.findAll({ where: { id: siteIds } });
@@ -192,7 +235,6 @@ const handleStartAiJob = async (req, res) => {
     aiJobState.stats = { total: apps.length * sites.length, success: 0, failed: 0, skipped: 0 };
 
     addLog(io, 'INFO', `🚀 BẮT ĐẦU AUTO CONTENT! Target: ${apps.length} Apps x ${sites.length} Sites.`);
-
     res.status(200).json({ message: "Job đã bắt đầu!" });
 
     (async () => {
@@ -208,19 +250,13 @@ const handleStartAiJob = async (req, res) => {
 
         while (tasks.length > 0) {
             if (aiJobState.isStopping) break;
-
             const batch = tasks.splice(0, numConcurrency);
-            const promises = batch.map(task => processSingleItem(task.app, task.site, openAiKey, io, task.postStatus));
-            
-            await Promise.all(promises);
-
+            await Promise.all(batch.map(task => processSingleItem(task.app, task.site, openAiKey, io, task.postStatus)));
             if (tasks.length > 0) await new Promise(r => setTimeout(r, numDelay));
         }
 
         addLog(io, 'INFO', `🏁 AI Job hoàn tất! Success: ${aiJobState.stats.success}, Fail: ${aiJobState.stats.failed}, Skipped: ${aiJobState.stats.skipped}`);
-        
         io.emit('ai_job:done', aiJobState.stats);
-        
         aiJobState.isRunning = false;
     })();
 };

@@ -93,14 +93,12 @@ const renderAppListPage = async (req, res) => {
         order: [['siteName', 'ASC']]
     });
 
-    // Query Log de biet app nao da dang o dau
     const appIds = apps.map(a => a.appId);
     const logs = await WpPostLog.findAll({
         where: { appId: appIds, status: 'SUCCESS' },
         attributes: ['appId', 'wpSiteId']
     });
 
-    // Map log vao app
     const postedMap = {};
     logs.forEach(log => {
         if (!postedMap[log.appId]) postedMap[log.appId] = [];
@@ -108,8 +106,8 @@ const renderAppListPage = async (req, res) => {
     });
 
     const enrichedApps = apps.map(app => {
-        const plainApp = app.get({ plain: true }); // Convert to Object thuong
-        plainApp.postedSiteIds = postedMap[app.appId] || []; // Them mang ID site da dang
+        const plainApp = app.get({ plain: true }); 
+        plainApp.postedSiteIds = postedMap[app.appId] || []; 
         return plainApp;
     });
 
@@ -245,7 +243,6 @@ const handleForceDeleteApps = async (req, res) => {
       } else {
         whereClause = { deletedAt: { [Op.not]: null } };
       }
-      // +++ FIX LOI: Bo dau ngoac {} bao quanh whereClause +++
       const apps = await App.findAll({ where: whereClause, attributes: ['appId'], paranoid: false });
       appIdsToDelete = apps.map(app => app.appId);
 
@@ -313,7 +310,8 @@ const handleGetWpSites = async (req, res) => {
 };
 
 const handleCreateWpSite = async (req, res) => {
-  const { siteName, siteUrl, apiKey, aiPrompt } = req.body;
+  // +++ UPDATE: Nhan aiPromptFooter +++
+  const { siteName, siteUrl, apiKey, aiPrompt, aiPromptTitle, aiPromptExcerpt, aiPromptFooter } = req.body;
   
   if (!siteName || !siteUrl || !apiKey) {
     return res.status(400).json({ success: false, message: 'Nhập thiếu rồi Bro. Cần Tên, URL, và API Key.' });
@@ -324,7 +322,10 @@ const handleCreateWpSite = async (req, res) => {
       siteName,
       siteUrl,
       apiKey,
-      aiPrompt: aiPrompt || '' 
+      aiPrompt: aiPrompt || '',
+      aiPromptTitle: aiPromptTitle || '',
+      aiPromptExcerpt: aiPromptExcerpt || '',
+      aiPromptFooter: aiPromptFooter || '' // Luu Footer
     });
     return res.status(201).json({ success: true, message: 'Đã thêm site mới ngon lành!', site: newSite });
   } catch (err) {
@@ -332,7 +333,6 @@ const handleCreateWpSite = async (req, res) => {
     if (err.name === 'SequelizeValidationError') {
       return res.status(400).json({ success: false, message: `URL không hợp lệ: ${err.errors[0].message}` });
     }
-    // +++ MOI: Bat loi trung URL +++
     if (err.name === 'SequelizeUniqueConstraintError') {
       return res.status(400).json({ success: false, message: 'URL này đã tồn tại trong hệ thống rồi Bro.' });
     }
@@ -342,7 +342,8 @@ const handleCreateWpSite = async (req, res) => {
 
 const handleUpdateWpSite = async (req, res) => {
   const { id } = req.params;
-  const { siteName, siteUrl, apiKey, aiPrompt } = req.body;
+  // +++ UPDATE: Nhan aiPromptFooter +++
+  const { siteName, siteUrl, apiKey, aiPrompt, aiPromptTitle, aiPromptExcerpt, aiPromptFooter } = req.body;
 
   if (!siteName || !siteUrl || !apiKey) {
     return res.status(400).json({ success: false, message: 'Nhập thiếu rồi Bro. Cần Tên, URL, và API Key.' });
@@ -358,6 +359,9 @@ const handleUpdateWpSite = async (req, res) => {
     site.siteUrl = siteUrl;
     site.apiKey = apiKey;
     site.aiPrompt = aiPrompt || ''; 
+    site.aiPromptTitle = aiPromptTitle || '';
+    site.aiPromptExcerpt = aiPromptExcerpt || '';
+    site.aiPromptFooter = aiPromptFooter || ''; // Cap nhat Footer
     
     await site.save();
     
@@ -367,7 +371,6 @@ const handleUpdateWpSite = async (req, res) => {
     if (err.name === 'SequelizeValidationError') {
       return res.status(400).json({ success: false, message: `URL không hợp lệ: ${err.errors[0].message}` });
     }
-    // +++ MOI: Bat loi trung URL +++
     if (err.name === 'SequelizeUniqueConstraintError') {
       return res.status(400).json({ success: false, message: 'URL này đã tồn tại trong hệ thống rồi Bro.' });
     }
