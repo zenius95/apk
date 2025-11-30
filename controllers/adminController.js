@@ -1,5 +1,6 @@
 const App = require('../models/app');
 const WpSite = require('../models/wpSite');
+const WpPostLog = require('../models/wpPostLog');
 const { default: gplay } = require('google-play-scraper');
 const { Op } = require('sequelize');
 const fs = require('fs-extra'); 
@@ -92,12 +93,32 @@ const renderAppListPage = async (req, res) => {
         order: [['siteName', 'ASC']]
     });
 
+    // Query Log de biet app nao da dang o dau
+    const appIds = apps.map(a => a.appId);
+    const logs = await WpPostLog.findAll({
+        where: { appId: appIds, status: 'SUCCESS' },
+        attributes: ['appId', 'wpSiteId']
+    });
+
+    // Map log vao app
+    const postedMap = {};
+    logs.forEach(log => {
+        if (!postedMap[log.appId]) postedMap[log.appId] = [];
+        postedMap[log.appId].push(log.wpSiteId);
+    });
+
+    const enrichedApps = apps.map(app => {
+        const plainApp = app.get({ plain: true }); // Convert to Object thuong
+        plainApp.postedSiteIds = postedMap[app.appId] || []; // Them mang ID site da dang
+        return plainApp;
+    });
+
     res.render('pages/appList', {
       data: {
         title: 'Danh sách APP đã lưu',
         page: 'appList'
       },
-      savedApps: apps, 
+      savedApps: enrichedApps, 
       pagination: pagination,
       search: search,
       trashCount: trashCount,
@@ -224,6 +245,7 @@ const handleForceDeleteApps = async (req, res) => {
       } else {
         whereClause = { deletedAt: { [Op.not]: null } };
       }
+      // +++ FIX LOI: Bo dau ngoac {} bao quanh whereClause +++
       const apps = await App.findAll({ where: whereClause, attributes: ['appId'], paranoid: false });
       appIdsToDelete = apps.map(app => app.appId);
 
@@ -368,13 +390,12 @@ const handleDeleteWpSite = async (req, res) => {
   }
 };
 
-// +++ MOI: Render Trang Huong Dan +++
 const renderGuidePage = async (req, res) => {
   try {
     res.render('pages/guide', {
       data: {
         title: 'Hướng dẫn sử dụng',
-        page: 'guide' // De active menu
+        page: 'guide'
       }
     });
   } catch (err) {

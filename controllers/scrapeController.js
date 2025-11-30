@@ -54,8 +54,9 @@ const addLog = (io, type, message) => {
 
 /**
  * Xu ly Job cào dữ liệu
+ * +++ UPDATE: Nhan them lang, country +++
  */
-async function runScrapingJob(appIds, concurrency, delay, io) {
+async function runScrapingJob(appIds, concurrency, delay, io, lang, country) {
   jobState.isRunning = true;
   jobState.isStopping = false;
   jobState.stats = { success: 0, failed: 0, total: appIds.length };
@@ -64,7 +65,7 @@ async function runScrapingJob(appIds, concurrency, delay, io) {
   // Xoa log cu trong RAM khi chay job moi
   jobState.logs = []; 
 
-  addLog(io, 'INFO', `🚀 BẮT ĐẦU JOB! Tổng số: ${appIds.length} apps.`);
+  addLog(io, 'INFO', `🚀 BẮT ĐẦU JOB! Tổng số: ${appIds.length} apps. (Lang: ${lang}, Country: ${country})`);
   io.emit('job:update_stats', jobState.stats); // Cap nhat so lieu ban dau
 
   const worker = async (workerId) => {
@@ -80,7 +81,8 @@ async function runScrapingJob(appIds, concurrency, delay, io) {
       addLog(io, 'mW', `[Worker ${workerId}] Đang xử lý: ${appId}...`);
       
       try {
-        const result = await scraperService.scrapeAndSave(appId);
+        // +++ UPDATE: Truyen lang, country vao service +++
+        const result = await scraperService.scrapeAndSave(appId, lang, country);
         
         if (result.success) {
           jobState.stats.success++;
@@ -136,8 +138,12 @@ const handleScrapeRequest = async (req, res) => {
     return res.status(400).json({ message: "Job đang chạy rồi Bro!", error: true });
   }
 
-  const { scrapeMode, appIdsList, category, collection, num, concurrency, delay } = req.body;
+  // +++ UPDATE: Lay them lang, country tu Body +++
+  const { scrapeMode, appIdsList, category, collection, num, concurrency, delay, lang, country } = req.body;
   
+  const targetLang = lang || 'en';
+  const targetCountry = country || 'us';
+
   let appIdsToScrape = [];
   
   try {
@@ -145,7 +151,14 @@ const handleScrapeRequest = async (req, res) => {
         if (!appIdsList) throw new Error("Thiếu danh sách ID.");
         appIdsToScrape = [...new Set(appIdsList.split('\n').map(id => id.trim()).filter(Boolean))];
       } else {
-         const listResults = await gplay.list({ category, collection, num: parseInt(num) || 50 });
+         // +++ UPDATE: Truyen lang, country vao list +++
+         const listResults = await gplay.list({ 
+             category, 
+             collection, 
+             num: parseInt(num) || 50,
+             lang: targetLang,
+             country: targetCountry
+         });
          appIdsToScrape = listResults.map(app => app.appId);
       }
 
@@ -162,10 +175,11 @@ const handleScrapeRequest = async (req, res) => {
       const numConcurrency = parseInt(concurrency) || 5;
       const numDelay = parseInt(delay) || 1000;
       
-      runScrapingJob(newAppIds, numConcurrency, numDelay, io);
+      // +++ UPDATE: Truyen lang, country vao Job +++
+      runScrapingJob(newAppIds, numConcurrency, numDelay, io, targetLang, targetCountry);
 
       return res.status(200).json({ 
-          message: `Bắt đầu xử lý ${newAppIds.length} apps...`, 
+          message: `Bắt đầu xử lý ${newAppIds.length} apps (Lang: ${targetLang}, Country: ${targetCountry})...`, 
           appIds: newAppIds 
       });
 

@@ -16,6 +16,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Inputs (giu nguyen nhu cu)
     const concurrencyEl = document.getElementById('concurrency');
     const delayEl = document.getElementById('delay');
+    // +++ MOI: Lay element Lang & Country +++
+    const langEl = document.getElementById('scrape-lang');
+    const countryEl = document.getElementById('scrape-country');
+
     const btnModeById = document.getElementById('btn-mode-by-id');
     const btnModeByList = document.getElementById('btn-mode-by-list');
     const panelById = document.getElementById('panel-by-id');
@@ -111,10 +115,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Xu ly Start Job
     async function handleStart() {
-        // (Logic lay payload giu nguyen nhu code cu cua Bro)
         const concurrency = concurrencyEl.value;
         const delay = delayEl.value;
-        let payload = { concurrency, delay, scrapeMode: currentScrapeMode };
+        // +++ UPDATE: Lay gia tri Lang & Country +++
+        const lang = langEl ? langEl.value : 'en';
+        const country = countryEl ? countryEl.value : 'us';
+
+        let payload = { concurrency, delay, scrapeMode: currentScrapeMode, lang, country };
 
         if (currentScrapeMode === 'by_id') {
             payload.appIdsList = appIdsListEl.value;
@@ -127,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setRunningState(true);
         terminalBody.innerHTML = ''; // Clear terminal
-        appendLog({ time: '...', type: 'INFO', message: 'Đang gửi yêu cầu...' });
+        appendLog({ time: '...', type: 'INFO', message: `Đang gửi yêu cầu (Lang: ${lang}, Country: ${country})...` });
 
         try {
             const res = await fetch('/api/scrape', {

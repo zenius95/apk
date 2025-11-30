@@ -13,18 +13,23 @@
 
         <div class="lg:col-span-2 space-y-6">
             <div class="bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg">
+      
                 <div class="p-6 space-y-6">
                     <div>
                         <label class="block text-sm font-medium text-slate-300 mb-2">Chế độ thu thập</label>
                         <div class="mt-2 grid grid-cols-2 gap-2 rounded-lg bg-slate-900/70 p-1.5">
+     
                             <button id="btn-mode-by-id" class="btn-mode relative flex items-center justify-center rounded-md py-2.5 px-3 text-sm font-semibold text-white bg-emerald-500 shadow-md">
                                 <i class="ri-keyboard-line mr-2 text-lg"></i>
+                            
                                 Thủ công (Theo App ID)
                             </button>
                             <button id="btn-mode-by-list" class="btn-mode relative flex items-center justify-center rounded-md py-2.5 px-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white">
+                      
                                 <i class="ri-list-check-2 mr-2 text-lg"></i>
                                 Tự động (Theo Danh sách)
                             </button>
+                       
                         </div>
                     </div>
                     
@@ -37,25 +42,31 @@
                         <div>
                             <label for="list-category" class="block text-sm font-medium text-slate-300 mb-2">Danh mục</label>
                             <select id="list-category" name="list-category" class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 transition">
+ 
                                 <% for (const key in categories) { %>
                                     <option value="<%= categories[key] %>"><%= key %></option>
+                     
                                 <% } %>
                             </select>
                         </div>
                         <div>
-                            <label for="list-collection" class="block text-sm font-medium text-slate-300 mb-2">Bộ sưu tập</label>
+           
+                                <label for="list-collection" class="block text-sm font-medium text-slate-300 mb-2">Bộ sưu tập</label>
                             <select id="list-collection" name="list-collection" class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 transition">
                                 <% for (const key in collections) { %>
                                     <option value="<%= collections[key] %>"><%= key %></option>
                                 <% } %>
+                     
                             </select>
                         </div>
                         <div>
                             <label for="list-num" class="block text-sm font-medium text-slate-300 mb-2">Số lượng (Tối đa 200)</label>
-                            <input type="number" id="list-num" name="list-num" class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 transition" value="50" min="1" max="200">
+       
+                             <input type="number" id="list-num" name="list-num" class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 transition" value="50" min="1" max="200">
                         </div>
                     </div>
                 </div>
+   
                 
                 <div class="p-6 border-t border-slate-700/50">
                     <button id="startScrapeBtn" class="w-full flex justify-center items-center p-3 bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-600 hover:to-cyan-700 text-white font-bold rounded-lg shadow-lg transform hover:scale-[1.02] transition-all duration-300 disabled:from-slate-600 disabled:to-slate-700 disabled:cursor-not-allowed">
@@ -64,13 +75,28 @@
                         <span id="btn-text" class="text-lg">Bắt đầu Thu thập</span>
                     </button>
                 </div>
+ 
             </div>
-        </div> <div class="lg:col-span-1">
+        </div> 
+        
+        <div class="lg:col-span-1">
             <div class="bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg p-6 space-y-6 sticky top-10">
                 <h3 class="text-lg font-semibold text-white border-b border-slate-700 pb-3 flex items-center">
                     <i class="ri-settings-3-line mr-2 text-cyan-400"></i>
                     Cấu hình Tác vụ
                 </h3>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="scrape-lang" class="block text-sm font-medium text-slate-300 mb-2">Ngôn ngữ (Lang)</label>
+                        <input type="text" id="scrape-lang" class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 transition" value="en" placeholder="en, vi...">
+                    </div>
+                    <div>
+                        <label for="scrape-country" class="block text-sm font-medium text-slate-300 mb-2">Quốc gia (Country)</label>
+                        <input type="text" id="scrape-country" class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 transition" value="us" placeholder="us, vn...">
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 -mt-4">Ví dụ: Lang: <code>vi</code>, Country: <code>vn</code> để lấy tiếng Việt.</p>
                 <div>
                     <label for="concurrency" class="block text-sm font-medium text-slate-300 mb-2">Số luồng đồng thời (Concurrency)</label>
                     <input type="number" id="concurrency" name="concurrency" class="w-full p-3 bg-slate-900/70 border border-slate-700 rounded-md text-slate-200 focus:ring-2 focus:ring-emerald-500 transition" value="5" min="1" max="50">
@@ -82,7 +108,8 @@
                     <p class="text-xs text-slate-500 mt-1">Thời gian chờ giữa các yêu cầu (ms).</p>
                 </div>
             </div>
-        </div> </div>
+        </div> 
+    </div>
     
     <div class="mt-8 bg-slate-900 ring-1 ring-white/10 shadow-xl rounded-lg overflow-hidden flex flex-col" style="height: 500px;">
         
@@ -95,6 +122,7 @@
                 <div class="text-xs font-mono space-x-2">
                     <span class="text-slate-400">Total: <span id="stat-total" class="text-white">0</span></span>
                     <span class="text-green-500">OK: <span id="stat-success">0</span></span>
+        
                     <span class="text-red-500">Fail: <span id="stat-failed">0</span></span>
                 </div>
                 

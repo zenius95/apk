@@ -38,12 +38,13 @@ async function downloadImage(url, filepath) {
 
 /**
  * Lay du lieu chi tiet cua 1 app va luu vao DB
+ * +++ UPDATE: Them tham so Lang va Country +++
  */
-async function scrapeAndSave(appId) {
-  console.log(`[Service] Bat dau lay du lieu cho: ${appId}`);
+async function scrapeAndSave(appId, lang = 'en', country = 'us') {
+  console.log(`[Service] Bat dau lay du lieu cho: ${appId} (Lang: ${lang}, Country: ${country})`);
   try {
     // 1. Goi API lay du lieu goc
-    const appData = await gplay.app({ appId: appId });
+    const appData = await gplay.app({ appId: appId, lang: lang, country: country });
 
     // --- 2. DOWNLOAD & XU LY ANH (TOI UU) ---
     const appImgDir = path.join(__dirname, '..', 'public', 'images', 'apps', appId);

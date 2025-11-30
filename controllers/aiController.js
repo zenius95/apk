@@ -21,7 +21,25 @@ const getLocalPath = (relPath) => {
     return path.join(__dirname, '..', 'public', relPath);
 };
 
-async function processSingleItem(app, site, openAiKey, io) {
+// +++ HELPER: Parse JSON an toan cho Server Linux/MariaDB +++
+const getSafeAppData = (appRecord) => {
+    let rawData = appRecord.fullData;
+    // Neu DB tra ve String (do driver MariaDB/MySQL cu), parse no ra
+    if (typeof rawData === 'string') {
+        try {
+            rawData = JSON.parse(rawData);
+        } catch (e) {
+            console.error("❌ JSON Parse Error:", e.message);
+            rawData = {};
+        }
+    }
+    // Dam bao Title luon co (uu tien tu cot Title cua bang App)
+    if (!rawData.title) rawData.title = appRecord.title;
+    return rawData;
+};
+
+// +++ UPDATE: Them tham so postStatus +++
+async function processSingleItem(app, site, openAiKey, io, postStatus) {
     const appId = app.appId;
     const siteId = site.id;
 
@@ -36,27 +54,28 @@ async function processSingleItem(app, site, openAiKey, io) {
 
     try {
         if (!site.aiPrompt) throw new Error("Site chưa cấu hình Prompt!");
-        const generatedContent = await aiService.generateContent(openAiKey, site.aiPrompt, app.fullData);
+        
+        // +++ FIX: Parse Data truoc khi dung +++
+        const appData = getSafeAppData(app);
 
-        let wpFullData = JSON.parse(JSON.stringify(app.fullData)); 
+        const generatedContent = await aiService.generateContent(openAiKey, site.aiPrompt, appData);
+
+        let wpFullData = JSON.parse(JSON.stringify(appData)); 
         let featuredMediaId = 0;
 
-        // +++ CHANGE 1: UPLOAD ICON TRUOC VA DAT LAM FEATURED IMAGE +++
         if (wpFullData.icon) {
             const localPath = getLocalPath(wpFullData.icon);
             const uploaded = await wpService.uploadMedia(site, localPath);
             if (uploaded) {
-                featuredMediaId = uploaded.id; // <--- Lay ID Icon lam Featured
+                featuredMediaId = uploaded.id; 
                 wpFullData.icon = uploaded.url; 
             }
         }
 
-        // +++ CHANGE 2: UPLOAD HEADER NHUNG KHONG DAT LAM FEATURED +++
         if (wpFullData.headerImage) {
             const localPath = getLocalPath(wpFullData.headerImage);
             const uploaded = await wpService.uploadMedia(site, localPath);
             if (uploaded) {
-                // featuredMediaId = uploaded.id; // <--- BO DONG NAY
                 wpFullData.headerImage = uploaded.url; 
             }
         }
@@ -71,11 +90,26 @@ async function processSingleItem(app, site, openAiKey, io) {
             wpFullData.screenshots = newScreenshots;
         }
 
+        let categoryIds = [];
+        if (appData.genre) {
+            const catId = await wpService.ensureTerm(site, 'categories', appData.genre);
+            if (catId) categoryIds.push(catId);
+        }
+
+        let tagIds = [];
+        if (appData.developer) {
+            const tagId = await wpService.ensureTerm(site, 'tags', appData.developer);
+            if (tagId) tagIds.push(tagId);
+        }
+
         const postData = {
             title: app.title,
             content: generatedContent,
-            status: 'publish', 
+            excerpt: appData.summary || '',
+            status: postStatus || 'publish', 
             featured_media: featuredMediaId || undefined,
+            categories: categoryIds, 
+            tags: tagIds,            
             meta: {
                 app_full_data: wpFullData 
             }
@@ -102,7 +136,7 @@ async function processSingleItem(app, site, openAiKey, io) {
 
 const handleStartAiJob = async (req, res) => {
     const io = req.io;
-    const { appIds, siteIds, openAiKey, concurrency, delay, isDemo } = req.body;
+    const { appIds, siteIds, openAiKey, concurrency, delay, isDemo, postStatus } = req.body;
 
     if (!isDemo && aiJobState.isRunning) return res.status(400).json({ message: "Job đang chạy rồi!" });
 
@@ -114,6 +148,9 @@ const handleStartAiJob = async (req, res) => {
             const app = await App.findOne({ where: { appId: appIds[0] } }); 
             if (!app) return res.status(404).json({ message: "Không tìm thấy App." });
 
+            // +++ FIX: Parse Data cho Demo +++
+            const appData = getSafeAppData(app);
+
             const sites = await WpSite.findAll({ where: { id: siteIds } });
             if (sites.length === 0) return res.status(404).json({ message: "Không tìm thấy Site." });
 
@@ -122,14 +159,15 @@ const handleStartAiJob = async (req, res) => {
                     return { siteName: site.siteName, error: "Chưa cấu hình Prompt." };
                 }
                 try {
+                    // Fix regex shortcode o day neu can, nhung logic chinh nam o aiService
                     const renderedPrompt = site.aiPrompt
-                        .replace(/{title}/g, app.title || '')
-                        .replace(/{summary}/g, app.fullData.summary || '')
-                        .replace(/{description}/g, app.fullData.description || '')
-                        .replace(/{developer}/g, app.fullData.developer || '')
-                        .replace(/{score}/g, app.fullData.scoreText || '');
+                        .replace(/{title}/gi, app.title || '')
+                        .replace(/{summary}/gi, appData.summary || '')
+                        .replace(/{description}/gi, appData.description || '')
+                        .replace(/{developer}/gi, appData.developer || '')
+                        .replace(/{score}/gi, appData.scoreText || '');
 
-                    const content = await aiService.generateContent(openAiKey, site.aiPrompt, app.fullData);
+                    const content = await aiService.generateContent(openAiKey, site.aiPrompt, appData);
                     return { siteName: site.siteName, prompt: renderedPrompt, content: content };
                 } catch (err) {
                     return { siteName: site.siteName, error: err.message };
@@ -157,12 +195,11 @@ const handleStartAiJob = async (req, res) => {
 
     res.status(200).json({ message: "Job đã bắt đầu!" });
 
-    // --- ASYNC WORKER ---
     (async () => {
         let tasks = [];
         for (const app of apps) {
             for (const site of sites) {
-                tasks.push({ app, site });
+                tasks.push({ app, site, postStatus });
             }
         }
 
@@ -173,7 +210,7 @@ const handleStartAiJob = async (req, res) => {
             if (aiJobState.isStopping) break;
 
             const batch = tasks.splice(0, numConcurrency);
-            const promises = batch.map(task => processSingleItem(task.app, task.site, openAiKey, io));
+            const promises = batch.map(task => processSingleItem(task.app, task.site, openAiKey, io, task.postStatus));
             
             await Promise.all(promises);
 
@@ -182,7 +219,6 @@ const handleStartAiJob = async (req, res) => {
 
         addLog(io, 'INFO', `🏁 AI Job hoàn tất! Success: ${aiJobState.stats.success}, Fail: ${aiJobState.stats.failed}, Skipped: ${aiJobState.stats.skipped}`);
         
-        // +++ CHANGE 3: BAN SU KIEN DONE DE FRONTEND BIET MA TAT LOADING +++
         io.emit('ai_job:done', aiJobState.stats);
         
         aiJobState.isRunning = false;

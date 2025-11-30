@@ -51,9 +51,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiResultAppName = document.getElementById('ai-result-app-name');
     const aiResultCopyBtn = document.getElementById('aiResultCopyBtn');
     
+    // +++ MOI: Posted Details Modal +++
+    const postedDetailsModal = document.getElementById('postedDetailsModal');
+    const postedDetailsBackdrop = document.getElementById('postedDetailsBackdrop');
+    const postedDetailsCloseBtn = document.getElementById('postedDetailsCloseBtn');
+    // +++ END +++
+
     // Data
     const itemsOnPage = (typeof initialData !== 'undefined') ? initialData : [];
     const totalItemsInDb = (typeof paginationData !== 'undefined') ? paginationData.totalItems : 0;
+    const globalWpSites = (typeof allWpSites !== 'undefined') ? allWpSites : []; // +++ MOI +++
+
     let selectedAppIds = new Set();
     let isSelectingAllDb = false;
 
@@ -75,7 +83,9 @@ document.addEventListener('DOMContentLoaded', () => {
             ...data,
             title: data.title || app.title || 'No Title',
             appId: app.appId,
-            icon: data.icon || 'https://placehold.co/100x100?text=No+Icon'
+            icon: data.icon || 'https://placehold.co/100x100?text=No+Icon',
+            // +++ MOI: Them mang ID site da post +++
+            postedSiteIds: app.postedSiteIds || []
         };
     };
 
@@ -104,6 +114,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 </button>`;
         }
 
+        // +++ MOI: Tinh toan cot Da Dang +++
+        const postedCount = appData.postedSiteIds.length;
+        const totalSites = globalWpSites.length;
+        let postedBadge = '';
+        
+        if (totalSites === 0) {
+            postedBadge = `<span class="text-xs text-slate-600 italic">--</span>`;
+        } else {
+            let badgeColor = 'bg-slate-700/50 text-slate-400 border-slate-600/50';
+            if (postedCount > 0 && postedCount < totalSites) badgeColor = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+            if (postedCount === totalSites && totalSites > 0) badgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+            
+            postedBadge = `<button class="btn-show-posted border ${badgeColor} px-2.5 py-1 rounded text-xs font-mono font-bold hover:brightness-125 transition-all" data-app-id="${app.appId}">
+                ${postedCount}/${totalSites}
+            </button>`;
+        }
+        // +++ END +++
+
         return `
             <tr data-app-id="${app.appId}" class="group transition-colors border-b border-slate-800/50 hover:bg-slate-800/30 ${isSelected ? 'bg-slate-800/50' : ''}">
                 <td class="px-4 sm:px-6 py-4">
@@ -123,6 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </td>
                 <td class="px-3 py-4 text-sm">${typeLabel}</td>
+                <td class="px-3 py-4 text-sm text-center">${postedBadge}</td>
                 <td class="px-3 py-4 text-sm text-slate-400 font-mono text-xs">
                     ${pageMode === 'list' ? new Date(app.lastScrapedAt).toLocaleDateString('vi-VN') : new Date(app.deletedAt).toLocaleDateString('vi-VN')}
                 </td>
@@ -149,6 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- UI: Update Controls ---
     function updateSelectionControls() {
+        // (Giu nguyen nhu cu)
         const count = selectedAppIds.size;
         
         const rows = tableBody.querySelectorAll('tr');
@@ -189,6 +219,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- AI: Check Button State ---
     function updateAiButtonState() {
+        // (Giu nguyen nhu cu)
         if (!btnStartAi) return;
         
         const hasSelectedApps = selectedAppIds.size > 0;
@@ -209,13 +240,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- AI: Reset UI ---
     function resetAiUi() {
+        // (Giu nguyen nhu cu)
         btnStartAi.classList.remove('hidden');
         btnStartAi.disabled = false;
-        // Reset content button
         btnStartAi.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center group-hover:scale-110 transition-transform"><i class="ri-play-fill text-lg"></i></div><span class="tracking-wide">BẮT ĐẦU</span>`;
-        
         updateAiButtonState(); 
-        
         btnStopAi.classList.add('hidden');
         aiProgressContainer.classList.add('hidden', 'opacity-0', 'translate-y-[-10px]');
         
@@ -228,6 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Settings: Save/Load ---
+    // (Giu nguyen loadSettings, saveSettings)
     function loadSettings() {
         if(aiOpenAiKey) {
             const savedKey = localStorage.getItem('ai_openai_key');
@@ -249,28 +279,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if(aiDelay) localStorage.setItem('ai_delay', aiDelay.value);
     }
 
-    // --- Modal: Show Result ---
+    // --- AI Result Modal (Demo) ---
+    // (Giu nguyen showAiResultModal, closeAiResultModal)
     function showAiResultModal(appName, results) {
         if (!results || results.length === 0) return;
-        
         aiResultAppName.textContent = `App: ${appName}`;
-        
         let tabButtonsHtml = '';
         let tabContentsHtml = '';
-        
         results.forEach((res, index) => {
             const isActive = index === 0;
             const tabId = `tab-${index}`;
-            
-            // Vertical Tab Button
             tabButtonsHtml += `
                 <button class="tab-btn w-full text-left px-4 py-3 text-sm font-medium border-l-2 transition-all flex items-center justify-between group ${isActive ? 'border-emerald-500 bg-slate-800 text-emerald-400' : 'border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'}" data-target="${tabId}">
                     <span class="truncate mr-2">${res.siteName}</span>
                     ${res.error ? '<i class="ri-error-warning-fill text-red-500"></i>' : '<i class="ri-check-double-line text-emerald-500 opacity-0 group-hover:opacity-50 ' + (isActive ? 'opacity-100' : '') + '"></i>'}
                 </button>
             `;
-            
-            // Content Pane
             tabContentsHtml += `
                 <div id="${tabId}" class="tab-pane space-y-6 ${isActive ? '' : 'hidden'} animate-fade-in">
                     ${res.error 
@@ -290,34 +314,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         });
-        
         aiResultTabs.innerHTML = tabButtonsHtml;
         aiResultTabContent.innerHTML = tabContentsHtml;
-        
-        // Click Event for Tabs
         const tabs = aiResultTabs.querySelectorAll('.tab-btn');
         const panes = aiResultTabContent.querySelectorAll('.tab-pane');
-        
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
-                // Reset style
                 tabs.forEach(t => {
                     t.classList.remove('border-emerald-500', 'bg-slate-800', 'text-emerald-400');
                     t.classList.add('border-transparent', 'text-slate-400');
                     t.querySelector('i.ri-check-double-line')?.classList.add('opacity-0');
                 });
                 panes.forEach(p => p.classList.add('hidden'));
-                
-                // Set Active
                 tab.classList.remove('border-transparent', 'text-slate-400');
                 tab.classList.add('border-emerald-500', 'bg-slate-800', 'text-emerald-400');
                 tab.querySelector('i.ri-check-double-line')?.classList.remove('opacity-0');
-                
                 const targetId = tab.dataset.target;
                 document.getElementById(targetId).classList.remove('hidden');
             });
         });
-
         aiResultModal.classList.remove('hidden');
     }
 
@@ -325,11 +340,60 @@ document.addEventListener('DOMContentLoaded', () => {
         aiResultModal.classList.add('hidden');
     }
 
+    // +++ MOI: Show Posted Details Modal +++
+    function showPostedDetails(appId) {
+        const app = itemsOnPage.find(a => a.appId === appId);
+        if(!app) return;
+        const appData = getSafeAppData(app);
+        
+        const postedIds = new Set(appData.postedSiteIds);
+        
+        const postedListEl = document.getElementById('list-posted');
+        const unpostedListEl = document.getElementById('list-unposted');
+        const countPostedEl = document.getElementById('count-posted');
+        const countUnpostedEl = document.getElementById('count-unposted');
+        
+        let postedHtml = '';
+        let unpostedHtml = '';
+        let pCount = 0;
+        let uCount = 0;
+
+        globalWpSites.forEach(site => {
+            if (postedIds.has(site.id)) {
+                pCount++;
+                postedHtml += `<div class="flex items-center text-sm text-emerald-300 p-1.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                    <i class="ri-checkbox-circle-fill mr-2 text-emerald-500"></i> ${site.siteName}
+                </div>`;
+            } else {
+                uCount++;
+                unpostedHtml += `<div class="flex items-center text-sm text-slate-400 p-1.5 rounded bg-slate-700/30 border border-slate-700/50">
+                    <i class="ri-checkbox-blank-circle-line mr-2 text-slate-600"></i> ${site.siteName}
+                </div>`;
+            }
+        });
+
+        if (pCount === 0) postedHtml = '<p class="text-xs text-slate-500 italic pl-1">Chưa đăng bài nào.</p>';
+        if (uCount === 0) unpostedHtml = '<p class="text-xs text-slate-500 italic pl-1">Đã phủ sóng toàn bộ!</p>';
+
+        postedListEl.innerHTML = postedHtml;
+        unpostedListEl.innerHTML = unpostedHtml;
+        countPostedEl.textContent = pCount;
+        countUnpostedEl.textContent = uCount;
+
+        postedDetailsModal.classList.remove('hidden');
+    }
+
+    function closePostedDetailsModal() {
+        postedDetailsModal.classList.add('hidden');
+    }
+    // +++ END +++
+
 
     // ==========================================
     // 3. ACTION HANDLER (DELETE / RESTORE)
     // ==========================================
     async function performAction(actionType, appIds) {
+        // (Giu nguyen performAction nhu cu)
         let endpoint, method, confirmTitle, confirmButtonText, confirmButtonColor;
         const count = isSelectingAllDb ? totalItemsInDb : appIds.length;
 
@@ -496,6 +560,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // +++ MOI: Posted Details Modal Events +++
+    if(postedDetailsCloseBtn) postedDetailsCloseBtn.addEventListener('click', closePostedDetailsModal);
+    if(postedDetailsBackdrop) postedDetailsBackdrop.addEventListener('click', closePostedDetailsModal);
+    // +++ END +++
+
     // -- Socket Listener --
     if(socket) {
         socket.on('ai_job:done', (stats) => {
@@ -522,6 +591,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (app && window.showAppDetailModal) window.showAppDetailModal(getSafeAppData(app));
             return;
         }
+        
+        // +++ MOI: Handle Click Show Posted Details +++
+        const btnPosted = target.closest('.btn-show-posted');
+        if (btnPosted) {
+            e.preventDefault();
+            e.stopPropagation(); // Tranh click nham vao row
+            showPostedDetails(btnPosted.dataset.appId);
+            return;
+        }
+        // +++ END +++
+
         const row = target.closest('tr');
         if (!row) return;
         if (target.closest('.btn-delete-single')) performAction('delete', [row.dataset.appId]);
