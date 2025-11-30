@@ -9,7 +9,9 @@
             <i class="ri-delete-bin-line -ml-1 mr-2"></i>
             Thùng rác
             <% if (typeof trashCount !== 'undefined' && trashCount > 0) { %>
-                <span class="ml-2 inline-flex items-center rounded-full bg-red-800/80 px-2.5 py-0.5 text-xs font-medium text-red-100"><%= trashCount %></span>
+                <span class="ml-2 inline-flex items-center rounded-full bg-red-800/80 px-2.5 py-0.5 text-xs font-medium text-red-100">
+                    <%= trashCount %>
+                </span>
             <% } %>
         </a>
     </header>
@@ -21,7 +23,9 @@
                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                         <i class="ri-search-line text-slate-400"></i>
                     </div>
-                    <input type="text" name="search" class="block w-full rounded-md border-0 bg-slate-800/60 py-2.5 pl-10 text-white ring-1 ring-inset ring-white/10 placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm" placeholder="Tìm kiếm theo Tên hoặc App ID..." value="<%= typeof search !== 'undefined' ? search : '' %>">
+                    <input type="text" name="search" class="block w-full rounded-md border-0 bg-slate-800/60 py-2.5 pl-10 text-white ring-1 ring-inset ring-white/10 placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-emerald-500 sm:text-sm"
+                           placeholder="Tìm kiếm theo Tên hoặc App ID..."
+                           value="<%= typeof search !== 'undefined' ? search : '' %>">
                 </div>
             </form>
         </div>
@@ -85,6 +89,14 @@
                    </div>
                 </div>
 
+                <div>
+                    <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1.5 ml-1">Trạng thái bài viết</label>
+                    <select id="ai-post-status" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm text-white focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all">
+                        <option value="publish" selected>🚀 Công khai (Publish)</option>
+                        <option value="draft">📝 Bản nháp (Draft)</option>
+                        <option value="pending">⏳ Chờ duyệt (Pending)</option>
+                    </select>
+                </div>
             </div>
 
             <div class="lg:col-span-5 flex flex-col">
@@ -112,18 +124,8 @@
                 </div>
             </div>
 
-            <div class="lg:col-span-3">
-
-                <div class="mb-3">
-                    <label class="block text-[10px] text-slate-400 uppercase font-bold mb-1.5 ml-1">Trạng thái bài viết</label>
-                    <select id="ai-post-status" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm text-white focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all">
-                        <option value="publish" selected>🚀 Công khai (Publish)</option>
-                        <option value="draft">📝 Bản nháp (Draft)</option>
-                        <option value="pending">⏳ Chờ duyệt (Pending)</option>
-                    </select>
-                </div>
-
-                <div>
+            <div class="lg:col-span-3 flex flex-col justify-end">
+                <div class="h-[50px] lg:h-[190px] flex items-end">
                     <button id="btn-start-ai" disabled class="group w-full h-[50px] flex items-center justify-center gap-3 bg-slate-800 text-slate-500 border border-slate-700 rounded-xl font-bold transition-all duration-300 cursor-not-allowed shadow-lg">
                         <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center group-hover:scale-110 transition-transform">
                             <i class="ri-play-fill text-lg"></i>
@@ -154,6 +156,24 @@
         </div>
     </div>
 
+    <div id="ai-terminal-panel" class="mb-6 bg-slate-900 ring-1 ring-white/10 shadow-xl rounded-lg overflow-hidden flex flex-col hidden transition-all duration-300" style="height: 400px;">
+        <div class="p-3 border-b border-slate-700/50 bg-slate-800 flex justify-between items-center">
+            <h3 class="text-sm font-mono text-slate-400 flex items-center">
+                <i class="ri-terminal-box-line mr-2 text-purple-500"></i>
+                AI Process Terminal
+            </h3>
+            <div class="flex items-center space-x-4">
+                 <div class="text-xs font-mono space-x-2">
+                    <span class="text-slate-400">Total: <span id="ai-stat-total" class="text-white">0</span></span>
+                    <span class="text-green-500">OK: <span id="ai-stat-success">0</span></span>
+                    <span class="text-red-500">Fail: <span id="ai-stat-failed">0</span></span>
+                </div>
+            </div>
+        </div>
+        <div id="ai-terminal-body" class="flex-1 p-4 overflow-y-auto font-mono text-sm space-y-1 bg-black/90 scroll-smooth">
+            <div class="text-slate-500 italic">Waiting for AI tasks...</div>
+        </div>
+    </div>
     <div class="bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg overflow-hidden">
         <div class="table-container">
             <table class="min-w-full">

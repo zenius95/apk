@@ -1,7 +1,7 @@
 /*
  * File: public/js/listManager.js
  * "Não" chung cho trang App List & Trash
- * Update: Lưu trạng thái Demo Mode & Post Status vào LocalStorage
+ * Update: Fix triệt để lỗi F5 không hiện trạng thái đang chạy (Cache busting + Safe DOM)
  */
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -9,12 +9,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const pageMode = document.body.dataset.pageMode;
     if (pageMode !== 'list' && pageMode !== 'trash') return; 
 
+    // Table Elements
     const tableBody = document.getElementById('app-table-body');
     const selectAllPageCheckbox = document.getElementById('select-all-page');
     const selectionControls = document.getElementById('selection-controls');
     const selectionCount = document.getElementById('selection-count');
     const btnSelectAllDb = document.getElementById('btn-select-all-db');
 
+    // Action Buttons
     let btnDeleteSelected, btnRestoreSelected, btnForceDeleteSelected;
     if (pageMode === 'list') {
         btnDeleteSelected = document.getElementById('btn-delete-selected');
@@ -23,20 +25,29 @@ document.addEventListener('DOMContentLoaded', () => {
         btnForceDeleteSelected = document.getElementById('btn-force-delete-selected');
     }
 
-    // AI Panel
+    // AI Panel Elements (Dung optional chaining ?. de tranh crash)
     const btnStartAi = document.getElementById('btn-start-ai');
     const btnStopAi = document.getElementById('btn-stop-ai');
     const aiProgressContainer = document.getElementById('ai-progress-container');
     const aiStatusText = document.getElementById('ai-status-text');
+    
+    // Terminal Elements
+    const aiTerminalPanel = document.getElementById('ai-terminal-panel');
+    const aiTerminalBody = document.getElementById('ai-terminal-body');
+    const aiStatTotal = document.getElementById('ai-stat-total');
+    const aiStatSuccess = document.getElementById('ai-stat-success');
+    const aiStatFailed = document.getElementById('ai-stat-failed');
+    
+    // Inputs
     const aiOpenAiKey = document.getElementById('ai-openai-key'); 
     const aiConcurrency = document.getElementById('ai-concurrency');
     const aiDelay = document.getElementById('ai-delay');
-    const aiDemoMode = document.getElementById('ai-demo-mode'); // Checkbox Demo
+    const aiDemoMode = document.getElementById('ai-demo-mode'); 
     const siteCheckboxes = document.querySelectorAll('.site-checkbox'); 
     const btnSelectAllSites = document.getElementById('btn-select-all-sites');
-    const aiPostStatus = document.getElementById('ai-post-status'); // Dropdown Status
+    const aiPostStatus = document.getElementById('ai-post-status');
     
-    // Demo Modal
+    // Modals
     const aiResultModal = document.getElementById('aiResultModal');
     const aiResultBackdrop = document.getElementById('aiResultBackdrop');
     const aiResultCloseBtn = document.getElementById('aiResultCloseBtn');
@@ -49,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const postedDetailsBackdrop = document.getElementById('postedDetailsBackdrop');
     const postedDetailsCloseBtn = document.getElementById('postedDetailsCloseBtn');
 
+    // Data
     const itemsOnPage = (typeof initialData !== 'undefined') ? initialData : [];
     const totalItemsInDb = (typeof paginationData !== 'undefined') ? paginationData.totalItems : 0;
     const globalWpSites = (typeof allWpSites !== 'undefined') ? allWpSites : [];
@@ -183,22 +195,114 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function resetAiUi() {
-        btnStartAi.classList.remove('hidden');
-        btnStartAi.disabled = false;
-        btnStartAi.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center group-hover:scale-110 transition-transform"><i class="ri-play-fill text-lg"></i></div><span class="tracking-wide">BẮT ĐẦU</span>`;
+        if(btnStartAi) {
+            btnStartAi.classList.remove('hidden');
+            btnStartAi.disabled = false;
+            btnStartAi.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center group-hover:scale-110 transition-transform"><i class="ri-play-fill text-lg"></i></div><span class="tracking-wide">BẮT ĐẦU</span>`;
+        }
         updateAiButtonState(); 
-        btnStopAi.classList.add('hidden');
-        aiProgressContainer.classList.add('hidden');
+        if(btnStopAi) btnStopAi.classList.add('hidden');
+        if(aiProgressContainer) aiProgressContainer.classList.add('hidden');
         
         if(aiConcurrency) aiConcurrency.disabled = false;
         if(aiDelay) aiDelay.disabled = false;
         if(aiOpenAiKey) aiOpenAiKey.disabled = false;
         if(aiDemoMode) aiDemoMode.disabled = false;
-        if(aiPostStatus) aiPostStatus.disabled = false; // Re-enable select
+        if(aiPostStatus) aiPostStatus.disabled = false;
         siteCheckboxes.forEach(cb => cb.disabled = false);
     }
 
-    // --- +++ NEW: LOAD & SAVE SETTINGS +++ ---
+    // --- LOGGING FUNCTIONS ---
+
+    function appendAiLog(log) {
+        if (!aiTerminalBody) return;
+        if (aiTerminalBody.querySelector('.italic')) aiTerminalBody.innerHTML = '';
+
+        const isAtBottom = (aiTerminalBody.scrollHeight - aiTerminalBody.scrollTop - aiTerminalBody.clientHeight) <= 50;
+        const div = document.createElement('div');
+        div.className = 'flex items-start space-x-2 border-b border-white/5 pb-0.5';
+        
+        let typeClass = 'text-slate-500';
+        let msgClass = 'text-slate-300';
+
+        if (log.type === 'INFO') { typeClass = 'text-blue-400'; msgClass = 'text-white font-bold'; }
+        if (log.type === 'WARN') { typeClass = 'text-yellow-500'; msgClass = 'text-yellow-200'; }
+        if (log.type === 'ERR' || log.type === 'mW_ERR') { typeClass = 'text-red-500'; msgClass = 'text-red-300'; }
+        if (log.type === 'mW_OK') { typeClass = 'text-emerald-500'; msgClass = 'text-emerald-200'; }
+
+        div.innerHTML = `
+            <span class="text-slate-600 text-[10px] min-w-[60px]">${log.time}</span>
+            <span class="${typeClass} font-bold text-[10px] min-w-[40px]">[${log.type}]</span>
+            <span class="${msgClass} break-all">${log.message}</span>
+        `;
+        
+        aiTerminalBody.appendChild(div);
+        if (isAtBottom) aiTerminalBody.scrollTop = aiTerminalBody.scrollHeight;
+        
+        if(aiTerminalPanel && aiTerminalPanel.classList.contains('hidden')) {
+            aiTerminalPanel.classList.remove('hidden');
+        }
+    }
+
+    function updateAiStats(stats) {
+        if(!stats) return;
+        if(aiStatTotal) aiStatTotal.textContent = stats.total || 0;
+        if(aiStatSuccess) aiStatSuccess.textContent = stats.success || 0;
+        if(aiStatFailed) aiStatFailed.textContent = stats.failed || 0;
+    }
+
+    function setAiRunningState(isRunning) {
+        if (!btnStartAi || !btnStopAi || !aiTerminalPanel) return; // Kiem tra an toan
+        
+        if (isRunning) {
+            btnStartAi.classList.add('hidden');
+            btnStopAi.classList.remove('hidden');
+            if(aiProgressContainer) aiProgressContainer.classList.remove('hidden');
+            aiTerminalPanel.classList.remove('hidden');
+            
+            // Disable inputs
+            if(aiConcurrency) aiConcurrency.disabled = true;
+            if(aiDelay) aiDelay.disabled = true;
+            if(aiOpenAiKey) aiOpenAiKey.disabled = true;
+            if(aiDemoMode) aiDemoMode.disabled = true;
+            if(aiPostStatus) aiPostStatus.disabled = true;
+            siteCheckboxes.forEach(cb => cb.disabled = true);
+        } else {
+            resetAiUi();
+        }
+    }
+
+    // +++ FIX: CHECK STATUS (CACHE BUSTING) +++
+    async function checkAiStatus() {
+        try {
+            // Them ?t=... de tranh Browser Cache
+            const res = await fetch(`/api/ai/status?t=${Date.now()}`);
+            const data = await res.json();
+            
+            if (data.stats) updateAiStats(data.stats);
+
+            // Load log cu neu co
+            if (data.logs && data.logs.length > 0) {
+                if (aiTerminalBody) aiTerminalBody.innerHTML = '';
+                data.logs.forEach(log => appendAiLog(log));
+                if(aiTerminalPanel) aiTerminalPanel.classList.remove('hidden');
+            }
+
+            // Set UI theo trang thai
+            if (data.isRunning) {
+                console.log("🔥 AI Job dang chay, khoi phuc UI...");
+                setAiRunningState(true);
+            } else {
+                setAiRunningState(false);
+                // Giu terminal neu co log
+                if (data.logs && data.logs.length > 0 && aiTerminalPanel) {
+                    aiTerminalPanel.classList.remove('hidden'); 
+                }
+            }
+        } catch (e) { console.error("Lỗi check AI status:", e); }
+    }
+
+    // --- SETTINGS STORAGE ---
     function loadSettings() {
         if(aiOpenAiKey) {
             const savedKey = localStorage.getItem('ai_openai_key');
@@ -206,14 +310,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if(aiConcurrency) aiConcurrency.value = localStorage.getItem('ai_concurrency') || 1;
         if(aiDelay) aiDelay.value = localStorage.getItem('ai_delay') || 2000;
-        
-        // Load Demo Mode
         if(aiDemoMode) {
             const savedDemo = localStorage.getItem('ai_demo_mode');
-            aiDemoMode.checked = (savedDemo === 'true'); // Convert string to boolean
+            aiDemoMode.checked = (savedDemo === 'true');
         }
-
-        // Load Post Status
         if(aiPostStatus) {
             const savedStatus = localStorage.getItem('ai_post_status');
             if(savedStatus) aiPostStatus.value = savedStatus;
@@ -224,84 +324,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if(aiOpenAiKey) localStorage.setItem('ai_openai_key', aiOpenAiKey.value);
         if(aiConcurrency) localStorage.setItem('ai_concurrency', aiConcurrency.value);
         if(aiDelay) localStorage.setItem('ai_delay', aiDelay.value);
-        if(aiDemoMode) localStorage.setItem('ai_demo_mode', aiDemoMode.checked); // Save boolean as string
+        if(aiDemoMode) localStorage.setItem('ai_demo_mode', aiDemoMode.checked);
         if(aiPostStatus) localStorage.setItem('ai_post_status', aiPostStatus.value);
     }
 
+    // ... (Phan showModal Demo, postedDetails... GIU NGUYEN) ...
     function showAiResultModal(appName, results) {
         if (!results || results.length === 0) return;
         aiResultAppName.textContent = `App: ${appName}`;
         let tabButtonsHtml = '';
         let tabContentsHtml = '';
-        
         results.forEach((res, index) => {
             const isActive = index === 0;
             const tabId = `tab-${index}`;
-            
-            tabButtonsHtml += `
-                <button class="tab-btn w-full text-left px-4 py-3 text-sm font-medium border-l-2 transition-all flex items-center justify-between group ${isActive ? 'border-emerald-500 bg-slate-800 text-emerald-400' : 'border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'}" data-target="${tabId}">
-                    <span class="truncate mr-2">${res.siteName}</span>
-                    ${res.error ? '<i class="ri-error-warning-fill text-red-500"></i>' : '<i class="ri-check-double-line text-emerald-500 opacity-0 group-hover:opacity-50 ' + (isActive ? 'opacity-100' : '') + '"></i>'}
-                </button>`;
-            
+            tabButtonsHtml += `<button class="tab-btn w-full text-left px-4 py-3 text-sm font-medium border-l-2 transition-all flex items-center justify-between group ${isActive ? 'border-emerald-500 bg-slate-800 text-emerald-400' : 'border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'}" data-target="${tabId}"><span class="truncate mr-2">${res.siteName}</span>${res.error ? '<i class="ri-error-warning-fill text-red-500"></i>' : '<i class="ri-check-double-line text-emerald-500 opacity-0 group-hover:opacity-50 ' + (isActive ? 'opacity-100' : '') + '"></i>'}</button>`;
             let content = '';
             if (res.error) {
                 content = `<div class="p-4 bg-red-900/20 border border-red-500/30 rounded text-red-400 text-sm"><i class="ri-error-warning-line mr-2"></i>${res.error}</div>`;
             } else {
-                content = `
-                    <div class="flex flex-col h-full">
-                        <div class="flex border-b border-slate-700/50 mb-4 space-x-1">
-                            <button class="inner-tab-link px-4 py-2 text-sm font-bold text-white border-b-2 border-emerald-500 transition-colors" data-target="result-panel-${index}">
-                                <i class="ri-file-text-line mr-1 text-emerald-400"></i> Kết quả
-                            </button>
-                            <button class="inner-tab-link px-4 py-2 text-sm font-bold text-slate-400 border-b-2 border-transparent hover:text-white transition-colors" data-target="prompt-panel-${index}">
-                                <i class="ri-terminal-box-line mr-1 text-purple-400"></i> Prompt
-                            </button>
-                        </div>
-
-                        <div id="result-panel-${index}" class="inner-tab-content space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Tiêu đề (Title)</label>
-                                <div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-white font-bold text-lg">${res.title}</div>
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Tóm tắt (Excerpt)</label>
-                                <div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-slate-300 text-sm italic">${res.excerpt}</div>
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Nội dung chính</label>
-                                <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-800/80">
-                                    <pre class="result-content text-emerald-100 font-mono text-sm whitespace-pre-wrap leading-relaxed select-text">${res.content}</pre>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="prompt-panel-${index}" class="inner-tab-content hidden space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Prompt Tiêu đề</label>
-                                <div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-purple-200 font-mono text-xs whitespace-pre-wrap select-text">${res.promptTitle || '<span class="text-slate-600 italic">(Sử dụng tiêu đề gốc của App)</span>'}</div>
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Prompt Tóm tắt</label>
-                                <div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-purple-200 font-mono text-xs whitespace-pre-wrap select-text">${res.promptExcerpt || '<span class="text-slate-600 italic">(Sử dụng summary gốc của App)</span>'}</div>
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Prompt Nội dung</label>
-                                <div class="bg-slate-900/50 p-4 rounded-lg border border-slate-800/80">
-                                    <pre class="text-purple-200 font-mono text-xs whitespace-pre-wrap leading-relaxed select-text">${res.promptContent}</pre>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Prompt Footer</label>
-                                <div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-purple-200 font-mono text-xs whitespace-pre-wrap select-text">${res.promptFooter || '<span class="text-slate-600 italic">(Không có Prompt Footer)</span>'}</div>
-                            </div>
-                        </div>
-                    </div>`;
+                content = `<div class="flex flex-col h-full"><div class="flex border-b border-slate-700/50 mb-4 space-x-1"><button class="inner-tab-link px-4 py-2 text-sm font-bold text-white border-b-2 border-emerald-500 transition-colors" data-target="result-panel-${index}"><i class="ri-file-text-line mr-1 text-emerald-400"></i> Kết quả</button><button class="inner-tab-link px-4 py-2 text-sm font-bold text-slate-400 border-b-2 border-transparent hover:text-white transition-colors" data-target="prompt-panel-${index}"><i class="ri-terminal-box-line mr-1 text-purple-400"></i> Prompt</button></div><div id="result-panel-${index}" class="inner-tab-content space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar"><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Tiêu đề</label><div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-white font-bold text-lg">${res.title}</div></div><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Tóm tắt</label><div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-slate-300 text-sm italic">${res.excerpt}</div></div><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Nội dung chính</label><div class="bg-slate-900/50 p-4 rounded-lg border border-slate-800/80"><pre class="result-content text-emerald-100 font-mono text-sm whitespace-pre-wrap leading-relaxed select-text">${res.content}</pre></div></div></div><div id="prompt-panel-${index}" class="inner-tab-content hidden space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar"><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Prompt Tiêu đề</label><div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-purple-200 font-mono text-xs whitespace-pre-wrap select-text">${res.promptTitle || '<span class="text-slate-600 italic">(Mặc định)</span>'}</div></div><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Prompt Tóm tắt</label><div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-purple-200 font-mono text-xs whitespace-pre-wrap select-text">${res.promptExcerpt || '<span class="text-slate-600 italic">(Mặc định)</span>'}</div></div><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Prompt Nội dung</label><div class="bg-slate-900/50 p-4 rounded-lg border border-slate-800/80"><pre class="text-purple-200 font-mono text-xs whitespace-pre-wrap leading-relaxed select-text">${res.promptContent}</pre></div></div><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Prompt Footer</label><div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-purple-200 font-mono text-xs whitespace-pre-wrap select-text">${res.promptFooter || '<span class="text-slate-600 italic">(Không dùng)</span>'}</div></div></div></div>`;
             }
-
             tabContentsHtml += `<div id="${tabId}" class="tab-pane h-full ${isActive ? '' : 'hidden'} animate-fade-in">${content}</div>`;
         });
-
         aiResultTabs.innerHTML = tabButtonsHtml;
         aiResultTabContent.innerHTML = tabContentsHtml;
         
@@ -309,19 +353,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const panes = aiResultTabContent.querySelectorAll('.tab-pane');
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
-                tabs.forEach(t => {
-                    t.classList.remove('border-emerald-500', 'bg-slate-800', 'text-emerald-400');
-                    t.classList.add('border-transparent', 'text-slate-400');
-                    t.querySelector('i.ri-check-double-line')?.classList.add('opacity-0');
-                });
+                tabs.forEach(t => { t.classList.remove('border-emerald-500', 'bg-slate-800', 'text-emerald-400'); t.classList.add('border-transparent', 'text-slate-400'); t.querySelector('i.ri-check-double-line')?.classList.add('opacity-0'); });
                 panes.forEach(p => p.classList.add('hidden'));
-                tab.classList.remove('border-transparent', 'text-slate-400');
-                tab.classList.add('border-emerald-500', 'bg-slate-800', 'text-emerald-400');
-                tab.querySelector('i.ri-check-double-line')?.classList.remove('opacity-0');
+                tab.classList.remove('border-transparent', 'text-slate-400'); tab.classList.add('border-emerald-500', 'bg-slate-800', 'text-emerald-400'); tab.querySelector('i.ri-check-double-line')?.classList.remove('opacity-0');
                 document.getElementById(tab.dataset.target).classList.remove('hidden');
             });
         });
-        
         aiResultModal.classList.remove('hidden');
     }
 
@@ -332,12 +369,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!btn) return;
             const targetId = btn.dataset.target;
             const pane = btn.closest('.tab-pane');
-            pane.querySelectorAll('.inner-tab-link').forEach(b => {
-                b.classList.remove('text-white', 'border-emerald-500');
-                b.classList.add('text-slate-400', 'border-transparent');
-            });
-            btn.classList.remove('text-slate-400', 'border-transparent');
-            btn.classList.add('text-white', 'border-emerald-500');
+            pane.querySelectorAll('.inner-tab-link').forEach(b => { b.classList.remove('text-white', 'border-emerald-500'); b.classList.add('text-slate-400', 'border-transparent'); });
+            btn.classList.remove('text-slate-400', 'border-transparent'); btn.classList.add('text-white', 'border-emerald-500');
             pane.querySelectorAll('.inner-tab-content').forEach(p => p.classList.add('hidden'));
             pane.querySelector('#' + targetId).classList.remove('hidden');
         });
@@ -351,17 +384,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const appData = getSafeAppData(app);
         const postedIds = new Set(appData.postedSiteIds);
         let postedHtml = '', unpostedHtml = '', pCount = 0, uCount = 0;
-
         globalWpSites.forEach(site => {
-            if (postedIds.has(site.id)) {
-                pCount++;
-                postedHtml += `<div class="flex items-center text-sm text-emerald-300 p-1.5 rounded bg-emerald-500/10 border border-emerald-500/20"><i class="ri-checkbox-circle-fill mr-2 text-emerald-500"></i> ${site.siteName}</div>`;
-            } else {
-                uCount++;
-                unpostedHtml += `<div class="flex items-center text-sm text-slate-400 p-1.5 rounded bg-slate-700/30 border border-slate-700/50"><i class="ri-checkbox-blank-circle-line mr-2 text-slate-600"></i> ${site.siteName}</div>`;
-            }
+            if (postedIds.has(site.id)) { pCount++; postedHtml += `<div class="flex items-center text-sm text-emerald-300 p-1.5 rounded bg-emerald-500/10 border border-emerald-500/20"><i class="ri-checkbox-circle-fill mr-2 text-emerald-500"></i> ${site.siteName}</div>`; } 
+            else { uCount++; unpostedHtml += `<div class="flex items-center text-sm text-slate-400 p-1.5 rounded bg-slate-700/30 border border-slate-700/50"><i class="ri-checkbox-blank-circle-line mr-2 text-slate-600"></i> ${site.siteName}</div>`; }
         });
-
         document.getElementById('list-posted').innerHTML = pCount ? postedHtml : '<p class="text-xs text-slate-500 italic pl-1">Chưa đăng bài nào.</p>';
         document.getElementById('list-unposted').innerHTML = uCount ? unpostedHtml : '<p class="text-xs text-slate-500 italic pl-1">Đã phủ sóng toàn bộ!</p>';
         document.getElementById('count-posted').textContent = pCount;
@@ -377,10 +403,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if(actionType === 'delete') { endpoint = '/api/apps'; method = 'DELETE'; confirmTitle = `Vứt ${count} app?`; }
         else if(actionType === 'restore') { endpoint = '/api/apps/restore'; method = 'POST'; confirmTitle = `Khôi phục ${count} app?`; }
         else { endpoint = '/api/apps/permanent'; method = 'DELETE'; confirmTitle = `XOÁ VĨNH VIỄN ${count} app?`; }
-
         const res = await Swal.fire({ title: confirmTitle, icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626', background: '#1e293b', color: '#e2e8f0' });
         if (!res.isConfirmed) return;
-
         Swal.fire({ title: 'Processing...', didOpen: () => Swal.showLoading(), background: '#1e293b', color: '#e2e8f0' });
         try {
             const payload = { appIds: isSelectingAllDb ? null : appIds, [actionType === 'restore'?'restoreAll':'deleteAll']: isSelectingAllDb, search: isSelectingAllDb ? document.querySelector('input[name="search"]').value : null };
@@ -391,12 +415,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 3. EVENTS ---
-    loadSettings(); // Goị ngay khi init
+    loadSettings();
+    checkAiStatus(); // <--- Load status va log khi F5
+
     if(aiOpenAiKey) { aiOpenAiKey.addEventListener('input', updateAiButtonState); aiOpenAiKey.addEventListener('change', saveSettings); }
     if(aiConcurrency) aiConcurrency.addEventListener('change', saveSettings);
     if(aiDelay) aiDelay.addEventListener('change', saveSettings);
-    if(aiDemoMode) aiDemoMode.addEventListener('change', saveSettings); // Save Demo Mode
-    if(aiPostStatus) aiPostStatus.addEventListener('change', saveSettings); // Save Post Status
+    if(aiDemoMode) aiDemoMode.addEventListener('change', saveSettings);
+    if(aiPostStatus) aiPostStatus.addEventListener('change', saveSettings);
     
     siteCheckboxes.forEach(cb => cb.addEventListener('change', updateAiButtonState));
     if(btnSelectAllSites) btnSelectAllSites.addEventListener('click', () => {
@@ -411,15 +437,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const isDemo = aiDemoMode.checked;
             const postStatus = aiPostStatus ? aiPostStatus.value : 'publish'; 
 
-            btnStartAi.classList.add('hidden');
             if (!isDemo) {
-                btnStopAi.classList.remove('hidden');
-                aiProgressContainer.classList.remove('hidden');
+                setAiRunningState(true);
+                aiTerminalBody.innerHTML = ''; // Clear log cu neu chay that
             } else {
                 btnStartAi.classList.remove('hidden'); btnStartAi.disabled = true;
                 btnStartAi.innerHTML = `<div class="w-full flex justify-center"><i class="ri-loader-4-line animate-spin text-xl"></i></div>`;
             }
             
+            // ... (Phan lay payload gui request GIU NGUYEN) ...
             if(aiConcurrency) aiConcurrency.disabled = true;
             if(aiDelay) aiDelay.disabled = true;
             if(aiOpenAiKey) aiOpenAiKey.disabled = true;
@@ -454,7 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnStopAi.addEventListener('click', async () => {
             if(!confirm('Dừng tác vụ hiện tại?')) return;
             try { await fetch('/api/ai/stop', { method: 'POST' }); } catch(e) {}
-            resetAiUi();
+            // Khong can resetUi ngay, doi socket bao done
         });
     }
 
@@ -468,7 +494,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const innerPrompt = activePane.querySelector('.inner-tab-content:not(.hidden) pre');
             const targetEl = innerResult || innerPrompt;
             if(!targetEl) return;
-            
             navigator.clipboard.writeText(targetEl.textContent).then(() => {
                 const orgHtml = aiResultCopyBtn.innerHTML;
                 aiResultCopyBtn.innerHTML = '<i class="ri-check-line text-lg"></i> <span>Đã Copy!</span>';
@@ -481,9 +506,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if(postedDetailsBackdrop) postedDetailsBackdrop.addEventListener('click', closePostedDetailsModal);
 
     if(socket) socket.on('ai_job:done', (stats) => {
-        resetAiUi();
+        setAiRunningState(false);
+        updateAiStats(stats);
+        if(aiTerminalPanel) aiTerminalPanel.classList.remove('hidden'); // Van giu terminal hien thi
         Swal.fire({ title: 'Hoàn tất!', html: `Success: <b class="text-green-500">${stats.success}</b> | Fail: <b class="text-red-500">${stats.failed}</b>`, icon: 'success', background: '#1e293b', color: '#e2e8f0' });
     });
+    
+    if(socket) socket.on('ai_job:log', (log) => appendAiLog(log));
+    if(socket) socket.on('ai_job:update_stats', (stats) => updateAiStats(stats));
 
     tableBody.addEventListener('click', (e) => {
         const target = e.target;

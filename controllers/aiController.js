@@ -4,16 +4,22 @@ const WpPostLog = require('../models/wpPostLog');
 const aiService = require('../services/aiService');
 const wpService = require('../services/wpService');
 const path = require('path');
+const fs = require('fs');
 
 let aiJobState = {
     isRunning: false,
     isStopping: false,
+    queue: [], // +++ MOI: Quan ly queue toan cuc +++
+    logs: [],
     stats: { total: 0, success: 0, failed: 0, skipped: 0 }
 };
 
 const addLog = (io, type, message) => {
     const time = new Date().toLocaleTimeString('vi-VN');
-    io.emit('job:log', { time, type, message });
+    const logEntry = { time, type, message };
+    aiJobState.logs.push(logEntry);
+    if (aiJobState.logs.length > 100) aiJobState.logs.shift();
+    io.emit('ai_job:log', logEntry);
 };
 
 const getLocalPath = (relPath) => {
@@ -30,10 +36,12 @@ const getSafeAppData = (appRecord) => {
     return rawData;
 };
 
+// ... (Ham processSingleItem GIU NGUYEN - Copy tu file truoc) ...
 async function processSingleItem(app, site, openAiKey, io, postStatus) {
     const appId = app.appId;
     const siteId = site.id;
 
+    // Check Duplicate
     const existing = await WpPostLog.findOne({ where: { appId, wpSiteId: siteId } });
     if (existing) {
         addLog(io, 'WARN', `⏩ Bỏ qua: ${app.title} đã đăng trên ${site.siteName}.`);
@@ -64,39 +72,53 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
         // --- 3. MAIN CONTENT ---
         let generatedContent = await aiService.generateContent(openAiKey, site.aiPrompt, appData);
 
-        // --- 4. FOOTER (APPEND) CONTENT ---
-        if (site.aiPromptFooter && site.aiPromptFooter.trim()) {
-            const footerContent = await aiService.generateContent(openAiKey, site.aiPromptFooter, appData);
-            generatedContent += `\n\n${footerContent}`; // Noi vao cuoi
-        }
-
-        // --- MEDIA ---
+        // --- MEDIA UPLOAD ---
         let wpFullData = JSON.parse(JSON.stringify(appData)); 
         let featuredMediaId = 0;
+        let uploadedScreenshotIds = [];
 
         if (wpFullData.icon) {
             const localPath = getLocalPath(wpFullData.icon);
-            const uploaded = await wpService.uploadMedia(site, localPath);
-            if (uploaded) {
-                featuredMediaId = uploaded.id; 
-                wpFullData.icon = uploaded.url; 
+            if (fs.existsSync(localPath)) {
+                const uploaded = await wpService.uploadMedia(site, localPath);
+                if (uploaded) { featuredMediaId = uploaded.id; wpFullData.icon = uploaded.url; }
             }
         }
 
         if (wpFullData.headerImage) {
             const localPath = getLocalPath(wpFullData.headerImage);
-            const uploaded = await wpService.uploadMedia(site, localPath);
-            if (uploaded) wpFullData.headerImage = uploaded.url; 
+            if (fs.existsSync(localPath)) {
+                const uploaded = await wpService.uploadMedia(site, localPath);
+                if (uploaded) wpFullData.headerImage = uploaded.url; 
+            }
         }
 
         if (wpFullData.screenshots && wpFullData.screenshots.length > 0) {
+            addLog(io, 'INFO', `📸 Tìm thấy ${wpFullData.screenshots.length} ảnh screenshots trong DB.`);
             const uploadPromises = wpFullData.screenshots.map(async (ssUrl) => {
                 const localPath = getLocalPath(ssUrl);
+                if (!localPath || !fs.existsSync(localPath)) { return { url: ssUrl, id: null }; }
                 const uploaded = await wpService.uploadMedia(site, localPath);
-                return uploaded ? uploaded.url : ssUrl; 
+                return uploaded && uploaded.id ? { url: uploaded.url, id: uploaded.id } : { url: ssUrl, id: null };
             });
-            const newScreenshots = await Promise.all(uploadPromises);
-            wpFullData.screenshots = newScreenshots;
+            const results = await Promise.all(uploadPromises);
+            wpFullData.screenshots = results.map(r => r.url);
+            uploadedScreenshotIds = results.map(r => r.id).filter(id => id);
+            
+            if(uploadedScreenshotIds.length > 0) addLog(io, 'INFO', `✨ Upload thành công ${uploadedScreenshotIds.length} ảnh.`);
+        }
+
+        // --- 4. PREPEND GALLERY ---
+        if (uploadedScreenshotIds.length > 0) {
+            const galleryShortcode = `[gallery columns="3" link="file" size="medium" ids="${uploadedScreenshotIds.join(',')}"]`;
+            generatedContent = galleryShortcode + "\n\n" + generatedContent;
+            addLog(io, 'INFO', `📝 Đã chèn Gallery Shortcode.`);
+        }
+
+        // --- 5. FOOTER CONTENT ---
+        if (site.aiPromptFooter && site.aiPromptFooter.trim()) {
+            const footerContent = await aiService.generateContent(openAiKey, site.aiPromptFooter, appData);
+            generatedContent += `\n\n${footerContent}`; 
         }
 
         // --- TERMS ---
@@ -105,7 +127,6 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
             const catId = await wpService.ensureTerm(site, 'categories', appData.genre);
             if (catId) categoryIds.push(catId);
         }
-
         let tagIds = [];
         if (appData.developer) {
             const tagId = await wpService.ensureTerm(site, 'tags', appData.developer);
@@ -150,22 +171,18 @@ const handleStartAiJob = async (req, res) => {
     if (!isDemo && aiJobState.isRunning) return res.status(400).json({ message: "Job đang chạy rồi!" });
     if (!appIds || !siteIds || !openAiKey) return res.status(400).json({ message: "Thiếu thông tin!" });
 
-    // === DEMO MODE ===
+    // === DEMO MODE (GIU NGUYEN) ===
     if (isDemo) {
         try {
             const app = await App.findOne({ where: { appId: appIds[0] } }); 
             if (!app) return res.status(404).json({ message: "Không tìm thấy App." });
-
             const appData = getSafeAppData(app);
             const sites = await WpSite.findAll({ where: { id: siteIds } });
             if (sites.length === 0) return res.status(404).json({ message: "Không tìm thấy Site." });
 
             const demoResults = await Promise.all(sites.map(async (site) => {
-                if (!site.aiPrompt) {
-                    return { siteName: site.siteName, error: "Chưa cấu hình Prompt Nội dung." };
-                }
+                if (!site.aiPrompt) return { siteName: site.siteName, error: "Chưa cấu hình Prompt." };
                 try {
-                    // 1. Title
                     let demoTitle = app.title;
                     let promptTitleUsed = null;
                     if (site.aiPromptTitle && site.aiPromptTitle.trim()) {
@@ -173,55 +190,28 @@ const handleStartAiJob = async (req, res) => {
                         demoTitle = demoTitle.replace(/^"|"$/g, '').trim();
                         promptTitleUsed = site.aiPromptTitle;
                     }
-
-                    // 2. Excerpt
                     let demoExcerpt = appData.summary || '';
                     let promptExcerptUsed = null;
                     if (site.aiPromptExcerpt && site.aiPromptExcerpt.trim()) {
                         demoExcerpt = await aiService.generateContent(openAiKey, site.aiPromptExcerpt, appData);
                         promptExcerptUsed = site.aiPromptExcerpt;
                     }
-
-                    // 3. Content
-                    const renderedContentPrompt = site.aiPrompt
-                        .replace(/{title}/gi, app.title || '')
-                        .replace(/{summary}/gi, appData.summary || '')
-                        .replace(/{description}/gi, appData.description || '')
-                        .replace(/{developer}/gi, appData.developer || '')
-                        .replace(/{score}/gi, appData.scoreText || '');
-
                     let content = await aiService.generateContent(openAiKey, site.aiPrompt, appData);
+                    const galleryPlaceholder = `[GALLERY_PLACEHOLDER: Sẽ chèn [gallery ids="..."] vào đây khi đăng thật]\n\n`;
+                    content = galleryPlaceholder + content;
                     
-                    // 4. Footer
                     let demoFooter = '';
                     let promptFooterUsed = null;
                     if (site.aiPromptFooter && site.aiPromptFooter.trim()) {
                         demoFooter = await aiService.generateContent(openAiKey, site.aiPromptFooter, appData);
                         promptFooterUsed = site.aiPromptFooter;
-                        // Noi luon vao noi dung demo de view cho de
                         content += `\n\n[FOOTER_APPEND]\n${demoFooter}`;
                     }
-
-                    return { 
-                        siteName: site.siteName, 
-                        title: demoTitle,
-                        excerpt: demoExcerpt,
-                        content: content,
-                        promptTitle: promptTitleUsed,
-                        promptExcerpt: promptExcerptUsed,
-                        promptContent: renderedContentPrompt,
-                        promptFooter: promptFooterUsed // Tra ve de hien thi trong tab Prompt
-                    };
-                } catch (err) {
-                    return { siteName: site.siteName, error: err.message };
-                }
+                    return { siteName: site.siteName, title: demoTitle, excerpt: demoExcerpt, content: content, promptTitle: promptTitleUsed, promptExcerpt: promptExcerptUsed, promptFooter: promptFooterUsed };
+                } catch (err) { return { siteName: site.siteName, error: err.message }; }
             }));
-
             return res.status(200).json({ success: true, isDemo: true, appName: app.title, results: demoResults, message: "Đã tạo nội dung Demo!" });
-        } catch (err) {
-            console.error("Loi Demo:", err);
-            return res.status(500).json({ message: "Lỗi Demo: " + err.message });
-        }
+        } catch (err) { return res.status(500).json({ message: "Lỗi Demo: " + err.message }); }
     }
     // === END DEMO ===
 
@@ -230,42 +220,66 @@ const handleStartAiJob = async (req, res) => {
 
     if (apps.length === 0 || sites.length === 0) return res.status(400).json({ message: "Không tìm thấy Apps hoặc Sites." });
 
+    // RESET STATE
     aiJobState.isRunning = true;
     aiJobState.isStopping = false;
+    aiJobState.logs = [];
     aiJobState.stats = { total: apps.length * sites.length, success: 0, failed: 0, skipped: 0 };
+    aiJobState.queue = []; // Xoa queue cu
 
-    addLog(io, 'INFO', `🚀 BẮT ĐẦU AUTO CONTENT! Target: ${apps.length} Apps x ${sites.length} Sites.`);
+    // +++ NAP QUEUE MOI +++
+    for (const app of apps) {
+        for (const site of sites) {
+            aiJobState.queue.push({ app, site, postStatus });
+        }
+    }
+
+    addLog(io, 'INFO', `🚀 BẮT ĐẦU AUTO CONTENT! Tổng: ${aiJobState.queue.length} tasks.`);
     res.status(200).json({ message: "Job đã bắt đầu!" });
 
     (async () => {
-        let tasks = [];
-        for (const app of apps) {
-            for (const site of sites) {
-                tasks.push({ app, site, postStatus });
-            }
-        }
-
         const numConcurrency = parseInt(concurrency) || 1;
         const numDelay = parseInt(delay) || 2000;
 
-        while (tasks.length > 0) {
+        while (aiJobState.queue.length > 0) {
             if (aiJobState.isStopping) break;
-            const batch = tasks.splice(0, numConcurrency);
+
+            const batch = aiJobState.queue.splice(0, numConcurrency);
             await Promise.all(batch.map(task => processSingleItem(task.app, task.site, openAiKey, io, task.postStatus)));
-            if (tasks.length > 0) await new Promise(r => setTimeout(r, numDelay));
+            
+            io.emit('ai_job:update_stats', aiJobState.stats);
+            
+            // Delay thong minh: Chi delay neu con hang doi va chua bi dung
+            if (aiJobState.queue.length > 0 && !aiJobState.isStopping) {
+                await new Promise(r => setTimeout(r, numDelay));
+            }
         }
 
-        addLog(io, 'INFO', `🏁 AI Job hoàn tất! Success: ${aiJobState.stats.success}, Fail: ${aiJobState.stats.failed}, Skipped: ${aiJobState.stats.skipped}`);
+        if (aiJobState.isStopping) {
+            addLog(io, 'WARN', `🛑 JOB ĐÃ DỪNG! (Đã hủy ${aiJobState.queue.length} task còn lại)`);
+        } else {
+            addLog(io, 'INFO', `🏁 AI Job hoàn tất! Success: ${aiJobState.stats.success}, Fail: ${aiJobState.stats.failed}, Skipped: ${aiJobState.stats.skipped}`);
+        }
+        
         io.emit('ai_job:done', aiJobState.stats);
         aiJobState.isRunning = false;
+        aiJobState.isStopping = false;
     })();
 };
 
+// +++ FIX: STOPPING LOGIC +++
 const handleStopAiJob = (req, res) => {
     if (!aiJobState.isRunning) return res.status(400).json({ message: "Không có Job nào để dừng." });
+    
     aiJobState.isStopping = true;
-    addLog(req.io, 'WARN', '⚠️ Đang dừng AI Job...');
+    aiJobState.queue = []; // <--- XOA QUEUE DE DUNG NGAY
+    
+    addLog(req.io, 'WARN', '⚠️ Lệnh DỪNG đã được kích hoạt! Đang hủy hàng đợi...');
     return res.status(200).json({ message: "Đang dừng..." });
 };
 
-module.exports = { handleStartAiJob, handleStopAiJob };
+const getAiJobStatus = (req, res) => {
+    res.status(200).json({ isRunning: aiJobState.isRunning, logs: aiJobState.logs, stats: aiJobState.stats });
+};
+
+module.exports = { handleStartAiJob, handleStopAiJob, getAiJobStatus };

@@ -86,5 +86,6 @@ router.delete('/wp-sites/:id', adminController.handleDeleteWpSite);
 router.post('/ai/start', aiController.handleStartAiJob);
 router.post('/ai/stop', aiController.handleStopAiJob);
 
+router.get('/ai/status', aiController.getAiJobStatus);
 
 module.exports = router;
