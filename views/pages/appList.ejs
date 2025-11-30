@@ -43,7 +43,8 @@
     </div>
 
     <div id="ai-gen-panel" class="mb-6 bg-slate-900/80 border border-purple-500/20 ring-1 ring-white/5 rounded-xl p-6 shadow-2xl backdrop-blur-sm transition-all duration-300">
-        <div class="flex items-center justify-between mb-5 pb-4 border-b border-slate-800">
+        
+        <div class="flex flex-wrap items-center justify-between mb-5 pb-4 border-b border-slate-800 gap-4">
             <div class="flex items-center gap-3">
                 <div class="p-2 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-lg shadow-lg shadow-purple-900/20">
                      <i class="ri-openai-fill text-2xl text-white"></i>
@@ -56,16 +57,28 @@
                 </div>
            </div>
             
-            <label class="flex items-center cursor-pointer relative group bg-slate-800/50 px-4 py-2 rounded-full border border-slate-700/50 hover:border-emerald-500/30 transition-all select-none">
-                <span class="mr-3 text-xs font-bold text-slate-400 group-hover:text-emerald-400 transition-colors">CHẾ ĐỘ DEMO</span>
-                <input type="checkbox" id="ai-demo-mode" class="sr-only peer">
-                <div class="relative w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 shadow-inner"></div>
-            </label>
+            <div class="flex items-center gap-3">
+                <button id="btn-start-ai" disabled class="flex items-center gap-2 bg-slate-800 text-slate-500 border border-slate-700 px-5 py-2 rounded-lg font-bold transition-all duration-300 cursor-not-allowed hover:shadow-lg disabled:opacity-50 text-sm h-[42px]">
+                    <i class="ri-play-fill text-lg"></i>
+                    <span>BẮT ĐẦU</span>
+                </button>
+
+                <button id="btn-stop-ai" class="hidden flex items-center gap-2 bg-red-900/20 hover:bg-red-900/30 border border-red-500/30 text-red-400 px-5 py-2 rounded-lg font-bold transition-all duration-300 hover:shadow-lg text-sm h-[42px]">
+                    <i class="ri-stop-circle-line text-lg animate-pulse"></i> 
+                    <span>DỪNG</span>
+                </button>
+
+                <label class="flex items-center cursor-pointer relative group bg-slate-800/50 px-4 py-2 rounded-lg border border-slate-700/50 hover:border-emerald-500/30 transition-all select-none h-[42px]">
+                    <span class="mr-3 text-xs font-bold text-slate-400 group-hover:text-emerald-400 transition-colors">DEMO</span>
+                    <input type="checkbox" id="ai-demo-mode" class="sr-only peer">
+                    <div class="relative w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500 shadow-inner"></div>
+                </label>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            <div class="lg:col-span-4 space-y-4">
+            <div class="lg:col-span-5 space-y-4">
                 <div>
                     <label class="flex justify-between text-[10px] text-slate-400 uppercase font-bold mb-1.5 ml-1">
                         <span>OpenAI API Key</span>
@@ -99,12 +112,12 @@
                 </div>
             </div>
 
-            <div class="lg:col-span-5 flex flex-col">
+            <div class="lg:col-span-7 flex flex-col">
                 <div class="flex justify-between items-end mb-1.5">
                     <label class="block text-[10px] text-slate-400 uppercase font-bold ml-1">Chọn Sites Đăng Bài</label>
                     <button id="btn-select-all-sites" class="text-[10px] text-purple-400 hover:text-purple-300 font-bold uppercase tracking-wider hover:underline">Chọn tất cả</button>
                 </div>
-                <div class="bg-slate-950 border border-slate-700 rounded-lg p-2 h-[190px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800 shadow-inner">
+                <div class="bg-slate-950 border border-slate-700 rounded-lg p-2 h-[205px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800 shadow-inner">
                    <% if(typeof wpSites !== 'undefined' && wpSites.length > 0) { %>
                         <div class="space-y-1">
                             <% wpSites.forEach(site => { %>
@@ -123,23 +136,7 @@
                     <% } %>
                 </div>
             </div>
-
-            <div class="lg:col-span-3 flex flex-col justify-end">
-                <div class="h-[50px] lg:h-[190px] flex items-end">
-                    <button id="btn-start-ai" disabled class="group w-full h-[50px] flex items-center justify-center gap-3 bg-slate-800 text-slate-500 border border-slate-700 rounded-xl font-bold transition-all duration-300 cursor-not-allowed shadow-lg">
-                        <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <i class="ri-play-fill text-lg"></i>
-                        </div>
-                        <span class="tracking-wide">BẮT ĐẦU</span>
-                    </button>
-                    
-                    <button id="btn-stop-ai" class="hidden w-full h-[50px] flex items-center justify-center gap-3 bg-red-900/20 hover:bg-red-900/30 border border-red-500/30 text-red-400 rounded-xl font-bold transition-all duration-300 hover:shadow-lg hover:shadow-red-900/20">
-                        <i class="ri-stop-circle-line text-2xl animate-pulse"></i> 
-                        <span class="tracking-wide">DỪNG LẠI</span>
-                    </button>
-                </div>
             </div>
-        </div>
         
         <div id="ai-progress-container" class="hidden border-t border-white/5 bg-slate-950 p-4 transition-all duration-300 mt-4 rounded-b-xl">
             <div class="flex justify-between text-xs text-slate-400 mb-2">

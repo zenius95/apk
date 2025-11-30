@@ -1,7 +1,7 @@
 /*
  * File: public/js/listManager.js
  * "Não" chung cho trang App List & Trash
- * Update: Fix triệt để lỗi F5 không hiện trạng thái đang chạy (Cache busting + Safe DOM)
+ * Update: Fix UI State "Bất tử" & Update Reset Button Style
  */
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectionCount = document.getElementById('selection-count');
     const btnSelectAllDb = document.getElementById('btn-select-all-db');
 
-    // Action Buttons
     let btnDeleteSelected, btnRestoreSelected, btnForceDeleteSelected;
     if (pageMode === 'list') {
         btnDeleteSelected = document.getElementById('btn-delete-selected');
@@ -25,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnForceDeleteSelected = document.getElementById('btn-force-delete-selected');
     }
 
-    // AI Panel Elements (Dung optional chaining ?. de tranh crash)
+    // AI Panel Elements
     const btnStartAi = document.getElementById('btn-start-ai');
     const btnStopAi = document.getElementById('btn-stop-ai');
     const aiProgressContainer = document.getElementById('ai-progress-container');
@@ -198,7 +197,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if(btnStartAi) {
             btnStartAi.classList.remove('hidden');
             btnStartAi.disabled = false;
-            btnStartAi.innerHTML = `<div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center group-hover:scale-110 transition-transform"><i class="ri-play-fill text-lg"></i></div><span class="tracking-wide">BẮT ĐẦU</span>`;
+            // +++ UPDATE STYLE NUT START MỚI (NHỎ GỌN) +++
+            btnStartAi.innerHTML = `<i class="ri-play-fill text-lg"></i><span>BẮT ĐẦU</span>`;
         }
         updateAiButtonState(); 
         if(btnStopAi) btnStopAi.classList.add('hidden');
@@ -209,6 +209,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if(aiOpenAiKey) aiOpenAiKey.disabled = false;
         if(aiDemoMode) aiDemoMode.disabled = false;
         if(aiPostStatus) aiPostStatus.disabled = false;
+        if(btnSelectAllSites) {
+            btnSelectAllSites.disabled = false;
+            btnSelectAllSites.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
         siteCheckboxes.forEach(cb => cb.disabled = false);
     }
 
@@ -251,50 +255,59 @@ document.addEventListener('DOMContentLoaded', () => {
         if(aiStatFailed) aiStatFailed.textContent = stats.failed || 0;
     }
 
+    // +++ HAM SET TRANG THAI CHAY (KHOA UI) +++
     function setAiRunningState(isRunning) {
-        if (!btnStartAi || !btnStopAi || !aiTerminalPanel) return; // Kiem tra an toan
+        if (!btnStartAi || !btnStopAi || !aiTerminalPanel) return;
         
         if (isRunning) {
+            // Swap Buttons
             btnStartAi.classList.add('hidden');
             btnStopAi.classList.remove('hidden');
+            
+            // Show Status Panels
             if(aiProgressContainer) aiProgressContainer.classList.remove('hidden');
             aiTerminalPanel.classList.remove('hidden');
             
-            // Disable inputs
+            // +++ PROTECT SETTINGS: DISABLE INPUTS +++
             if(aiConcurrency) aiConcurrency.disabled = true;
             if(aiDelay) aiDelay.disabled = true;
             if(aiOpenAiKey) aiOpenAiKey.disabled = true;
             if(aiDemoMode) aiDemoMode.disabled = true;
             if(aiPostStatus) aiPostStatus.disabled = true;
+            if(btnSelectAllSites) {
+                btnSelectAllSites.disabled = true;
+                btnSelectAllSites.classList.add('opacity-50', 'cursor-not-allowed');
+            }
             siteCheckboxes.forEach(cb => cb.disabled = true);
         } else {
             resetAiUi();
         }
     }
 
-    // +++ FIX: CHECK STATUS (CACHE BUSTING) +++
+    // +++ HAM CHECK STATUS KHI LOAD TRANG +++
     async function checkAiStatus() {
         try {
-            // Them ?t=... de tranh Browser Cache
+            // Anti-cache param
             const res = await fetch(`/api/ai/status?t=${Date.now()}`);
             const data = await res.json();
             
+            // Cap nhat UI voi so lieu moi nhat
             if (data.stats) updateAiStats(data.stats);
 
-            // Load log cu neu co
+            // Luon load lai log neu co (ke ca khi job da xong)
             if (data.logs && data.logs.length > 0) {
                 if (aiTerminalBody) aiTerminalBody.innerHTML = '';
                 data.logs.forEach(log => appendAiLog(log));
                 if(aiTerminalPanel) aiTerminalPanel.classList.remove('hidden');
             }
 
-            // Set UI theo trang thai
+            // Neu dang chay -> Khoa UI ngay lap tuc
             if (data.isRunning) {
                 console.log("🔥 AI Job dang chay, khoi phuc UI...");
                 setAiRunningState(true);
             } else {
                 setAiRunningState(false);
-                // Giu terminal neu co log
+                // Giu terminal hien thi neu co log
                 if (data.logs && data.logs.length > 0 && aiTerminalPanel) {
                     aiTerminalPanel.classList.remove('hidden'); 
                 }
@@ -328,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(aiPostStatus) localStorage.setItem('ai_post_status', aiPostStatus.value);
     }
 
-    // ... (Phan showModal Demo, postedDetails... GIU NGUYEN) ...
+    // ... (Cac ham Show Modal Demo, Posted Details... GIU NGUYEN) ...
     function showAiResultModal(appName, results) {
         if (!results || results.length === 0) return;
         aiResultAppName.textContent = `App: ${appName}`;
@@ -439,7 +452,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!isDemo) {
                 setAiRunningState(true);
-                aiTerminalBody.innerHTML = ''; // Clear log cu neu chay that
+                // +++ UPDATE: NUT START LOADING +++
+                btnStartAi.innerHTML = `<i class="ri-loader-4-line animate-spin text-lg"></i>`;
+                aiTerminalBody.innerHTML = ''; // Clear log
             } else {
                 btnStartAi.classList.remove('hidden'); btnStartAi.disabled = true;
                 btnStartAi.innerHTML = `<div class="w-full flex justify-center"><i class="ri-loader-4-line animate-spin text-xl"></i></div>`;
@@ -505,15 +520,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if(postedDetailsCloseBtn) postedDetailsCloseBtn.addEventListener('click', closePostedDetailsModal);
     if(postedDetailsBackdrop) postedDetailsBackdrop.addEventListener('click', closePostedDetailsModal);
 
-    if(socket) socket.on('ai_job:done', (stats) => {
-        setAiRunningState(false);
-        updateAiStats(stats);
-        if(aiTerminalPanel) aiTerminalPanel.classList.remove('hidden'); // Van giu terminal hien thi
-        Swal.fire({ title: 'Hoàn tất!', html: `Success: <b class="text-green-500">${stats.success}</b> | Fail: <b class="text-red-500">${stats.failed}</b>`, icon: 'success', background: '#1e293b', color: '#e2e8f0' });
-    });
-    
-    if(socket) socket.on('ai_job:log', (log) => appendAiLog(log));
-    if(socket) socket.on('ai_job:update_stats', (stats) => updateAiStats(stats));
+    if(socket) {
+        socket.on('ai_job:done', (stats) => {
+            setAiRunningState(false);
+            updateAiStats(stats);
+            if(aiTerminalPanel) aiTerminalPanel.classList.remove('hidden'); 
+            Swal.fire({ title: 'Hoàn tất!', html: `Success: <b class="text-green-500">${stats.success}</b> | Fail: <b class="text-red-500">${stats.failed}</b>`, icon: 'success', background: '#1e293b', color: '#e2e8f0' });
+        });
+        
+        socket.on('ai_job:log', (log) => appendAiLog(log));
+        socket.on('ai_job:update_stats', (stats) => updateAiStats(stats));
+    }
 
     tableBody.addEventListener('click', (e) => {
         const target = e.target;
