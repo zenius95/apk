@@ -1,7 +1,7 @@
 /*
  * File: public/js/listManager.js
  * "Não" chung cho trang App List & Trash
- * Update: Fix UI State "Bất tử" & Update Reset Button Style
+ * Update: Added Gallery Config Logic (Pos & Alt)
  */
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -45,6 +45,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const siteCheckboxes = document.querySelectorAll('.site-checkbox'); 
     const btnSelectAllSites = document.getElementById('btn-select-all-sites');
     const aiPostStatus = document.getElementById('ai-post-status');
+    // +++ MOI: Bien Input Gallery +++
+    const aiGalleryPos = document.getElementById('ai-gallery-pos');
+    const aiGalleryAlt = document.getElementById('ai-gallery-alt');
     
     // Modals
     const aiResultModal = document.getElementById('aiResultModal');
@@ -193,11 +196,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // +++ MOI: enable Inputs +++
     function resetAiUi() {
         if(btnStartAi) {
             btnStartAi.classList.remove('hidden');
             btnStartAi.disabled = false;
-            // +++ UPDATE STYLE NUT START MỚI (NHỎ GỌN) +++
             btnStartAi.innerHTML = `<i class="ri-play-fill text-lg"></i><span>BẮT ĐẦU</span>`;
         }
         updateAiButtonState(); 
@@ -209,6 +212,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if(aiOpenAiKey) aiOpenAiKey.disabled = false;
         if(aiDemoMode) aiDemoMode.disabled = false;
         if(aiPostStatus) aiPostStatus.disabled = false;
+        
+        if(aiGalleryPos) aiGalleryPos.disabled = false;
+        if(aiGalleryAlt) aiGalleryAlt.disabled = false;
+
         if(btnSelectAllSites) {
             btnSelectAllSites.disabled = false;
             btnSelectAllSites.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -274,6 +281,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if(aiOpenAiKey) aiOpenAiKey.disabled = true;
             if(aiDemoMode) aiDemoMode.disabled = true;
             if(aiPostStatus) aiPostStatus.disabled = true;
+            
+            if(aiGalleryPos) aiGalleryPos.disabled = true;
+            if(aiGalleryAlt) aiGalleryAlt.disabled = true;
+
             if(btnSelectAllSites) {
                 btnSelectAllSites.disabled = true;
                 btnSelectAllSites.classList.add('opacity-50', 'cursor-not-allowed');
@@ -331,6 +342,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const savedStatus = localStorage.getItem('ai_post_status');
             if(savedStatus) aiPostStatus.value = savedStatus;
         }
+        // +++ MOI: Load setting Gallery +++
+        if(aiGalleryPos) aiGalleryPos.value = localStorage.getItem('ai_gallery_pos') || 'top';
+        if(aiGalleryAlt) aiGalleryAlt.value = localStorage.getItem('ai_gallery_alt') || '';
     }
 
     function saveSettings() {
@@ -339,6 +353,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if(aiDelay) localStorage.setItem('ai_delay', aiDelay.value);
         if(aiDemoMode) localStorage.setItem('ai_demo_mode', aiDemoMode.checked);
         if(aiPostStatus) localStorage.setItem('ai_post_status', aiPostStatus.value);
+        // +++ MOI: Save setting Gallery +++
+        if(aiGalleryPos) localStorage.setItem('ai_gallery_pos', aiGalleryPos.value);
+        if(aiGalleryAlt) localStorage.setItem('ai_gallery_alt', aiGalleryAlt.value);
     }
 
     // ... (Cac ham Show Modal Demo, Posted Details... GIU NGUYEN) ...
@@ -436,6 +453,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if(aiDelay) aiDelay.addEventListener('change', saveSettings);
     if(aiDemoMode) aiDemoMode.addEventListener('change', saveSettings);
     if(aiPostStatus) aiPostStatus.addEventListener('change', saveSettings);
+    // +++ MOI: Add event listener +++
+    if(aiGalleryPos) aiGalleryPos.addEventListener('change', saveSettings);
+    if(aiGalleryAlt) aiGalleryAlt.addEventListener('change', saveSettings);
     
     siteCheckboxes.forEach(cb => cb.addEventListener('change', updateAiButtonState));
     if(btnSelectAllSites) btnSelectAllSites.addEventListener('click', () => {
@@ -466,6 +486,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if(aiOpenAiKey) aiOpenAiKey.disabled = true;
             if(aiDemoMode) aiDemoMode.disabled = true;
             if(aiPostStatus) aiPostStatus.disabled = true;
+            
+            if(aiGalleryPos) aiGalleryPos.disabled = true;
+            if(aiGalleryAlt) aiGalleryAlt.disabled = true;
+
             siteCheckboxes.forEach(cb => cb.disabled = true);
 
             const selectedSiteIds = Array.from(document.querySelectorAll('.site-checkbox:checked')).map(cb => cb.value);
@@ -476,7 +500,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 concurrency: aiConcurrency.value, 
                 delay: aiDelay.value, 
                 isDemo: isDemo,
-                postStatus: postStatus
+                postStatus: postStatus,
+                // +++ MOI: Gui them config Gallery +++
+                galleryPos: aiGalleryPos ? aiGalleryPos.value : 'top',
+                galleryAlt: aiGalleryAlt ? aiGalleryAlt.value : ''
             };
 
             try {

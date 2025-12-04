@@ -19,7 +19,7 @@
     <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
         <div class="w-full max-w-sm">
             <form method="GET" action="/app-list">
-                <div class="relative">
+               <div class="relative">
                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                         <i class="ri-search-line text-slate-400"></i>
                     </div>
@@ -38,7 +38,7 @@
             <button id="btn-delete-selected" class="inline-flex items-center justify-center rounded-md bg-red-600/90 px-3.5 py-2 text-sm font-medium text-white shadow-sm hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
                 <i class="ri-delete-bin-line -ml-1 mr-2"></i>
                 Chuyển vào thùng rác
-           </button>
+            </button>
         </div>
     </div>
 
@@ -51,12 +51,12 @@
                 </div>
                 <div>
                     <h3 class="text-white font-bold text-base tracking-wide flex items-center gap-2">
-                         AI WRITER CENTER <span class="px-2 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-400 border border-purple-500/20">AUTO</span>
+                        AI WRITER CENTER <span class="px-2 py-0.5 rounded text-[10px] bg-purple-500/10 text-purple-400 border border-purple-500/20">AUTO</span>
                     </h3>
                     <p class="text-slate-500 text-xs">Tự động hóa nội dung & đăng bài vệ tinh</p>
                 </div>
            </div>
-            
+           
             <div class="flex items-center gap-3">
                 <button id="btn-start-ai" disabled class="flex items-center gap-2 bg-slate-800 text-slate-500 border border-slate-700 px-5 py-2 rounded-lg font-bold transition-all duration-300 cursor-not-allowed hover:shadow-lg disabled:opacity-50 text-sm h-[42px]">
                     <i class="ri-play-fill text-lg"></i>
@@ -110,26 +110,43 @@
                         <option value="pending">⏳ Chờ duyệt (Pending)</option>
                     </select>
                 </div>
+
+                <div class="border-t border-slate-800 pt-3 mt-3">
+                    <label class="block text-slate-400 text-[10px] uppercase font-bold mb-1.5 ml-1">Vị trí chèn Gallery</label>
+                    
+                    <div class="mb-3">
+                        <select id="ai-gallery-pos" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm text-white focus:ring-1 focus:ring-emerald-500 outline-none transition-all">
+                            <option value="top">Đầu bài viết</option>
+                            <option value="middle">Giữa bài viết</option>
+                            <option value="bottom">Cuối bài viết</option>
+                        </select>
+                    </div>
+
+                    <label class="block text-slate-400 text-[10px] uppercase font-bold mb-1.5 ml-1">Nội dung ALT</label>
+                    <div>
+                        <input type="text" id="ai-gallery-alt" class="w-full bg-slate-950 border border-slate-700 rounded-lg py-2 px-3 text-sm text-white focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all" placeholder="Alt text ảnh (Vd: Tải game {title}...)">
+                    </div>
+                </div>
             </div>
 
             <div class="lg:col-span-7 flex flex-col">
-                <div class="flex justify-between items-end mb-1.5">
+               <div class="flex justify-between items-end mb-1.5">
                     <label class="block text-[10px] text-slate-400 uppercase font-bold ml-1">Chọn Sites Đăng Bài</label>
                     <button id="btn-select-all-sites" class="text-[10px] text-purple-400 hover:text-purple-300 font-bold uppercase tracking-wider hover:underline">Chọn tất cả</button>
                 </div>
-                <div class="bg-slate-950 border border-slate-700 rounded-lg p-2 h-[205px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800 shadow-inner">
+                <div class="bg-slate-950 border border-slate-700 rounded-lg p-2 h-full overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-800 shadow-inner">
                    <% if(typeof wpSites !== 'undefined' && wpSites.length > 0) { %>
                         <div class="space-y-1">
                             <% wpSites.forEach(site => { %>
-                                <label class="flex items-center p-2 rounded hover:bg-slate-800/80 cursor-pointer transition-colors group">
+                                 <label class="flex items-center p-2 rounded hover:bg-slate-800/80 cursor-pointer transition-colors group">
                                     <input type="checkbox" value="<%= site.id %>" class="site-checkbox w-4 h-4 rounded border-slate-600 bg-slate-800 text-purple-500 focus:ring-purple-500/50 cursor-pointer transition-all">
-                                    <span class="ml-3 text-sm text-slate-300 group-hover:text-white select-none truncate"><%= site.siteName %></span>
+                                   <span class="ml-3 text-sm text-slate-300 group-hover:text-white select-none truncate"><%= site.siteName %></span>
                                 </label>
                             <% }); %>
                         </div>
                     <% } else { %>
                         <div class="h-full flex flex-col items-center justify-center text-center">
-                            <i class="ri-globe-line text-2xl text-slate-600 mb-2"></i>
+                             <i class="ri-globe-line text-2xl text-slate-600 mb-2"></i>
                             <p class="text-xs text-slate-500 italic">Chưa có site nào.</p>
                             <a href="/wp-sites" class="text-xs text-emerald-400 hover:underline mt-1">Thêm ngay</a>
                         </div>
@@ -144,7 +161,7 @@
                     <i class="ri-loader-4-line animate-spin mr-2"></i> Initializing...
                 </span>
                 <span id="ai-progress-text" class="font-mono text-white">0 / 0</span>
-            </div>
+           </div>
             <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
                 <div id="ai-progress-bar" class="bg-gradient-to-r from-purple-600 to-indigo-600 h-full rounded-full transition-all duration-300 relative" style="width: 0%">
                     <div class="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
@@ -158,7 +175,7 @@
             <h3 class="text-sm font-mono text-slate-400 flex items-center">
                 <i class="ri-terminal-box-line mr-2 text-purple-500"></i>
                 AI Process Terminal
-            </h3>
+             </h3>
             <div class="flex items-center space-x-4">
                  <div class="text-xs font-mono space-x-2">
                     <span class="text-slate-400">Total: <span id="ai-stat-total" class="text-white">0</span></span>
@@ -171,7 +188,8 @@
             <div class="text-slate-500 italic">Waiting for AI tasks...</div>
         </div>
     </div>
-    <div class="bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg overflow-hidden">
+    
+<div class="bg-slate-800/60 backdrop-blur-lg ring-1 ring-white/10 shadow-xl rounded-lg overflow-hidden">
         <div class="table-container">
             <table class="min-w-full">
                 <thead class="bg-slate-900/50 sticky top-0">

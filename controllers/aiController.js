@@ -36,8 +36,19 @@ const getSafeAppData = (appRecord) => {
     return rawData;
 };
 
-// ... (Ham processSingleItem GIU NGUYEN - Copy tu file truoc) ...
-async function processSingleItem(app, site, openAiKey, io, postStatus) {
+// Helper: Replace Shortcode (Tách ra để dùng chung cho Prompt và Alt)
+const replaceShortcodes = (text, appData) => {
+    if (!text) return '';
+    return text
+        .replace(/{title}/g, appData.title || '')
+        .replace(/{summary}/g, appData.summary || '')
+        .replace(/{description}/g, appData.description || '')
+        .replace(/{developer}/g, appData.developer || '')
+        .replace(/{score}/g, appData.scoreText || '');
+};
+
+// [UPDATE] Thêm tham số galleryPos, galleryAltTemplate vào hàm xử lý
+async function processSingleItem(app, site, openAiKey, io, postStatus, galleryPos = 'top', galleryAltTemplate = '') {
     const appId = app.appId;
     const siteId = site.id;
 
@@ -77,10 +88,14 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
         let featuredMediaId = 0;
         let uploadedScreenshotIds = [];
 
+        // +++ MOI: Parse Alt Text cho anh +++
+        const finalAltText = replaceShortcodes(galleryAltTemplate, appData);
+
         if (wpFullData.icon) {
             const localPath = getLocalPath(wpFullData.icon);
             if (fs.existsSync(localPath)) {
-                const uploaded = await wpService.uploadMedia(site, localPath);
+                // [UPDATE] Truyen Alt Text vao uploadMedia
+                const uploaded = await wpService.uploadMedia(site, localPath, finalAltText || `Icon ${appData.title}`);
                 if (uploaded) { featuredMediaId = uploaded.id; wpFullData.icon = uploaded.url; }
             }
         }
@@ -88,17 +103,22 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
         if (wpFullData.headerImage) {
             const localPath = getLocalPath(wpFullData.headerImage);
             if (fs.existsSync(localPath)) {
-                const uploaded = await wpService.uploadMedia(site, localPath);
+                // [UPDATE] Truyen Alt Text vao uploadMedia
+                const uploaded = await wpService.uploadMedia(site, localPath, finalAltText || `Banner ${appData.title}`);
                 if (uploaded) wpFullData.headerImage = uploaded.url; 
             }
         }
 
         if (wpFullData.screenshots && wpFullData.screenshots.length > 0) {
             addLog(io, 'INFO', `📸 Tìm thấy ${wpFullData.screenshots.length} ảnh screenshots trong DB.`);
-            const uploadPromises = wpFullData.screenshots.map(async (ssUrl) => {
+            const uploadPromises = wpFullData.screenshots.map(async (ssUrl, index) => {
                 const localPath = getLocalPath(ssUrl);
                 if (!localPath || !fs.existsSync(localPath)) { return { url: ssUrl, id: null }; }
-                const uploaded = await wpService.uploadMedia(site, localPath);
+                
+                // [UPDATE] Truyen Alt Text (DA LOAI BO SO THU TU)
+                const ssAlt = finalAltText ? finalAltText : `Screenshot ${appData.title}`;
+                const uploaded = await wpService.uploadMedia(site, localPath, ssAlt);
+                
                 return uploaded && uploaded.id ? { url: uploaded.url, id: uploaded.id } : { url: ssUrl, id: null };
             });
             const results = await Promise.all(uploadPromises);
@@ -108,17 +128,33 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
             if(uploadedScreenshotIds.length > 0) addLog(io, 'INFO', `✨ Upload thành công ${uploadedScreenshotIds.length} ảnh.`);
         }
 
-        // --- 4. PREPEND GALLERY ---
+        // --- 4. GALLERY LOGIC (MOI: CHON VI TRI) ---
+        let galleryShortcode = '';
         if (uploadedScreenshotIds.length > 0) {
-            const galleryShortcode = `[gallery columns="3" link="file" size="medium" ids="${uploadedScreenshotIds.join(',')}"]`;
-            generatedContent = galleryShortcode + "\n\n" + generatedContent;
-            addLog(io, 'INFO', `📝 Đã chèn Gallery Shortcode.`);
+            galleryShortcode = `[gallery columns="3" link="file" size="medium" ids="${uploadedScreenshotIds.join(',')}"]`;
+            addLog(io, 'INFO', `📝 Đã tạo Gallery Shortcode (Vị trí: ${galleryPos}).`);
+        }
+
+        // Xử lý chèn Gallery dựa trên vị trí
+        if (galleryShortcode) {
+            if (galleryPos === 'top') {
+                generatedContent = galleryShortcode + "\n\n" + generatedContent;
+            } 
+            else if (galleryPos === 'middle') {
+                generatedContent = generatedContent + "\n\n" + galleryShortcode;
+            }
+            // Neu la 'bottom', se noi vao sau footer hoac cuoi cung
         }
 
         // --- 5. FOOTER CONTENT ---
         if (site.aiPromptFooter && site.aiPromptFooter.trim()) {
             const footerContent = await aiService.generateContent(openAiKey, site.aiPromptFooter, appData);
             generatedContent += `\n\n${footerContent}`; 
+        }
+
+        // [UPDATE] Xu ly Gallery Bottom (sau khi da co footer)
+        if (galleryShortcode && galleryPos === 'bottom') {
+            generatedContent += `\n\n${galleryShortcode}`;
         }
 
         // --- TERMS ---
@@ -166,12 +202,13 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
 
 const handleStartAiJob = async (req, res) => {
     const io = req.io;
-    const { appIds, siteIds, openAiKey, concurrency, delay, isDemo, postStatus } = req.body;
+    // [UPDATE] Lay them params galleryPos, galleryAlt
+    const { appIds, siteIds, openAiKey, concurrency, delay, isDemo, postStatus, galleryPos, galleryAlt } = req.body;
 
     if (!isDemo && aiJobState.isRunning) return res.status(400).json({ message: "Job đang chạy rồi!" });
     if (!appIds || !siteIds || !openAiKey) return res.status(400).json({ message: "Thiếu thông tin!" });
 
-    // === DEMO MODE (GIU NGUYEN) ===
+    // === DEMO MODE ===
     if (isDemo) {
         try {
             const app = await App.findOne({ where: { appId: appIds[0] } }); 
@@ -197,8 +234,15 @@ const handleStartAiJob = async (req, res) => {
                         promptExcerptUsed = site.aiPromptExcerpt;
                     }
                     let content = await aiService.generateContent(openAiKey, site.aiPrompt, appData);
-                    const galleryPlaceholder = `[GALLERY_PLACEHOLDER: Sẽ chèn [gallery ids="..."] vào đây khi đăng thật]\n\n`;
-                    content = galleryPlaceholder + content;
+                    
+                    // [UPDATE] Demo Gallery Placeholder theo vi tri
+                    const galleryPlaceholder = `\n[GALLERY_PLACEHOLDER: Vị trí ${galleryPos || 'top'} - Alt: "${replaceShortcodes(galleryAlt, appData) || 'Default'}"]\n`;
+                    
+                    if (!galleryPos || galleryPos === 'top') {
+                        content = galleryPlaceholder + "\n" + content;
+                    } else if (galleryPos === 'middle') {
+                        content = content + "\n" + galleryPlaceholder;
+                    }
                     
                     let demoFooter = '';
                     let promptFooterUsed = null;
@@ -207,6 +251,12 @@ const handleStartAiJob = async (req, res) => {
                         promptFooterUsed = site.aiPromptFooter;
                         content += `\n\n[FOOTER_APPEND]\n${demoFooter}`;
                     }
+
+                    // [UPDATE] Demo Gallery Bottom
+                    if (galleryPos === 'bottom') {
+                        content += "\n" + galleryPlaceholder;
+                    }
+
                     return { siteName: site.siteName, title: demoTitle, excerpt: demoExcerpt, content: content, promptTitle: promptTitleUsed, promptExcerpt: promptExcerptUsed, promptFooter: promptFooterUsed };
                 } catch (err) { return { siteName: site.siteName, error: err.message }; }
             }));
@@ -230,7 +280,8 @@ const handleStartAiJob = async (req, res) => {
     // +++ NAP QUEUE MOI +++
     for (const app of apps) {
         for (const site of sites) {
-            aiJobState.queue.push({ app, site, postStatus });
+            // [UPDATE] Pass them params vao queue task
+            aiJobState.queue.push({ app, site, postStatus, galleryPos, galleryAlt });
         }
     }
 
@@ -245,7 +296,8 @@ const handleStartAiJob = async (req, res) => {
             if (aiJobState.isStopping) break;
 
             const batch = aiJobState.queue.splice(0, numConcurrency);
-            await Promise.all(batch.map(task => processSingleItem(task.app, task.site, openAiKey, io, task.postStatus)));
+            // [UPDATE] Goi processSingleItem voi cac param moi tu task
+            await Promise.all(batch.map(task => processSingleItem(task.app, task.site, openAiKey, io, task.postStatus, task.galleryPos, task.galleryAlt)));
             
             io.emit('ai_job:update_stats', aiJobState.stats);
             

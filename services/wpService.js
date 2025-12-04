@@ -16,12 +16,18 @@ function getAuthHeader(apiKey) {
 /**
  * Upload 1 file anh len WP Media Library
  * Tra ve { id, url }
+ * [UPDATE] Them tham so altText
  */
-async function uploadMedia(site, localPath) {
+async function uploadMedia(site, localPath, altText = '') {
     if (!fs.existsSync(localPath)) return null;
 
     const formData = new FormData();
     formData.append('file', fs.createReadStream(localPath));
+
+    // +++ MOI: Chi them Alt Text (van ban thay the), khong them caption/description +++
+    if (altText) {
+        formData.append('alt_text', altText);
+    }
 
     try {
         const res = await axios.post(`${site.siteUrl}/wp-json/wp/v2/media`, formData, {
