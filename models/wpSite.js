@@ -41,11 +41,29 @@ const WpSite = sequelize.define('WpSite', {
     allowNull: true,
     comment: 'Prompt mau de tao noi dung chinh'
   },
-  // --- MOI: Prompt Footer (Them vao cuoi) ---
+  // --- Prompt Footer ---
   aiPromptFooter: {
     type: DataTypes.TEXT,
     allowNull: true,
     comment: 'Prompt de tao noi dung them vao cuoi bai (vd: Loi ket, CTA)'
+  },
+  // --- ALT Text cho Gallery ---
+  galleryAlt: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'Alt text mac dinh cho anh Gallery'
+  },
+  // --- ALT Text cho Featured Image ---
+  featuredImageAlt: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    comment: 'Alt text mac dinh cho anh dai dien (Featured Image)'
+  },
+  // +++ MOI: Download Link Template +++
+  downloadLink: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Mau nut download (ho tro shortcode {url}, {version}, {size}...)'
   }
 }, {
   tableName: 'wp_sites',

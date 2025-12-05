@@ -27,7 +27,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiPromptTitleInput = document.getElementById('wp-ai-prompt-title');
     const aiPromptExcerptInput = document.getElementById('wp-ai-prompt-excerpt');
     const aiPromptInput = document.getElementById('wp-ai-prompt');
-    const aiPromptFooterInput = document.getElementById('wp-ai-prompt-footer'); // +++ MOI +++
+    const aiPromptFooterInput = document.getElementById('wp-ai-prompt-footer'); 
+    const galleryAltInput = document.getElementById('wp-gallery-alt'); 
+    const featuredAltInput = document.getElementById('wp-featured-alt'); 
+    const downloadLinkInput = document.getElementById('wp-download-link'); // +++ MOI +++
     
     const submitButton = document.getElementById('wp-form-submit');
     const submitButtonIcon = document.getElementById('wp-btn-icon');
@@ -113,7 +116,10 @@ document.addEventListener('DOMContentLoaded', () => {
         aiPromptInput.value = ''; 
         if(aiPromptTitleInput) aiPromptTitleInput.value = '';
         if(aiPromptExcerptInput) aiPromptExcerptInput.value = '';
-        if(aiPromptFooterInput) aiPromptFooterInput.value = ''; // +++ Reset Footer +++
+        if(aiPromptFooterInput) aiPromptFooterInput.value = ''; 
+        if(galleryAltInput) galleryAltInput.value = ''; 
+        if(featuredAltInput) featuredAltInput.value = ''; 
+        if(downloadLinkInput) downloadLinkInput.value = ''; // +++ Reset +++
         
         hideModalError();
         
@@ -132,7 +138,10 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if(aiPromptTitleInput) aiPromptTitleInput.value = site.aiPromptTitle || '';
         if(aiPromptExcerptInput) aiPromptExcerptInput.value = site.aiPromptExcerpt || '';
-        if(aiPromptFooterInput) aiPromptFooterInput.value = site.aiPromptFooter || ''; // +++ Fill Footer +++
+        if(aiPromptFooterInput) aiPromptFooterInput.value = site.aiPromptFooter || ''; 
+        if(galleryAltInput) galleryAltInput.value = site.galleryAlt || ''; 
+        if(featuredAltInput) featuredAltInput.value = site.featuredImageAlt || ''; 
+        if(downloadLinkInput) downloadLinkInput.value = site.downloadLink || ''; // +++ Load Value +++
         
         formTitle.innerHTML = '<i class="ri-pencil-line mr-2 text-cyan-400"></i> Sửa Site';
         submitButtonIcon.className = 'ri-save-line text-xl mr-2';

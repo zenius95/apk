@@ -9,7 +9,7 @@ const fs = require('fs');
 let aiJobState = {
     isRunning: false,
     isStopping: false,
-    queue: [], // +++ MOI: Quan ly queue toan cuc +++
+    queue: [], 
     logs: [],
     stats: { total: 0, success: 0, failed: 0, skipped: 0 }
 };
@@ -36,7 +36,7 @@ const getSafeAppData = (appRecord) => {
     return rawData;
 };
 
-// Helper: Replace Shortcode (Tách ra để dùng chung cho Prompt và Alt)
+// [UPDATE] Full options Shortcode
 const replaceShortcodes = (text, appData) => {
     if (!text) return '';
     return text
@@ -44,11 +44,18 @@ const replaceShortcodes = (text, appData) => {
         .replace(/{summary}/g, appData.summary || '')
         .replace(/{description}/g, appData.description || '')
         .replace(/{developer}/g, appData.developer || '')
-        .replace(/{score}/g, appData.scoreText || '');
+        .replace(/{score}/g, appData.scoreText || '')
+        // New Shortcodes
+        .replace(/{url}/g, appData.url || '#')
+        .replace(/{version}/g, appData.version || 'Latest')
+        .replace(/{size}/g, appData.size || 'Varies with device')
+        .replace(/{updated}/g, appData.updated ? new Date(appData.updated).toLocaleDateString('vi-VN') : 'Unknown')
+        .replace(/{genre}/g, appData.genre || 'App')
+        .replace(/{installs}/g, appData.installs || 'N/A')
+        .replace(/{icon}/g, appData.icon || '');
 };
 
-// [UPDATE] Thêm tham số galleryPos, galleryAltTemplate vào hàm xử lý
-async function processSingleItem(app, site, openAiKey, io, postStatus, galleryPos = 'top', galleryAltTemplate = '') {
+async function processSingleItem(app, site, openAiKey, io, postStatus) {
     const appId = app.appId;
     const siteId = site.id;
 
@@ -88,14 +95,17 @@ async function processSingleItem(app, site, openAiKey, io, postStatus, galleryPo
         let featuredMediaId = 0;
         let uploadedScreenshotIds = [];
 
-        // +++ MOI: Parse Alt Text cho anh +++
-        const finalAltText = replaceShortcodes(galleryAltTemplate, appData);
+        // Parse Alt Text
+        const galleryAltTemplate = site.galleryAlt || ''; 
+        const finalGalleryAlt = replaceShortcodes(galleryAltTemplate, appData);
+
+        const featAltTemplate = site.featuredImageAlt || '';
+        const finalFeatAlt = replaceShortcodes(featAltTemplate, appData);
 
         if (wpFullData.icon) {
             const localPath = getLocalPath(wpFullData.icon);
             if (fs.existsSync(localPath)) {
-                // [UPDATE] Truyen Alt Text vao uploadMedia
-                const uploaded = await wpService.uploadMedia(site, localPath, finalAltText || `Icon ${appData.title}`);
+                const uploaded = await wpService.uploadMedia(site, localPath, finalFeatAlt || `Icon ${appData.title}`);
                 if (uploaded) { featuredMediaId = uploaded.id; wpFullData.icon = uploaded.url; }
             }
         }
@@ -103,8 +113,7 @@ async function processSingleItem(app, site, openAiKey, io, postStatus, galleryPo
         if (wpFullData.headerImage) {
             const localPath = getLocalPath(wpFullData.headerImage);
             if (fs.existsSync(localPath)) {
-                // [UPDATE] Truyen Alt Text vao uploadMedia
-                const uploaded = await wpService.uploadMedia(site, localPath, finalAltText || `Banner ${appData.title}`);
+                const uploaded = await wpService.uploadMedia(site, localPath, finalFeatAlt || `Banner ${appData.title}`);
                 if (uploaded) wpFullData.headerImage = uploaded.url; 
             }
         }
@@ -115,8 +124,7 @@ async function processSingleItem(app, site, openAiKey, io, postStatus, galleryPo
                 const localPath = getLocalPath(ssUrl);
                 if (!localPath || !fs.existsSync(localPath)) { return { url: ssUrl, id: null }; }
                 
-                // [UPDATE] Truyen Alt Text (DA LOAI BO SO THU TU)
-                const ssAlt = finalAltText ? finalAltText : `Screenshot ${appData.title}`;
+                const ssAlt = finalGalleryAlt ? finalGalleryAlt : `Screenshot ${appData.title}`;
                 const uploaded = await wpService.uploadMedia(site, localPath, ssAlt);
                 
                 return uploaded && uploaded.id ? { url: uploaded.url, id: uploaded.id } : { url: ssUrl, id: null };
@@ -128,22 +136,16 @@ async function processSingleItem(app, site, openAiKey, io, postStatus, galleryPo
             if(uploadedScreenshotIds.length > 0) addLog(io, 'INFO', `✨ Upload thành công ${uploadedScreenshotIds.length} ảnh.`);
         }
 
-        // --- 4. GALLERY LOGIC (MOI: CHON VI TRI) ---
+        // --- 4. GALLERY LOGIC ---
         let galleryShortcode = '';
         if (uploadedScreenshotIds.length > 0) {
             galleryShortcode = `[gallery columns="3" link="file" size="medium" ids="${uploadedScreenshotIds.join(',')}"]`;
-            addLog(io, 'INFO', `📝 Đã tạo Gallery Shortcode (Vị trí: ${galleryPos}).`);
+            addLog(io, 'INFO', `📝 Đã tạo Gallery Shortcode.`);
         }
 
-        // Xử lý chèn Gallery dựa trên vị trí
+        // Insert Gallery (Sau content)
         if (galleryShortcode) {
-            if (galleryPos === 'top') {
-                generatedContent = galleryShortcode + "\n\n" + generatedContent;
-            } 
-            else if (galleryPos === 'middle') {
-                generatedContent = generatedContent + "\n\n" + galleryShortcode;
-            }
-            // Neu la 'bottom', se noi vao sau footer hoac cuoi cung
+            generatedContent += `\n\n${galleryShortcode}`;
         }
 
         // --- 5. FOOTER CONTENT ---
@@ -152,9 +154,11 @@ async function processSingleItem(app, site, openAiKey, io, postStatus, galleryPo
             generatedContent += `\n\n${footerContent}`; 
         }
 
-        // [UPDATE] Xu ly Gallery Bottom (sau khi da co footer)
-        if (galleryShortcode && galleryPos === 'bottom') {
-            generatedContent += `\n\n${galleryShortcode}`;
+        // --- 6. DOWNLOAD LINK (MOI: CHUYEN XUONG CUOI CUNG) ---
+        if (site.downloadLink && site.downloadLink.trim()) {
+            const finalDownloadLink = replaceShortcodes(site.downloadLink, appData);
+            generatedContent += `\n\n${finalDownloadLink}`;
+            addLog(io, 'INFO', `🔗 Đã chèn Download Link (Cuối bài).`);
         }
 
         // --- TERMS ---
@@ -202,8 +206,7 @@ async function processSingleItem(app, site, openAiKey, io, postStatus, galleryPo
 
 const handleStartAiJob = async (req, res) => {
     const io = req.io;
-    // [UPDATE] Lay them params galleryPos, galleryAlt
-    const { appIds, siteIds, openAiKey, concurrency, delay, isDemo, postStatus, galleryPos, galleryAlt } = req.body;
+    const { appIds, siteIds, openAiKey, concurrency, delay, isDemo, postStatus } = req.body;
 
     if (!isDemo && aiJobState.isRunning) return res.status(400).json({ message: "Job đang chạy rồi!" });
     if (!appIds || !siteIds || !openAiKey) return res.status(400).json({ message: "Thiếu thông tin!" });
@@ -235,15 +238,12 @@ const handleStartAiJob = async (req, res) => {
                     }
                     let content = await aiService.generateContent(openAiKey, site.aiPrompt, appData);
                     
-                    // [UPDATE] Demo Gallery Placeholder theo vi tri
-                    const galleryPlaceholder = `\n[GALLERY_PLACEHOLDER: Vị trí ${galleryPos || 'top'} - Alt: "${replaceShortcodes(galleryAlt, appData) || 'Default'}"]\n`;
-                    
-                    if (!galleryPos || galleryPos === 'top') {
-                        content = galleryPlaceholder + "\n" + content;
-                    } else if (galleryPos === 'middle') {
-                        content = content + "\n" + galleryPlaceholder;
-                    }
-                    
+                    // Demo Gallery
+                    const siteGalAlt = replaceShortcodes(site.galleryAlt || '', appData);
+                    const galleryPlaceholder = `\n[GALLERY_AUTO - Alt: "${siteGalAlt || 'Default'}"]\n`;
+                    content += "\n" + galleryPlaceholder;
+
+                    // Demo Footer
                     let demoFooter = '';
                     let promptFooterUsed = null;
                     if (site.aiPromptFooter && site.aiPromptFooter.trim()) {
@@ -252,9 +252,10 @@ const handleStartAiJob = async (req, res) => {
                         content += `\n\n[FOOTER_APPEND]\n${demoFooter}`;
                     }
 
-                    // [UPDATE] Demo Gallery Bottom
-                    if (galleryPos === 'bottom') {
-                        content += "\n" + galleryPlaceholder;
+                    // Demo Download Link (BOTTOM)
+                    if (site.downloadLink && site.downloadLink.trim()) {
+                        const demoDownloadLink = replaceShortcodes(site.downloadLink, appData);
+                        content += `\n\n${demoDownloadLink}`;
                     }
 
                     return { siteName: site.siteName, title: demoTitle, excerpt: demoExcerpt, content: content, promptTitle: promptTitleUsed, promptExcerpt: promptExcerptUsed, promptFooter: promptFooterUsed };
@@ -275,13 +276,12 @@ const handleStartAiJob = async (req, res) => {
     aiJobState.isStopping = false;
     aiJobState.logs = [];
     aiJobState.stats = { total: apps.length * sites.length, success: 0, failed: 0, skipped: 0 };
-    aiJobState.queue = []; // Xoa queue cu
+    aiJobState.queue = []; 
 
     // +++ NAP QUEUE MOI +++
     for (const app of apps) {
         for (const site of sites) {
-            // [UPDATE] Pass them params vao queue task
-            aiJobState.queue.push({ app, site, postStatus, galleryPos, galleryAlt });
+            aiJobState.queue.push({ app, site, postStatus });
         }
     }
 
@@ -296,12 +296,10 @@ const handleStartAiJob = async (req, res) => {
             if (aiJobState.isStopping) break;
 
             const batch = aiJobState.queue.splice(0, numConcurrency);
-            // [UPDATE] Goi processSingleItem voi cac param moi tu task
-            await Promise.all(batch.map(task => processSingleItem(task.app, task.site, openAiKey, io, task.postStatus, task.galleryPos, task.galleryAlt)));
+            await Promise.all(batch.map(task => processSingleItem(task.app, task.site, openAiKey, io, task.postStatus)));
             
             io.emit('ai_job:update_stats', aiJobState.stats);
             
-            // Delay thong minh: Chi delay neu con hang doi va chua bi dung
             if (aiJobState.queue.length > 0 && !aiJobState.isStopping) {
                 await new Promise(r => setTimeout(r, numDelay));
             }
@@ -319,12 +317,11 @@ const handleStartAiJob = async (req, res) => {
     })();
 };
 
-// +++ FIX: STOPPING LOGIC +++
 const handleStopAiJob = (req, res) => {
     if (!aiJobState.isRunning) return res.status(400).json({ message: "Không có Job nào để dừng." });
     
     aiJobState.isStopping = true;
-    aiJobState.queue = []; // <--- XOA QUEUE DE DUNG NGAY
+    aiJobState.queue = []; 
     
     addLog(req.io, 'WARN', '⚠️ Lệnh DỪNG đã được kích hoạt! Đang hủy hàng đợi...');
     return res.status(200).json({ message: "Đang dừng..." });

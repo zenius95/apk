@@ -310,8 +310,8 @@ const handleGetWpSites = async (req, res) => {
 };
 
 const handleCreateWpSite = async (req, res) => {
-  // +++ UPDATE: Nhan aiPromptFooter +++
-  const { siteName, siteUrl, apiKey, aiPrompt, aiPromptTitle, aiPromptExcerpt, aiPromptFooter } = req.body;
+  // +++ UPDATE: Nhan them downloadLink +++
+  const { siteName, siteUrl, apiKey, aiPrompt, aiPromptTitle, aiPromptExcerpt, aiPromptFooter, galleryAlt, featuredImageAlt, downloadLink } = req.body;
   
   if (!siteName || !siteUrl || !apiKey) {
     return res.status(400).json({ success: false, message: 'Nhập thiếu rồi Bro. Cần Tên, URL, và API Key.' });
@@ -325,7 +325,10 @@ const handleCreateWpSite = async (req, res) => {
       aiPrompt: aiPrompt || '',
       aiPromptTitle: aiPromptTitle || '',
       aiPromptExcerpt: aiPromptExcerpt || '',
-      aiPromptFooter: aiPromptFooter || '' // Luu Footer
+      aiPromptFooter: aiPromptFooter || '', 
+      galleryAlt: galleryAlt || '',
+      featuredImageAlt: featuredImageAlt || '',
+      downloadLink: downloadLink || '' // +++ Save +++
     });
     return res.status(201).json({ success: true, message: 'Đã thêm site mới ngon lành!', site: newSite });
   } catch (err) {
@@ -342,8 +345,8 @@ const handleCreateWpSite = async (req, res) => {
 
 const handleUpdateWpSite = async (req, res) => {
   const { id } = req.params;
-  // +++ UPDATE: Nhan aiPromptFooter +++
-  const { siteName, siteUrl, apiKey, aiPrompt, aiPromptTitle, aiPromptExcerpt, aiPromptFooter } = req.body;
+  // +++ UPDATE: Nhan them downloadLink +++
+  const { siteName, siteUrl, apiKey, aiPrompt, aiPromptTitle, aiPromptExcerpt, aiPromptFooter, galleryAlt, featuredImageAlt, downloadLink } = req.body;
 
   if (!siteName || !siteUrl || !apiKey) {
     return res.status(400).json({ success: false, message: 'Nhập thiếu rồi Bro. Cần Tên, URL, và API Key.' });
@@ -361,7 +364,10 @@ const handleUpdateWpSite = async (req, res) => {
     site.aiPrompt = aiPrompt || ''; 
     site.aiPromptTitle = aiPromptTitle || '';
     site.aiPromptExcerpt = aiPromptExcerpt || '';
-    site.aiPromptFooter = aiPromptFooter || ''; // Cap nhat Footer
+    site.aiPromptFooter = aiPromptFooter || '';
+    site.galleryAlt = galleryAlt || '';
+    site.featuredImageAlt = featuredImageAlt || ''; 
+    site.downloadLink = downloadLink || ''; // +++ Update +++
     
     await site.save();
     
