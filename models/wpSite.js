@@ -49,9 +49,9 @@ const WpSite = sequelize.define('WpSite', {
   },
   // --- ALT Text cho Gallery ---
   galleryAlt: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: true,
-    comment: 'Alt text mac dinh cho anh Gallery'
+    comment: 'Alt text mac dinh cho anh Gallery (ho tro Spintax dang nhieu dong)'
   },
   // --- ALT Text cho Featured Image ---
   featuredImageAlt: {
@@ -59,11 +59,23 @@ const WpSite = sequelize.define('WpSite', {
     allowNull: true,
     comment: 'Alt text mac dinh cho anh dai dien (Featured Image)'
   },
-  // +++ MOI: Download Link Template +++
+  // --- Download Link Template ---
   downloadLink: {
     type: DataTypes.TEXT,
     allowNull: true,
     comment: 'Mau nut download (ho tro shortcode {url}, {version}, {size}...)'
+  },
+  // --- Thoi gian cho Download ---
+  downloadWaitTime: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    comment: 'Thoi gian cho (giay) truoc khi tai. 0 la tat.'
+  },
+  // +++ MOI: Che do hien thi Screenshot (gallery / normal) +++
+  screenshotMode: {
+    type: DataTypes.STRING(20),
+    defaultValue: 'gallery',
+    comment: 'Che do hien thi anh: gallery (mac dinh) hoac normal (anh don)'
   }
 }, {
   tableName: 'wp_sites',

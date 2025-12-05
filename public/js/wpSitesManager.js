@@ -30,7 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const aiPromptFooterInput = document.getElementById('wp-ai-prompt-footer'); 
     const galleryAltInput = document.getElementById('wp-gallery-alt'); 
     const featuredAltInput = document.getElementById('wp-featured-alt'); 
-    const downloadLinkInput = document.getElementById('wp-download-link'); // +++ MOI +++
+    const downloadLinkInput = document.getElementById('wp-download-link');
+    const downloadWaitInput = document.getElementById('wp-download-wait'); // +++ MOI +++
     
     const submitButton = document.getElementById('wp-form-submit');
     const submitButtonIcon = document.getElementById('wp-btn-icon');
@@ -119,7 +120,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if(aiPromptFooterInput) aiPromptFooterInput.value = ''; 
         if(galleryAltInput) galleryAltInput.value = ''; 
         if(featuredAltInput) featuredAltInput.value = ''; 
-        if(downloadLinkInput) downloadLinkInput.value = ''; // +++ Reset +++
+        if(downloadLinkInput) downloadLinkInput.value = '';
+        if(downloadWaitInput) downloadWaitInput.value = ''; // +++ Reset +++
         
         hideModalError();
         
@@ -141,7 +143,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if(aiPromptFooterInput) aiPromptFooterInput.value = site.aiPromptFooter || ''; 
         if(galleryAltInput) galleryAltInput.value = site.galleryAlt || ''; 
         if(featuredAltInput) featuredAltInput.value = site.featuredImageAlt || ''; 
-        if(downloadLinkInput) downloadLinkInput.value = site.downloadLink || ''; // +++ Load Value +++
+        if(downloadLinkInput) downloadLinkInput.value = site.downloadLink || ''; 
+        if(downloadWaitInput) downloadWaitInput.value = site.downloadWaitTime || 0; // +++ Load Value +++
         
         formTitle.innerHTML = '<i class="ri-pencil-line mr-2 text-cyan-400"></i> Sửa Site';
         submitButtonIcon.className = 'ri-save-line text-xl mr-2';

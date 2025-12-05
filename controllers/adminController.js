@@ -310,8 +310,12 @@ const handleGetWpSites = async (req, res) => {
 };
 
 const handleCreateWpSite = async (req, res) => {
-  // +++ UPDATE: Nhan them downloadLink +++
-  const { siteName, siteUrl, apiKey, aiPrompt, aiPromptTitle, aiPromptExcerpt, aiPromptFooter, galleryAlt, featuredImageAlt, downloadLink } = req.body;
+  const { 
+      siteName, siteUrl, apiKey, 
+      aiPrompt, aiPromptTitle, aiPromptExcerpt, aiPromptFooter, 
+      galleryAlt, featuredImageAlt, downloadLink,
+      downloadWaitTime, screenshotMode // +++ MOI +++
+  } = req.body;
   
   if (!siteName || !siteUrl || !apiKey) {
     return res.status(400).json({ success: false, message: 'Nhập thiếu rồi Bro. Cần Tên, URL, và API Key.' });
@@ -328,7 +332,9 @@ const handleCreateWpSite = async (req, res) => {
       aiPromptFooter: aiPromptFooter || '', 
       galleryAlt: galleryAlt || '',
       featuredImageAlt: featuredImageAlt || '',
-      downloadLink: downloadLink || '' // +++ Save +++
+      downloadLink: downloadLink || '',
+      downloadWaitTime: downloadWaitTime || 0,
+      screenshotMode: screenshotMode || 'gallery' // +++ SAVE +++
     });
     return res.status(201).json({ success: true, message: 'Đã thêm site mới ngon lành!', site: newSite });
   } catch (err) {
@@ -345,8 +351,12 @@ const handleCreateWpSite = async (req, res) => {
 
 const handleUpdateWpSite = async (req, res) => {
   const { id } = req.params;
-  // +++ UPDATE: Nhan them downloadLink +++
-  const { siteName, siteUrl, apiKey, aiPrompt, aiPromptTitle, aiPromptExcerpt, aiPromptFooter, galleryAlt, featuredImageAlt, downloadLink } = req.body;
+  const { 
+      siteName, siteUrl, apiKey, 
+      aiPrompt, aiPromptTitle, aiPromptExcerpt, aiPromptFooter, 
+      galleryAlt, featuredImageAlt, downloadLink,
+      downloadWaitTime, screenshotMode // +++ MOI +++
+  } = req.body;
 
   if (!siteName || !siteUrl || !apiKey) {
     return res.status(400).json({ success: false, message: 'Nhập thiếu rồi Bro. Cần Tên, URL, và API Key.' });
@@ -367,7 +377,9 @@ const handleUpdateWpSite = async (req, res) => {
     site.aiPromptFooter = aiPromptFooter || '';
     site.galleryAlt = galleryAlt || '';
     site.featuredImageAlt = featuredImageAlt || ''; 
-    site.downloadLink = downloadLink || ''; // +++ Update +++
+    site.downloadLink = downloadLink || ''; 
+    site.downloadWaitTime = downloadWaitTime || 0; 
+    site.screenshotMode = screenshotMode || 'gallery'; // +++ UPDATE +++
     
     await site.save();
     
