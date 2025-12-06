@@ -18,6 +18,13 @@ const sequelize = new Sequelize(
     port: process.env.DB_PORT || 3306,
     dialect: 'mysql',
     logging: false, // Tat log SQL query cho do roi console
+    dialectOptions: {
+      charset: 'utf8mb4', // [FIX] Ho tro Emoji
+    },
+    define: {
+        charset: 'utf8mb4', // [FIX] Default charset cho cac bang moi
+        collate: 'utf8mb4_unicode_ci'
+    },
     pool: {
       max: 5,
       min: 0,

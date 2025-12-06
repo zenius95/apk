@@ -35,6 +35,8 @@ const WpPostLog = sequelize.define('WpPostLog', {
 }, {
   tableName: 'wp_post_logs',
   timestamps: true,
+  charset: 'utf8mb4', // [FIX] Quan trong: Cho phep luu emoji
+  collate: 'utf8mb4_unicode_ci', 
   indexes: [
     {
       unique: true,

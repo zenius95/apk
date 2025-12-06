@@ -31,7 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const galleryAltInput = document.getElementById('wp-gallery-alt'); 
     const featuredAltInput = document.getElementById('wp-featured-alt'); 
     const downloadLinkInput = document.getElementById('wp-download-link');
-    const downloadWaitInput = document.getElementById('wp-download-wait'); // +++ MOI +++
+    const downloadWaitInput = document.getElementById('wp-download-wait'); 
+    
+    // [FIX] Thêm biến input cho chế độ ảnh màn hình
+    const screenshotModeInput = document.getElementById('wp-screenshot-mode'); 
     
     const submitButton = document.getElementById('wp-form-submit');
     const submitButtonIcon = document.getElementById('wp-btn-icon');
@@ -121,7 +124,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if(galleryAltInput) galleryAltInput.value = ''; 
         if(featuredAltInput) featuredAltInput.value = ''; 
         if(downloadLinkInput) downloadLinkInput.value = '';
-        if(downloadWaitInput) downloadWaitInput.value = ''; // +++ Reset +++
+        if(downloadWaitInput) downloadWaitInput.value = ''; 
+        
+        // [FIX] Reset chế độ hiển thị về mặc định
+        if(screenshotModeInput) screenshotModeInput.value = 'gallery'; 
         
         hideModalError();
         
@@ -144,7 +150,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if(galleryAltInput) galleryAltInput.value = site.galleryAlt || ''; 
         if(featuredAltInput) featuredAltInput.value = site.featuredImageAlt || ''; 
         if(downloadLinkInput) downloadLinkInput.value = site.downloadLink || ''; 
-        if(downloadWaitInput) downloadWaitInput.value = site.downloadWaitTime || 0; // +++ Load Value +++
+        if(downloadWaitInput) downloadWaitInput.value = site.downloadWaitTime || 0; 
+        
+        // [FIX] Load giá trị chế độ hiển thị đã lưu
+        if(screenshotModeInput) screenshotModeInput.value = site.screenshotMode || 'gallery';
         
         formTitle.innerHTML = '<i class="ri-pencil-line mr-2 text-cyan-400"></i> Sửa Site';
         submitButtonIcon.className = 'ri-save-line text-xl mr-2';
