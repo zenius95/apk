@@ -102,19 +102,30 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
         const featAltTemplate = site.featuredImageAlt || '';
         const finalFeatAlt = replaceShortcodes(featAltTemplate, appData);
 
-        if (wpFullData.icon) {
-            const localPath = getLocalPath(wpFullData.icon);
-            if (fs.existsSync(localPath)) {
-                const uploaded = await wpService.uploadMedia(site, localPath, finalFeatAlt || `Icon ${appData.title}`);
-                if (uploaded) { featuredMediaId = uploaded.id; wpFullData.icon = uploaded.url; }
-            }
-        }
+        let isHeaderUploaded = false; // Biến cờ để đánh dấu
 
+        // 1. Ưu tiên xử lý Header Image trước
         if (wpFullData.headerImage) {
             const localPath = getLocalPath(wpFullData.headerImage);
             if (fs.existsSync(localPath)) {
                 const uploaded = await wpService.uploadMedia(site, localPath, finalFeatAlt || `Banner ${appData.title}`);
-                if (uploaded) wpFullData.headerImage = uploaded.url; 
+                if (uploaded) { 
+                    wpFullData.headerImage = uploaded.url;
+                    featuredMediaId = uploaded.id; // Set luôn làm ảnh đại diện
+                    isHeaderUploaded = true; // Đánh dấu là đã có hàng xịn
+                }
+            }
+        }
+
+        // 2. Chỉ upload Icon nếu KHÔNG có Header (hoặc upload Header bị lỗi)
+        if (!isHeaderUploaded && wpFullData.icon) {
+            const localPath = getLocalPath(wpFullData.icon);
+            if (fs.existsSync(localPath)) {
+                const uploaded = await wpService.uploadMedia(site, localPath, finalFeatAlt || `Icon ${appData.title}`);
+                if (uploaded) { 
+                    featuredMediaId = uploaded.id; // Lấy Icon làm ảnh đại diện (chữa cháy)
+                    wpFullData.icon = uploaded.url; 
+                }
             }
         }
 
