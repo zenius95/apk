@@ -9,7 +9,7 @@ const fs = require('fs');
 let aiJobState = {
     isRunning: false,
     isStopping: false,
-    queue: [], 
+    queue: [],
     logs: [],
     stats: { total: 0, success: 0, failed: 0, skipped: 0 }
 };
@@ -62,23 +62,32 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
     // Check Duplicate
     const existing = await WpPostLog.findOne({ where: { appId, wpSiteId: siteId } });
     if (existing) {
-        addLog(io, 'WARN', `⏩ Bỏ qua: ${app.title} đã đăng trên ${site.siteName}.`);
-        aiJobState.stats.skipped++;
-        return;
+        // [UPDATE] Check check thuc te tren WP
+        const isExistOnWp = await wpService.checkPostExists(site, existing.wpPostId);
+
+        if (isExistOnWp) {
+            addLog(io, 'WARN', `⏩ Bỏ qua: ${app.title} đã đăng trên ${site.siteName}.`);
+            aiJobState.stats.skipped++;
+            return;
+        } else {
+            // Neu khong con tren WP -> Xoa Log cu -> Chay tiep
+            addLog(io, 'WARN', `⚠️ Bài cũ (ID ${existing.wpPostId}) đã bị xóa trên WP. Đang đăng lại...`);
+            await WpPostLog.destroy({ where: { id: existing.id } });
+        }
     }
 
     addLog(io, 'INFO', `🤖 Đang xử lý: ${app.title} -> ${site.siteName}...`);
 
     try {
         if (!site.aiPrompt) throw new Error("Site chưa cấu hình Prompt Nội dung!");
-        
+
         const appData = getSafeAppData(app);
 
         // --- 1. TITLE ---
         let finalTitle = app.title;
         if (site.aiPromptTitle && site.aiPromptTitle.trim()) {
             finalTitle = await aiService.generateContent(openAiKey, site.aiPromptTitle, appData);
-            finalTitle = finalTitle.replace(/^"|"$/g, '').trim(); 
+            finalTitle = finalTitle.replace(/^"|"$/g, '').trim();
         }
 
         // --- 2. EXCERPT ---
@@ -91,12 +100,12 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
         let generatedContent = await aiService.generateContent(openAiKey, site.aiPrompt, appData);
 
         // --- MEDIA UPLOAD ---
-        let wpFullData = JSON.parse(JSON.stringify(appData)); 
+        let wpFullData = JSON.parse(JSON.stringify(appData));
         let featuredMediaId = 0;
         let uploadedScreenshots = []; // Luu object {id, url, alt}
 
         // Parse Alt Text & Prepare Random Lines
-        const galleryAltRaw = site.galleryAlt || ''; 
+        const galleryAltRaw = site.galleryAlt || '';
         const galleryAltLines = galleryAltRaw.split('\n').map(line => line.trim()).filter(line => line);
 
         const featAltTemplate = site.featuredImageAlt || '';
@@ -109,12 +118,24 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
             const localPath = getLocalPath(wpFullData.headerImage);
             if (fs.existsSync(localPath)) {
                 const uploaded = await wpService.uploadMedia(site, localPath, finalFeatAlt || `Banner ${appData.title}`);
-                if (uploaded) { 
+                if (uploaded) {
                     wpFullData.headerImage = uploaded.url;
                     featuredMediaId = uploaded.id; // Set luôn làm ảnh đại diện
                     isHeaderUploaded = true; // Đánh dấu là đã có hàng xịn
+                    addLog(io, 'INFO', `📸 Đã upload Header Image thành công (ID: ${uploaded.id})`);
+                } else {
+                    // [LOG] Co Header nhung upload loi
+                    addLog(io, 'WARN', `⚠️ Có ảnh Header nhưng upload thất bại!`);
                 }
+            } else {
+                // [LOG] Co Header path trong DB nhung file khong ton tai
+                addLog(io, 'WARN', `⚠️ Có ảnh Header (DB) nhưng không tìm thấy file local!`);
             }
+        }
+
+        // [VALIDATION] Check Case: Co headerImage nhung featuredMediaId van = 0 -> Warning
+        if (wpFullData.headerImage && !featuredMediaId) {
+            addLog(io, 'WARN', `⚠️ Cảnh báo: Bài viết sẽ không có Featured Image dù có Header Image data.`);
         }
 
         // 2. Chỉ upload Icon nếu KHÔNG có Header (hoặc upload Header bị lỗi)
@@ -122,20 +143,21 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
             const localPath = getLocalPath(wpFullData.icon);
             if (fs.existsSync(localPath)) {
                 const uploaded = await wpService.uploadMedia(site, localPath, finalFeatAlt || `Icon ${appData.title}`);
-                if (uploaded) { 
+                if (uploaded) {
                     featuredMediaId = uploaded.id; // Lấy Icon làm ảnh đại diện (chữa cháy)
-                    wpFullData.icon = uploaded.url; 
+                    wpFullData.icon = uploaded.url;
+                    addLog(io, 'INFO', `📸 Đã upload Icon làm Featured Image (ID: ${uploaded.id})`);
                 }
             }
         }
 
         if (wpFullData.screenshots && wpFullData.screenshots.length > 0) {
             addLog(io, 'INFO', `📸 Tìm thấy ${wpFullData.screenshots.length} ảnh screenshots trong DB.`);
-            
+
             const uploadPromises = wpFullData.screenshots.map(async (ssUrl, index) => {
                 const localPath = getLocalPath(ssUrl);
                 if (!localPath || !fs.existsSync(localPath)) { return { url: ssUrl, id: null, alt: '' }; }
-                
+
                 // Logic Random Alt Line
                 let selectedTemplate = '';
                 if (galleryAltLines.length > 0) {
@@ -144,22 +166,22 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
 
                 let ssAlt = replaceShortcodes(selectedTemplate, appData);
                 if (!ssAlt) ssAlt = `Screenshot ${appData.title}`;
-                
+
                 // Manual number {i}
                 if (ssAlt.includes('{i}')) {
                     ssAlt = ssAlt.replace(/{i}/g, index + 1);
                 }
 
                 const uploaded = await wpService.uploadMedia(site, localPath, ssAlt);
-                
+
                 return uploaded && uploaded.id ? { url: uploaded.url, id: uploaded.id, alt: ssAlt } : { url: ssUrl, id: null, alt: '' };
             });
-            
+
             uploadedScreenshots = await Promise.all(uploadPromises);
             wpFullData.screenshots = uploadedScreenshots.map(r => r.url);
-            
+
             const successCount = uploadedScreenshots.filter(r => r.id).length;
-            if(successCount > 0) addLog(io, 'INFO', `✨ Upload thành công ${successCount} ảnh.`);
+            if (successCount > 0) addLog(io, 'INFO', `✨ Upload thành công ${successCount} ảnh.`);
         }
 
         // --- 4. DISPLAY MODE LOGIC (GALLERY vs NORMAL) ---
@@ -189,18 +211,18 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
         // --- 5. FOOTER CONTENT ---
         if (site.aiPromptFooter && site.aiPromptFooter.trim()) {
             const footerContent = await aiService.generateContent(openAiKey, site.aiPromptFooter, appData);
-            generatedContent += `\n\n${footerContent}`; 
+            generatedContent += `\n\n${footerContent}`;
         }
 
         // --- 6. DOWNLOAD LINK & SCRIPT ---
         if (site.downloadLink && site.downloadLink.trim()) {
             let finalDownloadLink = replaceShortcodes(site.downloadLink, appData);
-            
+
             // Logic Script Countdown (Manual Click)
             if (site.downloadWaitTime && site.downloadWaitTime > 0) {
                 const waitTime = parseInt(site.downloadWaitTime);
                 const uniqueId = `dl-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-                
+
                 const scriptWrapper = `
 <div id="${uniqueId}" class="download-wrapper">${finalDownloadLink}</div>
 <script>
@@ -232,10 +254,10 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
             title: finalTitle,
             content: generatedContent,
             excerpt: finalExcerpt,
-            status: postStatus || 'publish', 
+            status: postStatus || 'publish',
             featured_media: featuredMediaId || undefined,
-            categories: categoryIds, 
-            tags: tagIds,            
+            categories: categoryIds,
+            tags: tagIds,
             meta: { app_full_data: wpFullData }
         };
 
@@ -246,7 +268,7 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
             wpSiteId: siteId,
             wpPostId: wpPost.id,
             status: 'SUCCESS',
-            aiContent: generatedContent 
+            aiContent: generatedContent
         });
 
         addLog(io, 'mW_OK', `✅ Đã đăng: ${finalTitle} (ID: ${wpPost.id})`);
@@ -268,7 +290,7 @@ const handleStartAiJob = async (req, res) => {
     // === DEMO MODE ===
     if (isDemo) {
         try {
-            const app = await App.findOne({ where: { appId: appIds[0] } }); 
+            const app = await App.findOne({ where: { appId: appIds[0] } });
             if (!app) return res.status(404).json({ message: "Không tìm thấy App." });
             const appData = getSafeAppData(app);
             const sites = await WpSite.findAll({ where: { id: siteIds } });
@@ -291,13 +313,13 @@ const handleStartAiJob = async (req, res) => {
                         promptExcerptUsed = site.aiPromptExcerpt;
                     }
                     let content = await aiService.generateContent(openAiKey, site.aiPrompt, appData);
-                    
+
                     // Demo Gallery/Normal Images
                     const galleryAltRaw = site.galleryAlt || '';
                     const galleryAltLines = galleryAltRaw.split('\n').map(l => l.trim()).filter(l => l);
                     let demoAltLine = galleryAltLines.length > 0 ? galleryAltLines[0] : `Screenshot ${appData.title}`;
                     demoAltLine = replaceShortcodes(demoAltLine, appData);
-                    
+
                     let imagesPlaceholder = '';
                     if (site.screenshotMode === 'normal') {
                         imagesPlaceholder = `\n[NORMAL IMAGES AUTO]\n<img src="demo1.jpg" alt="${demoAltLine} 1" ...>\n<img src="demo2.jpg" alt="${demoAltLine} 2" ...>\n`;
@@ -341,7 +363,7 @@ const handleStartAiJob = async (req, res) => {
     aiJobState.isStopping = false;
     aiJobState.logs = [];
     aiJobState.stats = { total: apps.length * sites.length, success: 0, failed: 0, skipped: 0 };
-    aiJobState.queue = []; 
+    aiJobState.queue = [];
 
     for (const app of apps) {
         for (const site of sites) {
@@ -361,9 +383,9 @@ const handleStartAiJob = async (req, res) => {
 
             const batch = aiJobState.queue.splice(0, numConcurrency);
             await Promise.all(batch.map(task => processSingleItem(task.app, task.site, openAiKey, io, task.postStatus)));
-            
+
             io.emit('ai_job:update_stats', aiJobState.stats);
-            
+
             if (aiJobState.queue.length > 0 && !aiJobState.isStopping) {
                 await new Promise(r => setTimeout(r, numDelay));
             }
@@ -374,7 +396,7 @@ const handleStartAiJob = async (req, res) => {
         } else {
             addLog(io, 'INFO', `🏁 AI Job hoàn tất! Success: ${aiJobState.stats.success}, Fail: ${aiJobState.stats.failed}, Skipped: ${aiJobState.stats.skipped}`);
         }
-        
+
         io.emit('ai_job:done', aiJobState.stats);
         aiJobState.isRunning = false;
         aiJobState.isStopping = false;
@@ -384,7 +406,7 @@ const handleStartAiJob = async (req, res) => {
 const handleStopAiJob = (req, res) => {
     if (!aiJobState.isRunning) return res.status(400).json({ message: "Không có Job nào để dừng." });
     aiJobState.isStopping = true;
-    aiJobState.queue = []; 
+    aiJobState.queue = [];
     addLog(req.io, 'WARN', '⚠️ Lệnh DỪNG đã được kích hoạt! Đang hủy hàng đợi...');
     return res.status(200).json({ message: "Đang dừng..." });
 };

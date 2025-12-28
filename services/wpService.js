@@ -36,7 +36,7 @@ async function uploadMedia(site, localPath, altText = '') {
                 ...formData.getHeaders()
             }
         });
-        
+
         return {
             id: res.data.id,
             url: res.data.source_url
@@ -54,7 +54,7 @@ async function uploadMedia(site, localPath, altText = '') {
  */
 async function ensureTerm(site, taxonomy, name) {
     if (!name) return null;
-    
+
     // API endpoint: /wp-json/wp/v2/categories hoac /wp-json/wp/v2/tags
     // Luu y: Tham so taxonomy truyen vao nen la 'categories' hoac 'tags'
     // Nhung neu nguoi dung truyen 'category' hay 'tag' (so it) thi minh map lai cho dung
@@ -80,23 +80,48 @@ async function ensureTerm(site, taxonomy, name) {
     } catch (err) {
         // 2. Neu loi do da ton tai (term_exists) hoac 400
         if (err.response && (err.response.data.code === 'term_exists' || err.response.status === 400)) {
-             // Thuong thi WP se tra ve ID cua term da ton tai trong data error, nhung de chac an nhat:
-             // Goi API Search de tim ID cua ten do
-             try {
-                 const searchRes = await axios.get(`${site.siteUrl}/wp-json/wp/v2/${endpoint}?search=${encodeURIComponent(name)}`, {
+            // Thuong thi WP se tra ve ID cua term da ton tai trong data error, nhung de chac an nhat:
+            // Goi API Search de tim ID cua ten do
+            try {
+                const searchRes = await axios.get(`${site.siteUrl}/wp-json/wp/v2/${endpoint}?search=${encodeURIComponent(name)}`, {
                     headers: authHeader
-                 });
-                 // Tim item co ten khop nhat (vi search co the ra ket qua gan dung)
-                 const found = searchRes.data.find(t => t.name.toLowerCase() === name.toLowerCase());
-                 return found ? found.id : null;
-             } catch (searchErr) {
-                 console.error(`[WP Service] Loi tim kiem Term ${name}:`, searchErr.message);
-                 return null;
-             }
+                });
+                // Tim item co ten khop nhat (vi search co the ra ket qua gan dung)
+                const found = searchRes.data.find(t => t.name.toLowerCase() === name.toLowerCase());
+                return found ? found.id : null;
+            } catch (searchErr) {
+                console.error(`[WP Service] Loi tim kiem Term ${name}:`, searchErr.message);
+                return null;
+            }
         }
-        
+
         console.error(`[WP Service] Loi xu ly Term (${endpoint} - ${name}):`, err.message);
         return null;
+    }
+}
+
+/**
+ * Kiem tra bai viet co ton tai tren WP khong (Check 404)
+ */
+async function checkPostExists(site, postId) {
+    if (!postId) return false;
+    try {
+        // GET /wp-json/wp/v2/posts/{id}
+        // Chi can check status 200 la OK
+        await axios.get(`${site.siteUrl}/wp-json/wp/v2/posts/${postId}`, {
+            headers: getAuthHeader(site.apiKey)
+        });
+        return true;
+    } catch (err) {
+        // Neu loi 404 -> Bai viet da bi xoa
+        if (err.response && err.response.status === 404) {
+            return false;
+        }
+        // Cac loi khac (500, mang...) -> Coi nhu ton tai de an toan, hoac throw tuy logic
+        // O day ta tra ve true de tranh spam post moi neu chi la loi mang nhat thoi
+        // Tuy nhien, neu muon chac an co the log loi
+        console.error(`[WP Service] Check Exist Failure (${postId}):`, err.message);
+        return true;
     }
 }
 
@@ -118,4 +143,4 @@ async function createPost(site, postData) {
     }
 }
 
-module.exports = { uploadMedia, createPost, ensureTerm };
+module.exports = { uploadMedia, createPost, ensureTerm, checkPostExists };
