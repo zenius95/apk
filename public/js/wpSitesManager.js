@@ -5,8 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const tableBody = document.getElementById('wp-sites-table-body');
     const placeholder = document.getElementById('wp-table-placeholder');
-    const alertContainer = document.getElementById('alert-container-wp'); 
-    
+    const alertContainer = document.getElementById('alert-container-wp');
+
     // Modal Elements
     const wpSiteModal = document.getElementById('wpSiteModal');
     const wpModalBackdrop = document.getElementById('wpModalBackdrop');
@@ -22,20 +22,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const siteNameInput = document.getElementById('wp-site-name');
     const siteUrlInput = document.getElementById('wp-site-url');
     const apiKeyInput = document.getElementById('wp-api-key');
-    
+
     // Prompts
     const aiPromptTitleInput = document.getElementById('wp-ai-prompt-title');
     const aiPromptExcerptInput = document.getElementById('wp-ai-prompt-excerpt');
     const aiPromptInput = document.getElementById('wp-ai-prompt');
-    const aiPromptFooterInput = document.getElementById('wp-ai-prompt-footer'); 
-    const galleryAltInput = document.getElementById('wp-gallery-alt'); 
-    const featuredAltInput = document.getElementById('wp-featured-alt'); 
+    const aiPromptFooterInput = document.getElementById('wp-ai-prompt-footer');
+    const galleryAltInput = document.getElementById('wp-gallery-alt');
+    const featuredAltInput = document.getElementById('wp-featured-alt');
     const downloadLinkInput = document.getElementById('wp-download-link');
-    const downloadWaitInput = document.getElementById('wp-download-wait'); 
-    
+
     // [FIX] Thêm biến input cho chế độ ảnh màn hình
-    const screenshotModeInput = document.getElementById('wp-screenshot-mode'); 
-    
+    const screenshotModeInput = document.getElementById('wp-screenshot-mode');
+
     const submitButton = document.getElementById('wp-form-submit');
     const submitButtonIcon = document.getElementById('wp-btn-icon');
     const submitButtonText = document.getElementById('wp-btn-text');
@@ -43,11 +42,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let sites = (typeof initialWpSites !== 'undefined') ? initialWpSites : [];
 
-    function showAlert(message, isError = false) { 
-        alertContainer.innerHTML = ''; 
+    function showAlert(message, isError = false) {
+        alertContainer.innerHTML = '';
         if (!message) return;
-        const t = isError 
-            ? { bg: 'bg-red-900/80', b: 'border-red-700/50', x: 'text-red-200', i: 'Toang!' } 
+        const t = isError
+            ? { bg: 'bg-red-900/80', b: 'border-red-700/50', x: 'text-red-200', i: 'Toang!' }
             : { bg: 'bg-emerald-900/80', b: 'border-emerald-700/50', x: 'text-emerald-200', i: 'Ngon!' };
         alertContainer.innerHTML = `
             <div class="${t.bg} ${t.b} border backdrop-blur-md ${t.x} px-4 py-3 rounded-lg relative shadow-lg" role="alert">
@@ -61,14 +60,14 @@ document.addEventListener('DOMContentLoaded', () => {
         modalAlertMsg.textContent = message;
         modalAlertContainer.classList.remove('hidden');
     }
-    
+
     function hideModalError() {
         modalAlertContainer.classList.add('hidden');
     }
 
     function openModal() {
         wpSiteModal.classList.remove('hidden');
-        hideModalError(); 
+        hideModalError();
         setTimeout(() => {
             wpSiteModal.firstElementChild?.classList.remove('scale-95', 'opacity-0');
         }, 10);
@@ -116,21 +115,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function resetForm() {
         form.reset();
-        siteIdInput.value = ''; 
-        aiPromptInput.value = ''; 
-        if(aiPromptTitleInput) aiPromptTitleInput.value = '';
-        if(aiPromptExcerptInput) aiPromptExcerptInput.value = '';
-        if(aiPromptFooterInput) aiPromptFooterInput.value = ''; 
-        if(galleryAltInput) galleryAltInput.value = ''; 
-        if(featuredAltInput) featuredAltInput.value = ''; 
-        if(downloadLinkInput) downloadLinkInput.value = '';
-        if(downloadWaitInput) downloadWaitInput.value = ''; 
-        
+        siteIdInput.value = '';
+        aiPromptInput.value = '';
+        if (aiPromptTitleInput) aiPromptTitleInput.value = '';
+        if (aiPromptExcerptInput) aiPromptExcerptInput.value = '';
+        if (aiPromptFooterInput) aiPromptFooterInput.value = '';
+        if (galleryAltInput) galleryAltInput.value = '';
+        if (featuredAltInput) featuredAltInput.value = '';
+        if (downloadLinkInput) downloadLinkInput.value = '';
+
         // [FIX] Reset chế độ hiển thị về mặc định
-        if(screenshotModeInput) screenshotModeInput.value = 'gallery'; 
-        
+        if (screenshotModeInput) screenshotModeInput.value = 'gallery';
+
         hideModalError();
-        
+
         formTitle.innerHTML = '<i class="ri-add-line mr-2 text-emerald-400"></i> Thêm Trang Mới';
         submitButtonIcon.className = 'ri-add-line text-xl mr-2';
         submitButtonText.textContent = 'Thêm Site';
@@ -141,20 +139,19 @@ document.addEventListener('DOMContentLoaded', () => {
         siteIdInput.value = site.id;
         siteNameInput.value = site.siteName;
         siteUrlInput.value = site.siteUrl;
-        apiKeyInput.value = site.apiKey; 
-        aiPromptInput.value = site.aiPrompt || ''; 
-        
-        if(aiPromptTitleInput) aiPromptTitleInput.value = site.aiPromptTitle || '';
-        if(aiPromptExcerptInput) aiPromptExcerptInput.value = site.aiPromptExcerpt || '';
-        if(aiPromptFooterInput) aiPromptFooterInput.value = site.aiPromptFooter || ''; 
-        if(galleryAltInput) galleryAltInput.value = site.galleryAlt || ''; 
-        if(featuredAltInput) featuredAltInput.value = site.featuredImageAlt || ''; 
-        if(downloadLinkInput) downloadLinkInput.value = site.downloadLink || ''; 
-        if(downloadWaitInput) downloadWaitInput.value = site.downloadWaitTime || 0; 
-        
+        apiKeyInput.value = site.apiKey;
+        aiPromptInput.value = site.aiPrompt || '';
+
+        if (aiPromptTitleInput) aiPromptTitleInput.value = site.aiPromptTitle || '';
+        if (aiPromptExcerptInput) aiPromptExcerptInput.value = site.aiPromptExcerpt || '';
+        if (aiPromptFooterInput) aiPromptFooterInput.value = site.aiPromptFooter || '';
+        if (galleryAltInput) galleryAltInput.value = site.galleryAlt || '';
+        if (featuredAltInput) featuredAltInput.value = site.featuredImageAlt || '';
+        if (downloadLinkInput) downloadLinkInput.value = site.downloadLink || '';
+
         // [FIX] Load giá trị chế độ hiển thị đã lưu
-        if(screenshotModeInput) screenshotModeInput.value = site.screenshotMode || 'gallery';
-        
+        if (screenshotModeInput) screenshotModeInput.value = site.screenshotMode || 'gallery';
+
         formTitle.innerHTML = '<i class="ri-pencil-line mr-2 text-cyan-400"></i> Sửa Site';
         submitButtonIcon.className = 'ri-save-line text-xl mr-2';
         submitButtonText.textContent = 'Lưu Thay Đổi';
@@ -162,19 +159,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function handleSubmit(e) {
         e.preventDefault();
-        hideModalError(); 
-        
+        hideModalError();
+
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
         const siteId = data.id;
-        const isUpdating = !!siteId; 
-        
+        const isUpdating = !!siteId;
+
         const endpoint = isUpdating ? `/api/wp-sites/${siteId}` : '/api/wp-sites';
         const method = isUpdating ? 'PUT' : 'POST';
 
         submitButton.disabled = true;
         submitButtonText.textContent = isUpdating ? 'Đang lưu...' : 'Đang thêm...';
-        
+
         try {
             const response = await fetch(endpoint, {
                 method: method,
@@ -193,10 +190,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 sites.push(result.site);
             }
-            
+
             sites.sort((a, b) => a.siteName.localeCompare(b.siteName));
-            buildTable(); 
-            closeModal(); 
+            buildTable();
+            closeModal();
 
         } catch (err) {
             showModalError(err.message);
@@ -233,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 confirmButtonText: 'Xoá luôn!',
                 cancelButtonText: 'Huỷ',
                 confirmButtonColor: '#dc2626',
-                cancelButtonColor: '#475569', 
+                cancelButtonColor: '#475569',
                 background: '#1e293b',
                 color: '#e2e8f0'
             });
@@ -243,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const response = await fetch(`/api/wp-sites/${id}`, { method: 'DELETE' });
                     const result = await response.json();
                     if (!response.ok) throw new Error(result.message);
-                    
+
                     showAlert(result.message, false);
                     sites = sites.filter(s => s.id != id);
                     buildTable();
@@ -255,12 +252,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     form.addEventListener('submit', handleSubmit);
-    
+
     btnOpenAddModal.addEventListener('click', () => {
         resetForm();
         openModal();
     });
-    
+
     wpModalCloseBtn.addEventListener('click', closeModal);
     wpModalBackdrop.addEventListener('click', closeModal);
     cancelButton.addEventListener('click', closeModal);

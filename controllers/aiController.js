@@ -59,11 +59,41 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
     const appId = app.appId;
     const siteId = site.id;
 
+    // --- Round Robin Key Selection ---
+    let currentApiKey = '';
+    let currentUser = 'unknown';
+
+    if (site.apiKeys && site.apiKeys.length > 0) {
+        // Lay key hien tai dua tren index
+        const keyIndex = site.currentKeyIndex % site.apiKeys.length;
+        currentApiKey = site.apiKeys[keyIndex];
+
+        // Tang index cho lan sau
+        site.currentKeyIndex++;
+
+        // Extract user tu key (username:password)
+        const parts = currentApiKey.split(':');
+        if (parts.length > 0) currentUser = parts[0];
+    } else {
+        // Fallback neu khong co list (du la khong nen xay ra)
+        currentApiKey = site.apiKey;
+    }
+
+    // Tao mot site object moi (proxy) de override apiKey cho request nay
+    const siteProxy = { ...site.dataValues, apiKey: currentApiKey };
+    // Fix vi site la Model instance, copy spread se lay dataValues, nhung an toan nhat la gan truc tiep
+    // Tuy nhien, wpService su dung site.apiKey, nen ta tao object moi co apiKey dung la duoc.
+    // Vi db model co method, nen tot nhat la clone ra object POJO
+    const siteConfig = {
+        ...site.get({ plain: true }),
+        apiKey: currentApiKey
+    };
+
     // Check Duplicate
     const existing = await WpPostLog.findOne({ where: { appId, wpSiteId: siteId } });
     if (existing) {
         // [UPDATE] Check check thuc te tren WP
-        const isExistOnWp = await wpService.checkPostExists(site, existing.wpPostId);
+        const isExistOnWp = await wpService.checkPostExists(siteConfig, existing.wpPostId);
 
         if (isExistOnWp) {
             addLog(io, 'WARN', `⏩ Bỏ qua: ${app.title} đã đăng trên ${site.siteName}.`);
@@ -76,28 +106,28 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
         }
     }
 
-    addLog(io, 'INFO', `🤖 Đang xử lý: ${app.title} -> ${site.siteName}...`);
+    addLog(io, 'INFO', `🤖 Đang xử lý: ${app.title} -> ${site.siteName} (User: ${currentUser})...`);
 
     try {
-        if (!site.aiPrompt) throw new Error("Site chưa cấu hình Prompt Nội dung!");
+        if (!siteConfig.aiPrompt) throw new Error("Site chưa cấu hình Prompt Nội dung!");
 
         const appData = getSafeAppData(app);
 
         // --- 1. TITLE ---
         let finalTitle = app.title;
-        if (site.aiPromptTitle && site.aiPromptTitle.trim()) {
-            finalTitle = await aiService.generateContent(openAiKey, site.aiPromptTitle, appData);
+        if (siteConfig.aiPromptTitle && siteConfig.aiPromptTitle.trim()) {
+            finalTitle = await aiService.generateContent(openAiKey, siteConfig.aiPromptTitle, appData);
             finalTitle = finalTitle.replace(/^"|"$/g, '').trim();
         }
 
         // --- 2. EXCERPT ---
         let finalExcerpt = appData.summary || '';
-        if (site.aiPromptExcerpt && site.aiPromptExcerpt.trim()) {
-            finalExcerpt = await aiService.generateContent(openAiKey, site.aiPromptExcerpt, appData);
+        if (siteConfig.aiPromptExcerpt && siteConfig.aiPromptExcerpt.trim()) {
+            finalExcerpt = await aiService.generateContent(openAiKey, siteConfig.aiPromptExcerpt, appData);
         }
 
         // --- 3. MAIN CONTENT ---
-        let generatedContent = await aiService.generateContent(openAiKey, site.aiPrompt, appData);
+        let generatedContent = await aiService.generateContent(openAiKey, siteConfig.aiPrompt, appData);
 
         // --- MEDIA UPLOAD ---
         let wpFullData = JSON.parse(JSON.stringify(appData));
@@ -105,10 +135,10 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
         let uploadedScreenshots = []; // Luu object {id, url, alt}
 
         // Parse Alt Text & Prepare Random Lines
-        const galleryAltRaw = site.galleryAlt || '';
+        const galleryAltRaw = siteConfig.galleryAlt || '';
         const galleryAltLines = galleryAltRaw.split('\n').map(line => line.trim()).filter(line => line);
 
-        const featAltTemplate = site.featuredImageAlt || '';
+        const featAltTemplate = siteConfig.featuredImageAlt || '';
         const finalFeatAlt = replaceShortcodes(featAltTemplate, appData);
 
         let isHeaderUploaded = false; // Biến cờ để đánh dấu
@@ -117,7 +147,7 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
         if (wpFullData.headerImage) {
             const localPath = getLocalPath(wpFullData.headerImage);
             if (fs.existsSync(localPath)) {
-                const uploaded = await wpService.uploadMedia(site, localPath, finalFeatAlt || `Banner ${appData.title}`);
+                const uploaded = await wpService.uploadMedia(siteConfig, localPath, finalFeatAlt || `Banner ${appData.title}`);
                 if (uploaded) {
                     wpFullData.headerImage = uploaded.url;
                     featuredMediaId = uploaded.id; // Set luôn làm ảnh đại diện
@@ -142,7 +172,7 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
         if (!isHeaderUploaded && wpFullData.icon) {
             const localPath = getLocalPath(wpFullData.icon);
             if (fs.existsSync(localPath)) {
-                const uploaded = await wpService.uploadMedia(site, localPath, finalFeatAlt || `Icon ${appData.title}`);
+                const uploaded = await wpService.uploadMedia(siteConfig, localPath, finalFeatAlt || `Icon ${appData.title}`);
                 if (uploaded) {
                     featuredMediaId = uploaded.id; // Lấy Icon làm ảnh đại diện (chữa cháy)
                     wpFullData.icon = uploaded.url;
@@ -172,7 +202,7 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
                     ssAlt = ssAlt.replace(/{i}/g, index + 1);
                 }
 
-                const uploaded = await wpService.uploadMedia(site, localPath, ssAlt);
+                const uploaded = await wpService.uploadMedia(siteConfig, localPath, ssAlt);
 
                 return uploaded && uploaded.id ? { url: uploaded.url, id: uploaded.id, alt: ssAlt } : { url: ssUrl, id: null, alt: '' };
             });
@@ -189,7 +219,7 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
         const validScreenshots = uploadedScreenshots.filter(item => item.id);
 
         if (validScreenshots.length > 0) {
-            if (site.screenshotMode === 'normal') {
+            if (siteConfig.screenshotMode === 'normal') {
                 // +++ MOI: Che do Anh thuong +++
                 imagesHtml = validScreenshots.map(img => {
                     return `<p style="text-align: center;"><img src="${img.url}" alt="${img.alt}" class="aligncenter size-full wp-image-${img.id}" style="max-width: 100%; height: auto;" /></p>`;
@@ -209,45 +239,30 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
         }
 
         // --- 5. FOOTER CONTENT ---
-        if (site.aiPromptFooter && site.aiPromptFooter.trim()) {
-            const footerContent = await aiService.generateContent(openAiKey, site.aiPromptFooter, appData);
+        if (siteConfig.aiPromptFooter && siteConfig.aiPromptFooter.trim()) {
+            const footerContent = await aiService.generateContent(openAiKey, siteConfig.aiPromptFooter, appData);
             generatedContent += `\n\n${footerContent}`;
         }
 
-        // --- 6. DOWNLOAD LINK & SCRIPT ---
-        if (site.downloadLink && site.downloadLink.trim()) {
-            let finalDownloadLink = replaceShortcodes(site.downloadLink, appData);
-
-            // Logic Script Countdown (Manual Click)
-            if (site.downloadWaitTime && site.downloadWaitTime > 0) {
-                const waitTime = parseInt(site.downloadWaitTime);
-                const uniqueId = `dl-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
-                const scriptWrapper = `
-<div id="${uniqueId}" class="download-wrapper">${finalDownloadLink}</div>
-<script>
-(function(){var wrapper=document.getElementById('${uniqueId}');if(!wrapper)return;var btn=wrapper.querySelector('a');if(!btn)return;var originalHref=btn.href;var originalText=btn.innerText;var seconds=${waitTime};btn.href='javascript:void(0)';btn.onclick=function(e){e.preventDefault();if(btn.dataset.processing==='true')return;btn.dataset.processing='true';var count=seconds;btn.innerText='Xin chờ '+count+' giây...';var interval=setInterval(function(){count--;if(count<=0){clearInterval(interval);btn.innerText=originalText;btn.dataset.processing='false';btn.href=originalHref;btn.onclick=null;}else{btn.innerText='Xin chờ '+count+' giây...';}},1000);};})();
-</script>`.replace(/[\r\n]+/g, '');
-
-                finalDownloadLink = scriptWrapper;
-                addLog(io, 'INFO', `⏳ Đã thêm script đếm ngược ${waitTime}s (Manual Click) cho nút Download.`);
-            }
-
+        // --- 6. DOWNLOAD LINK ---
+        if (siteConfig.downloadLink && siteConfig.downloadLink.trim()) {
+            let finalDownloadLink = replaceShortcodes(siteConfig.downloadLink, appData);
             generatedContent += `\n\n${finalDownloadLink}`;
-            addLog(io, 'INFO', `🔗 Đã chèn Download Link (Cuối bài).`);
+            addLog(io, 'INFO', `🔗 Đã chèn Custom Script (Cuối bài).`);
         }
 
         // --- TERMS ---
         let categoryIds = [];
         if (appData.genre) {
-            const catId = await wpService.ensureTerm(site, 'categories', appData.genre);
+            const catId = await wpService.ensureTerm(siteConfig, 'categories', appData.genre);
             if (catId) categoryIds.push(catId);
         }
         let tagIds = [];
-        if (appData.developer) {
-            const tagId = await wpService.ensureTerm(site, 'tags', appData.developer);
-            if (tagId) tagIds.push(tagId);
-        }
+        // [UPDATE] Disable Tag Creation per user request
+        // if (appData.developer) {
+        //     const tagId = await wpService.ensureTerm(siteConfig, 'tags', appData.developer);
+        //     if (tagId) tagIds.push(tagId);
+        // }
 
         // --- POSTING ---
         const postData = {
@@ -261,7 +276,7 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
             meta: { app_full_data: wpFullData }
         };
 
-        const wpPost = await wpService.createPost(site, postData);
+        const wpPost = await wpService.createPost(siteConfig, postData);
 
         await WpPostLog.create({
             appId: appId,
@@ -340,9 +355,6 @@ const handleStartAiJob = async (req, res) => {
                     // Demo Download Link
                     if (site.downloadLink && site.downloadLink.trim()) {
                         let demoDownloadLink = replaceShortcodes(site.downloadLink, appData);
-                        if (site.downloadWaitTime > 0) {
-                            demoDownloadLink += `\n<br><i>[AUTO SCRIPT: Countdown ${site.downloadWaitTime}s then Restore Link (Manual Click)]</i>`;
-                        }
                         content += `\n\n${demoDownloadLink}`;
                     }
 
@@ -368,6 +380,23 @@ const handleStartAiJob = async (req, res) => {
     for (const app of apps) {
         for (const site of sites) {
             aiJobState.queue.push({ app, site, postStatus });
+        }
+    }
+
+    // Initialize Key Rotation for each site
+    for (const site of sites) {
+        if (site.apiKey) {
+            // Split by newline, trim, removes empty
+            site.apiKeys = site.apiKey.split('\n').map(k => k.trim()).filter(k => k);
+            site.currentKeyIndex = 0;
+            // Neu khong co key nao hop le -> bao loi luon hoac de nguyen
+            if (site.apiKeys.length === 0) {
+                // Fallback to raw string just in case
+                site.apiKeys = [site.apiKey];
+            }
+        } else {
+            site.apiKeys = [];
+            site.currentKeyIndex = 0;
         }
     }
 

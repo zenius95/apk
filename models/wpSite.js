@@ -19,9 +19,9 @@ const WpSite = sequelize.define('WpSite', {
     comment: 'URL day du cua site Wordpress (vd: https://blog.example.com)'
   },
   apiKey: {
-    type: DataTypes.STRING,
+    type: DataTypes.TEXT,
     allowNull: false,
-    comment: 'API Key de ket noi (vd: mot chuoi bi mat)'
+    comment: 'API Key de ket noi (vd: mot chuoi bi mat, hoac nhieu chuoi moi dong 1 key)'
   },
   // --- Prompt Title ---
   aiPromptTitle: {
@@ -65,12 +65,6 @@ const WpSite = sequelize.define('WpSite', {
     allowNull: true,
     comment: 'Mau nut download (ho tro shortcode {url}, {version}, {size}...)'
   },
-  // --- Thoi gian cho Download ---
-  downloadWaitTime: {
-    type: DataTypes.INTEGER,
-    defaultValue: 0,
-    comment: 'Thoi gian cho (giay) truoc khi tai. 0 la tat.'
-  },
   // +++ MOI: Che do hien thi Screenshot (gallery / normal) +++
   screenshotMode: {
     type: DataTypes.STRING(20),
@@ -79,7 +73,7 @@ const WpSite = sequelize.define('WpSite', {
   }
 }, {
   tableName: 'wp_sites',
-  timestamps: true 
+  timestamps: true
 });
 
 module.exports = WpSite;
