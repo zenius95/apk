@@ -23,6 +23,12 @@ const WpSite = sequelize.define('WpSite', {
     allowNull: false,
     comment: 'API Key de ket noi (vd: mot chuoi bi mat, hoac nhieu chuoi moi dong 1 key)'
   },
+  // --- Prompt Header ---
+  aiPromptHeader: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Prompt de tao Header/Intro'
+  },
   // --- Prompt Title ---
   aiPromptTitle: {
     type: DataTypes.TEXT,

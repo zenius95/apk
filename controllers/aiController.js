@@ -126,8 +126,20 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
             finalExcerpt = await aiService.generateContent(openAiKey, siteConfig.aiPromptExcerpt, appData);
         }
 
+        // --- 2.5 HEADER CONTENT (MOI) ---
+        let headerContent = '';
+        if (siteConfig.aiPromptHeader && siteConfig.aiPromptHeader.trim()) {
+            addLog(io, 'INFO', `📝 Đang tạo Header Content...`);
+            headerContent = await aiService.generateContent(openAiKey, siteConfig.aiPromptHeader, appData);
+        }
+
         // --- 3. MAIN CONTENT ---
         let generatedContent = await aiService.generateContent(openAiKey, siteConfig.aiPrompt, appData);
+
+        // Prepend Header
+        if (headerContent) {
+            generatedContent = headerContent + "\n\n" + generatedContent;
+        }
 
         // --- MEDIA UPLOAD ---
         let wpFullData = JSON.parse(JSON.stringify(appData));
@@ -254,7 +266,12 @@ async function processSingleItem(app, site, openAiKey, io, postStatus) {
         // --- TERMS ---
         let categoryIds = [];
         if (appData.genre) {
-            const catId = await wpService.ensureTerm(siteConfig, 'categories', appData.genre);
+            const catId = await wpService.ensureTerm(siteConfig, 'categories', appData.genre, (type, msg) => {
+                // Map log type from wpService to addLog type if needed, or just use directly
+                // wpService uses: INFO, WARN, ERR
+                // addLog uses: INFO, WARN, ERR, mW_OK...
+                addLog(io, type, msg);
+            });
             if (catId) categoryIds.push(catId);
         }
         let tagIds = [];
@@ -327,7 +344,19 @@ const handleStartAiJob = async (req, res) => {
                         demoExcerpt = await aiService.generateContent(openAiKey, site.aiPromptExcerpt, appData);
                         promptExcerptUsed = site.aiPromptExcerpt;
                     }
+
+                    let demoHeader = '';
+                    let promptHeaderUsed = null;
+                    if (site.aiPromptHeader && site.aiPromptHeader.trim()) {
+                        demoHeader = await aiService.generateContent(openAiKey, site.aiPromptHeader, appData);
+                        promptHeaderUsed = site.aiPromptHeader;
+                    }
+
                     let content = await aiService.generateContent(openAiKey, site.aiPrompt, appData);
+
+                    if (demoHeader) {
+                        content = demoHeader + "\n\n" + content;
+                    }
 
                     // Demo Gallery/Normal Images
                     const galleryAltRaw = site.galleryAlt || '';
@@ -358,7 +387,7 @@ const handleStartAiJob = async (req, res) => {
                         content += `\n\n${demoDownloadLink}`;
                     }
 
-                    return { siteName: site.siteName, title: demoTitle, excerpt: demoExcerpt, content: content, promptTitle: promptTitleUsed, promptExcerpt: promptExcerptUsed, promptFooter: promptFooterUsed };
+                    return { siteName: site.siteName, title: demoTitle, excerpt: demoExcerpt, content: content, promptTitle: promptTitleUsed, promptExcerpt: promptExcerptUsed, promptFooter: promptFooterUsed, promptHeader: promptHeaderUsed, promptContent: site.aiPrompt };
                 } catch (err) { return { siteName: site.siteName, error: err.message }; }
             }));
             return res.status(200).json({ success: true, isDemo: true, appName: app.title, results: demoResults, message: "Đã tạo nội dung Demo!" });

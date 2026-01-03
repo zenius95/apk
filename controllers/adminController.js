@@ -3,8 +3,8 @@ const WpSite = require('../models/wpSite');
 const WpPostLog = require('../models/wpPostLog');
 const { default: gplay } = require('google-play-scraper');
 const { Op } = require('sequelize');
-const fs = require('fs-extra'); 
-const path = require('path'); 
+const fs = require('fs-extra');
+const path = require('path');
 
 async function deleteAppImages(appId) {
   const imgDir = path.join(__dirname, '..', 'public', 'images', 'apps', appId);
@@ -17,63 +17,62 @@ async function deleteAppImages(appId) {
 }
 
 async function getPagedApps(req, isTrashView = false) {
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = 20; 
-    const offset = (page - 1) * limit;
-    const search = req.query.search || '';
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = 20;
+  const offset = (page - 1) * limit;
+  const search = req.query.search || '';
 
-    let whereClause = {};
-    if (search) {
-        whereClause = {
-            [Op.or]: [
-                { appId: { [Op.like]: `%${search}%` } },
-                { title: { [Op.like]: `%${search}%` } }
-            ]
-        };
-    }
-
-    const queryOptions = {
-        where: whereClause,
-        limit: limit,
-        offset: offset
+  let whereClause = {};
+  if (search) {
+    whereClause = {
+      [Op.or]: [
+        { appId: { [Op.like]: `%${search}%` } },
+        { title: { [Op.like]: `%${search}%` } }
+      ]
     };
+  }
 
-    if (isTrashView) {
-        whereClause.deletedAt = { [Op.not]: null };
-        queryOptions.paranoid = false;
-        queryOptions.order = [['deletedAt', 'DESC']];
-    } else {
-        queryOptions.order = [['lastScrapedAt', 'DESC']];
-    }
+  const queryOptions = {
+    where: whereClause,
+    limit: limit,
+    offset: offset
+  };
 
-    const { count, rows: apps } = await App.findAndCountAll(queryOptions);
+  if (isTrashView) {
+    whereClause.deletedAt = { [Op.not]: null };
+    queryOptions.paranoid = false;
+    queryOptions.order = [['deletedAt', 'DESC']];
+  } else {
+    queryOptions.order = [['lastScrapedAt', 'DESC']];
+  }
 
-    const totalPages = Math.ceil(count / limit);
-    const pagination = {
-        totalItems: count,
-        totalPages: totalPages,
-        currentPage: page,
-        limit: limit
-    };
-    
-    return { apps, pagination, search };
+  const { count, rows: apps } = await App.findAndCountAll(queryOptions);
+
+  const totalPages = Math.ceil(count / limit);
+  const pagination = {
+    totalItems: count,
+    totalPages: totalPages,
+    currentPage: page,
+    limit: limit
+  };
+
+  return { apps, pagination, search };
 }
 
 const renderScrapePage = async (req, res) => {
   try {
     const categories = gplay.category;
     const collections = gplay.collection;
-    
+
     res.render('pages/scrape', {
       data: {
         title: 'Bảng điều khiển - Lấy dữ liệu App',
-        page: 'scrape' 
+        page: 'scrape'
       },
-      categories: categories,     
+      categories: categories,
       collections: collections
     });
-  } catch (err)
- {
+  } catch (err) {
     console.error("Loi render trang scrape:", err);
     res.status(500).send("Loi server roi Bro oi.");
   }
@@ -82,33 +81,33 @@ const renderScrapePage = async (req, res) => {
 const renderAppListPage = async (req, res) => {
   try {
     const { apps, pagination, search } = await getPagedApps(req, false);
-    
+
     const trashCount = await App.count({
-        where: { deletedAt: { [Op.not]: null } },
-        paranoid: false
+      where: { deletedAt: { [Op.not]: null } },
+      paranoid: false
     });
 
-    const wpSites = await WpSite.findAll({ 
-        attributes: ['id', 'siteName'],
-        order: [['siteName', 'ASC']]
+    const wpSites = await WpSite.findAll({
+      attributes: ['id', 'siteName'],
+      order: [['siteName', 'ASC']]
     });
 
     const appIds = apps.map(a => a.appId);
     const logs = await WpPostLog.findAll({
-        where: { appId: appIds, status: 'SUCCESS' },
-        attributes: ['appId', 'wpSiteId']
+      where: { appId: appIds, status: 'SUCCESS' },
+      attributes: ['appId', 'wpSiteId']
     });
 
     const postedMap = {};
     logs.forEach(log => {
-        if (!postedMap[log.appId]) postedMap[log.appId] = [];
-        postedMap[log.appId].push(log.wpSiteId);
+      if (!postedMap[log.appId]) postedMap[log.appId] = [];
+      postedMap[log.appId].push(log.wpSiteId);
     });
 
     const enrichedApps = apps.map(app => {
-        const plainApp = app.get({ plain: true }); 
-        plainApp.postedSiteIds = postedMap[app.appId] || []; 
-        return plainApp;
+      const plainApp = app.get({ plain: true });
+      plainApp.postedSiteIds = postedMap[app.appId] || [];
+      return plainApp;
     });
 
     res.render('pages/appList', {
@@ -116,11 +115,11 @@ const renderAppListPage = async (req, res) => {
         title: 'Danh sách APP đã lưu',
         page: 'appList'
       },
-      savedApps: enrichedApps, 
+      savedApps: enrichedApps,
       pagination: pagination,
       search: search,
       trashCount: trashCount,
-      wpSites: wpSites, 
+      wpSites: wpSites,
       baseUrl: '/app-list'
     });
   } catch (err) {
@@ -132,7 +131,7 @@ const renderAppListPage = async (req, res) => {
 const renderTrashPage = async (req, res) => {
   try {
     const { apps, pagination, search } = await getPagedApps(req, true);
-    
+
     res.render('pages/trash', {
       data: {
         title: 'Thùng rác - App đã xoá',
@@ -158,7 +157,7 @@ const handleDeleteApps = async (req, res) => {
     if (deleteAll) {
       const search = req.body.search || '';
       if (search) {
-        whereClause = { [Op.or]: [ { appId: { [Op.like]: `%${search}%` } }, { title: { [Op.like]: `%${search}%` } } ] };
+        whereClause = { [Op.or]: [{ appId: { [Op.like]: `%${search}%` } }, { title: { [Op.like]: `%${search}%` } }] };
       }
       numDeleted = await App.destroy({ where: whereClause });
     } else if (appIds && Array.isArray(appIds) && appIds.length > 0) {
@@ -167,8 +166,8 @@ const handleDeleteApps = async (req, res) => {
     } else {
       return res.status(400).json({ success: false, message: 'Chưa chọn app nào để xoá, Bro.' });
     }
-    return res.status(200).json({ 
-      success: true, 
+    return res.status(200).json({
+      success: true,
       message: `Đã vứt ${numDeleted} app${numDeleted > 1 ? 's' : ''} vào thùng rác.`,
       deletedCount: numDeleted
     });
@@ -188,15 +187,15 @@ const handleRestoreApps = async (req, res) => {
       const search = req.body.search || '';
       if (search) {
         whereClause = {
-            [Op.and]: [
-                { deletedAt: { [Op.not]: null } },
-                {
-                    [Op.or]: [
-                        { appId: { [Op.like]: `%${search}%` } },
-                        { title: { [Op.like]: `%${search}%` } }
-                    ]
-                }
-            ]
+          [Op.and]: [
+            { deletedAt: { [Op.not]: null } },
+            {
+              [Op.or]: [
+                { appId: { [Op.like]: `%${search}%` } },
+                { title: { [Op.like]: `%${search}%` } }
+              ]
+            }
+          ]
         };
       } else {
         whereClause = { deletedAt: { [Op.not]: null } };
@@ -208,8 +207,8 @@ const handleRestoreApps = async (req, res) => {
     } else {
       return res.status(400).json({ success: false, message: 'Chưa chọn app nào để khôi phục.' });
     }
-    return res.status(200).json({ 
-      success: true, 
+    return res.status(200).json({
+      success: true,
       message: `Đã khôi phục ${numRestored} app${numRestored > 1 ? 's' : ''}.`,
       restoredCount: numRestored
     });
@@ -224,21 +223,21 @@ const handleForceDeleteApps = async (req, res) => {
   try {
     let numDeleted = 0;
     let whereClause = {};
-    let appIdsToDelete = []; 
+    let appIdsToDelete = [];
 
     if (deleteAll) {
       const search = req.body.search || '';
       if (search) {
         whereClause = {
-            [Op.and]: [
-                { deletedAt: { [Op.not]: null } },
-                {
-                    [Op.or]: [
-                        { appId: { [Op.like]: `%${search}%` } },
-                        { title: { [Op.like]: `%${search}%` } }
-                    ]
-                }
-            ]
+          [Op.and]: [
+            { deletedAt: { [Op.not]: null } },
+            {
+              [Op.or]: [
+                { appId: { [Op.like]: `%${search}%` } },
+                { title: { [Op.like]: `%${search}%` } }
+              ]
+            }
+          ]
         };
       } else {
         whereClause = { deletedAt: { [Op.not]: null } };
@@ -254,8 +253,8 @@ const handleForceDeleteApps = async (req, res) => {
     }
 
     if (appIdsToDelete.length === 0) {
-       return res.status(200).json({ 
-        success: true, 
+      return res.status(200).json({
+        success: true,
         message: `Chẳng có app rác nào để xoá vĩnh viễn cả.`,
         deletedCount: 0
       });
@@ -271,8 +270,8 @@ const handleForceDeleteApps = async (req, res) => {
         .catch(err => console.error('[Job Delete] Loi trong luc xoa dong loat thu muc anh:', err));
     }
 
-    return res.status(200).json({ 
-      success: true, 
+    return res.status(200).json({
+      success: true,
       message: `Đã xoá vĩnh viễn ${numDeleted} app${numDeleted > 1 ? 's' : ''}. (Đã bắt đầu dọn dẹp file ảnh)`,
       deletedCount: numDeleted
     });
@@ -285,13 +284,13 @@ const handleForceDeleteApps = async (req, res) => {
 const renderWpSitesPage = async (req, res) => {
   try {
     const sites = await WpSite.findAll({ order: [['siteName', 'ASC']] });
-    
+
     res.render('pages/wpSites', {
       data: {
         title: 'Quản lý Wordpress Sites',
-        page: 'wpSites' 
+        page: 'wpSites'
       },
-      wpSites: sites 
+      wpSites: sites
     });
   } catch (err) {
     console.error("Loi render trang WP Sites:", err);
@@ -310,13 +309,13 @@ const handleGetWpSites = async (req, res) => {
 };
 
 const handleCreateWpSite = async (req, res) => {
-  const { 
-      siteName, siteUrl, apiKey, 
-      aiPrompt, aiPromptTitle, aiPromptExcerpt, aiPromptFooter, 
-      galleryAlt, featuredImageAlt, downloadLink,
-      downloadWaitTime, screenshotMode // +++ MOI +++
+  const {
+    siteName, siteUrl, apiKey,
+    aiPrompt, aiPromptTitle, aiPromptExcerpt, aiPromptFooter, aiPromptHeader,
+    galleryAlt, featuredImageAlt, downloadLink,
+    downloadWaitTime, screenshotMode // +++ MOI +++
   } = req.body;
-  
+
   if (!siteName || !siteUrl || !apiKey) {
     return res.status(400).json({ success: false, message: 'Nhập thiếu rồi Bro. Cần Tên, URL, và API Key.' });
   }
@@ -329,7 +328,8 @@ const handleCreateWpSite = async (req, res) => {
       aiPrompt: aiPrompt || '',
       aiPromptTitle: aiPromptTitle || '',
       aiPromptExcerpt: aiPromptExcerpt || '',
-      aiPromptFooter: aiPromptFooter || '', 
+      aiPromptHeader: aiPromptHeader || '', // +++ MOI +++
+      aiPromptFooter: aiPromptFooter || '',
       galleryAlt: galleryAlt || '',
       featuredImageAlt: featuredImageAlt || '',
       downloadLink: downloadLink || '',
@@ -351,11 +351,11 @@ const handleCreateWpSite = async (req, res) => {
 
 const handleUpdateWpSite = async (req, res) => {
   const { id } = req.params;
-  const { 
-      siteName, siteUrl, apiKey, 
-      aiPrompt, aiPromptTitle, aiPromptExcerpt, aiPromptFooter, 
-      galleryAlt, featuredImageAlt, downloadLink,
-      downloadWaitTime, screenshotMode // +++ MOI +++
+  const {
+    siteName, siteUrl, apiKey,
+    aiPrompt, aiPromptTitle, aiPromptExcerpt, aiPromptFooter, aiPromptHeader,
+    galleryAlt, featuredImageAlt, downloadLink,
+    downloadWaitTime, screenshotMode // +++ MOI +++
   } = req.body;
 
   if (!siteName || !siteUrl || !apiKey) {
@@ -371,18 +371,19 @@ const handleUpdateWpSite = async (req, res) => {
     site.siteName = siteName;
     site.siteUrl = siteUrl;
     site.apiKey = apiKey;
-    site.aiPrompt = aiPrompt || ''; 
+    site.aiPrompt = aiPrompt || '';
     site.aiPromptTitle = aiPromptTitle || '';
     site.aiPromptExcerpt = aiPromptExcerpt || '';
+    site.aiPromptHeader = aiPromptHeader || ''; // +++ MOI +++
     site.aiPromptFooter = aiPromptFooter || '';
     site.galleryAlt = galleryAlt || '';
-    site.featuredImageAlt = featuredImageAlt || ''; 
-    site.downloadLink = downloadLink || ''; 
-    site.downloadWaitTime = downloadWaitTime || 0; 
+    site.featuredImageAlt = featuredImageAlt || '';
+    site.downloadLink = downloadLink || '';
+    site.downloadWaitTime = downloadWaitTime || 0;
     site.screenshotMode = screenshotMode || 'gallery'; // +++ UPDATE +++
-    
+
     await site.save();
-    
+
     return res.status(200).json({ success: true, message: 'Đã cập nhật site ngon lành!', site: site });
   } catch (err) {
     console.error("Loi API Update WP Site:", err);

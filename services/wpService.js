@@ -52,52 +52,70 @@ async function uploadMedia(site, localPath, altText = '') {
  * @param {string} taxonomy 'categories' hoac 'tags'
  * @param {string} name Ten Can Tao/Tim
  */
-async function ensureTerm(site, taxonomy, name) {
+async function ensureTerm(site, taxonomy, name, logger = null, maxRetries = 2) {
     if (!name) return null;
 
-    // API endpoint: /wp-json/wp/v2/categories hoac /wp-json/wp/v2/tags
-    // Luu y: Tham so taxonomy truyen vao nen la 'categories' hoac 'tags'
-    // Nhung neu nguoi dung truyen 'category' hay 'tag' (so it) thi minh map lai cho dung
     let endpoint = taxonomy;
     if (taxonomy === 'category') endpoint = 'categories';
     if (taxonomy === 'tag') endpoint = 'tags';
 
     const authHeader = getAuthHeader(site.apiKey);
+    const log = (type, msg) => {
+        if (logger && typeof logger === 'function') logger(type, msg);
+        else console.log(`[WP Service] ${type}: ${msg}`);
+    };
 
-    try {
-        // 1. Thu tao moi truc tiep
-        const res = await axios.post(`${site.siteUrl}/wp-json/wp/v2/${endpoint}`, {
-            name: name
-        }, {
-            headers: {
-                ...authHeader,
-                'Content-Type': 'application/json'
-            }
-        });
-        // Tao thanh cong -> Tra ve ID
-        return res.data.id;
-
-    } catch (err) {
-        // 2. Neu loi do da ton tai (term_exists) hoac 400
-        if (err.response && (err.response.data.code === 'term_exists' || err.response.status === 400)) {
-            // Thuong thi WP se tra ve ID cua term da ton tai trong data error, nhung de chac an nhat:
-            // Goi API Search de tim ID cua ten do
-            try {
-                const searchRes = await axios.get(`${site.siteUrl}/wp-json/wp/v2/${endpoint}?search=${encodeURIComponent(name)}`, {
-                    headers: authHeader
-                });
-                // Tim item co ten khop nhat (vi search co the ra ket qua gan dung)
-                const found = searchRes.data.find(t => t.name.toLowerCase() === name.toLowerCase());
-                return found ? found.id : null;
-            } catch (searchErr) {
-                console.error(`[WP Service] Loi tim kiem Term ${name}:`, searchErr.message);
-                return null;
-            }
+    let attempt = 0;
+    while (attempt <= maxRetries) {
+        attempt++;
+        if (attempt > 1) {
+            log('WARN', `⚠️ Đang thử lại (${attempt - 1}/${maxRetries}) tạo/tìm Term: ${name}...`);
         }
 
-        console.error(`[WP Service] Loi xu ly Term (${endpoint} - ${name}):`, err.message);
-        return null;
+        try {
+            // 1. Thu tao moi truc tiep
+            const res = await axios.post(`${site.siteUrl}/wp-json/wp/v2/${endpoint}`, {
+                name: name
+            }, {
+                headers: {
+                    ...authHeader,
+                    'Content-Type': 'application/json'
+                }
+            });
+            // Tao thanh cong -> Tra ve ID
+            log('INFO', `✨ Đã tạo mới ${taxonomy}: ${name} (ID: ${res.data.id})`);
+            return res.data.id;
+
+        } catch (err) {
+            // 2. Neu loi do da ton tai (term_exists) hoac 400
+            if (err.response && (err.response.data.code === 'term_exists' || err.response.status === 400)) {
+                try {
+                    const searchRes = await axios.get(`${site.siteUrl}/wp-json/wp/v2/${endpoint}?search=${encodeURIComponent(name)}`, {
+                        headers: authHeader
+                    });
+                    const found = searchRes.data.find(t => t.name.toLowerCase() === name.toLowerCase());
+                    if (found) {
+                        log('INFO', `✅ Tìm thấy ${taxonomy}: ${name} (ID: ${found.id})`);
+                        return found.id;
+                    }
+                } catch (searchErr) {
+                    console.error(`[WP Service] Loi tim kiem Term ${name}:`, searchErr.message);
+                }
+            }
+
+            // Neu la loi khac hoac khong tim thay sau khi loi -> Retry neu con luot
+            console.error(`[WP Service] Loi xu ly Term (${endpoint} - ${name}) - Lan ${attempt}:`, err.message);
+
+            if (attempt <= maxRetries) {
+                // Wait small delay before retry
+                await new Promise(r => setTimeout(r, 1000));
+                continue;
+            }
+        }
     }
+
+    log('ERR', `❌ Thất bại tạo/tìm ${taxonomy}: ${name} sau ${maxRetries + 1} lần thử.`);
+    return null;
 }
 
 /**

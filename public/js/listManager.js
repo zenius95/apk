@@ -3,10 +3,10 @@
  * "Não" chung cho trang App List & Trash
  */
 document.addEventListener('DOMContentLoaded', () => {
-    
+
     // --- 1. INIT VARIABLES ---
     const pageMode = document.body.dataset.pageMode;
-    if (pageMode !== 'list' && pageMode !== 'trash') return; 
+    if (pageMode !== 'list' && pageMode !== 'trash') return;
 
     // Table Elements
     const tableBody = document.getElementById('app-table-body');
@@ -28,32 +28,32 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnStopAi = document.getElementById('btn-stop-ai');
     const aiProgressContainer = document.getElementById('ai-progress-container');
     const aiStatusText = document.getElementById('ai-status-text');
-    
+
     // Terminal Elements
     const aiTerminalPanel = document.getElementById('ai-terminal-panel');
     const aiTerminalBody = document.getElementById('ai-terminal-body');
     const aiStatTotal = document.getElementById('ai-stat-total');
     const aiStatSuccess = document.getElementById('ai-stat-success');
     const aiStatFailed = document.getElementById('ai-stat-failed');
-    
+
     // Inputs
-    const aiOpenAiKey = document.getElementById('ai-openai-key'); 
+    const aiOpenAiKey = document.getElementById('ai-openai-key');
     const aiConcurrency = document.getElementById('ai-concurrency');
     const aiDelay = document.getElementById('ai-delay');
-    const aiDemoMode = document.getElementById('ai-demo-mode'); 
-    const siteCheckboxes = document.querySelectorAll('.site-checkbox'); 
+    const aiDemoMode = document.getElementById('ai-demo-mode');
+    const siteCheckboxes = document.querySelectorAll('.site-checkbox');
     const btnSelectAllSites = document.getElementById('btn-select-all-sites');
     const aiPostStatus = document.getElementById('ai-post-status');
-    
+
     // Modals
     const aiResultModal = document.getElementById('aiResultModal');
     const aiResultBackdrop = document.getElementById('aiResultBackdrop');
     const aiResultCloseBtn = document.getElementById('aiResultCloseBtn');
-    const aiResultTabs = document.getElementById('ai-result-tabs');         
-    const aiResultTabContent = document.getElementById('ai-result-tab-content'); 
+    const aiResultTabs = document.getElementById('ai-result-tabs');
+    const aiResultTabContent = document.getElementById('ai-result-tab-content');
     const aiResultAppName = document.getElementById('ai-result-app-name');
     const aiResultCopyBtn = document.getElementById('aiResultCopyBtn');
-    
+
     const postedDetailsModal = document.getElementById('postedDetailsModal');
     const postedDetailsBackdrop = document.getElementById('postedDetailsBackdrop');
     const postedDetailsCloseBtn = document.getElementById('postedDetailsCloseBtn');
@@ -87,10 +87,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function buildRow(app) {
         const isSelected = selectedAppIds.has(app.appId);
         const appData = getSafeAppData(app);
-        
+
         const typeLabel = app.appType === 'GAME'
-          ? `<span class="inline-flex items-center rounded-md bg-purple-500/10 px-2 py-1 text-xs font-medium text-purple-400 ring-1 ring-inset ring-purple-500/20"><i class="ri-gamepad-line mr-1.5"></i>GAME</span>`
-          : `<span class="inline-flex items-center rounded-md bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-400 ring-1 ring-inset ring-blue-500/20"><i class="ri-app-store-line mr-1.5"></i>APP</span>`;
+            ? `<span class="inline-flex items-center rounded-md bg-purple-500/10 px-2 py-1 text-xs font-medium text-purple-400 ring-1 ring-inset ring-purple-500/20"><i class="ri-gamepad-line mr-1.5"></i>GAME</span>`
+            : `<span class="inline-flex items-center rounded-md bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-400 ring-1 ring-inset ring-blue-500/20"><i class="ri-app-store-line mr-1.5"></i>APP</span>`;
 
         let actionButtons = '';
         if (pageMode === 'list') {
@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const postedCount = appData.postedSiteIds.length;
         const totalSites = globalWpSites.length;
         let postedBadge = totalSites === 0 ? `<span class="text-xs text-slate-600 italic">--</span>` : '';
-        
+
         if (totalSites > 0) {
             let badgeColor = 'bg-slate-700/50 text-slate-400 border-slate-600/50';
             if (postedCount > 0 && postedCount < totalSites) badgeColor = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function buildTable() {
-        if (itemsOnPage.length === 0) { 
+        if (itemsOnPage.length === 0) {
             document.getElementById('table-placeholder').classList.remove('hidden');
             tableBody.innerHTML = '';
         } else {
@@ -149,22 +149,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const cb = row.querySelector('.app-checkbox');
             if (selectedAppIds.has(row.dataset.appId)) {
                 row.classList.add('bg-slate-800/50');
-                if(cb) cb.checked = true;
+                if (cb) cb.checked = true;
             } else {
                 row.classList.remove('bg-slate-800/50');
-                if(cb) cb.checked = false;
+                if (cb) cb.checked = false;
             }
         });
-        
+
         if (count === 0) {
             selectionControls.classList.add('hidden');
             isSelectingAllDb = false;
-            if(selectAllPageCheckbox) { selectAllPageCheckbox.checked = false; selectAllPageCheckbox.indeterminate = false; }
+            if (selectAllPageCheckbox) { selectAllPageCheckbox.checked = false; selectAllPageCheckbox.indeterminate = false; }
         } else {
             selectionControls.classList.remove('hidden');
             selectionCount.textContent = isSelectingAllDb ? `Đã chọn tất cả ${totalItemsInDb} app` : `Đã chọn ${count} app`;
             btnSelectAllDb.classList.toggle('hidden', isSelectingAllDb || (count !== itemsOnPage.length) || (totalItemsInDb <= itemsOnPage.length));
-            if(selectAllPageCheckbox) {
+            if (selectAllPageCheckbox) {
                 if (isSelectingAllDb || count === itemsOnPage.length) {
                     selectAllPageCheckbox.checked = true; selectAllPageCheckbox.indeterminate = false;
                 } else {
@@ -194,22 +194,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // +++ MOI: enable Inputs +++
     function resetAiUi() {
-        if(btnStartAi) {
+        if (btnStartAi) {
             btnStartAi.classList.remove('hidden');
             btnStartAi.disabled = false;
             btnStartAi.innerHTML = `<i class="ri-play-fill text-lg"></i><span>BẮT ĐẦU</span>`;
         }
-        updateAiButtonState(); 
-        if(btnStopAi) btnStopAi.classList.add('hidden');
-        if(aiProgressContainer) aiProgressContainer.classList.add('hidden');
-        
-        if(aiConcurrency) aiConcurrency.disabled = false;
-        if(aiDelay) aiDelay.disabled = false;
-        if(aiOpenAiKey) aiOpenAiKey.disabled = false;
-        if(aiDemoMode) aiDemoMode.disabled = false;
-        if(aiPostStatus) aiPostStatus.disabled = false;
-        
-        if(btnSelectAllSites) {
+        updateAiButtonState();
+        if (btnStopAi) btnStopAi.classList.add('hidden');
+        if (aiProgressContainer) aiProgressContainer.classList.add('hidden');
+
+        if (aiConcurrency) aiConcurrency.disabled = false;
+        if (aiDelay) aiDelay.disabled = false;
+        if (aiOpenAiKey) aiOpenAiKey.disabled = false;
+        if (aiDemoMode) aiDemoMode.disabled = false;
+        if (aiPostStatus) aiPostStatus.disabled = false;
+
+        if (btnSelectAllSites) {
             btnSelectAllSites.disabled = false;
             btnSelectAllSites.classList.remove('opacity-50', 'cursor-not-allowed');
         }
@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isAtBottom = (aiTerminalBody.scrollHeight - aiTerminalBody.scrollTop - aiTerminalBody.clientHeight) <= 50;
         const div = document.createElement('div');
         div.className = 'flex items-start space-x-2 border-b border-white/5 pb-0.5';
-        
+
         let typeClass = 'text-slate-500';
         let msgClass = 'text-slate-300';
 
@@ -239,43 +239,43 @@ document.addEventListener('DOMContentLoaded', () => {
             <span class="${typeClass} font-bold text-[10px] min-w-[40px]">[${log.type}]</span>
             <span class="${msgClass} break-all">${log.message}</span>
         `;
-        
+
         aiTerminalBody.appendChild(div);
         if (isAtBottom) aiTerminalBody.scrollTop = aiTerminalBody.scrollHeight;
-        
-        if(aiTerminalPanel && aiTerminalPanel.classList.contains('hidden')) {
+
+        if (aiTerminalPanel && aiTerminalPanel.classList.contains('hidden')) {
             aiTerminalPanel.classList.remove('hidden');
         }
     }
 
     function updateAiStats(stats) {
-        if(!stats) return;
-        if(aiStatTotal) aiStatTotal.textContent = stats.total || 0;
-        if(aiStatSuccess) aiStatSuccess.textContent = stats.success || 0;
-        if(aiStatFailed) aiStatFailed.textContent = stats.failed || 0;
+        if (!stats) return;
+        if (aiStatTotal) aiStatTotal.textContent = stats.total || 0;
+        if (aiStatSuccess) aiStatSuccess.textContent = stats.success || 0;
+        if (aiStatFailed) aiStatFailed.textContent = stats.failed || 0;
     }
 
     // +++ HAM SET TRANG THAI CHAY (KHOA UI) +++
     function setAiRunningState(isRunning) {
         if (!btnStartAi || !btnStopAi || !aiTerminalPanel) return;
-        
+
         if (isRunning) {
             // Swap Buttons
             btnStartAi.classList.add('hidden');
             btnStopAi.classList.remove('hidden');
-            
+
             // Show Status Panels
-            if(aiProgressContainer) aiProgressContainer.classList.remove('hidden');
+            if (aiProgressContainer) aiProgressContainer.classList.remove('hidden');
             aiTerminalPanel.classList.remove('hidden');
-            
+
             // +++ PROTECT SETTINGS: DISABLE INPUTS +++
-            if(aiConcurrency) aiConcurrency.disabled = true;
-            if(aiDelay) aiDelay.disabled = true;
-            if(aiOpenAiKey) aiOpenAiKey.disabled = true;
-            if(aiDemoMode) aiDemoMode.disabled = true;
-            if(aiPostStatus) aiPostStatus.disabled = true;
-            
-            if(btnSelectAllSites) {
+            if (aiConcurrency) aiConcurrency.disabled = true;
+            if (aiDelay) aiDelay.disabled = true;
+            if (aiOpenAiKey) aiOpenAiKey.disabled = true;
+            if (aiDemoMode) aiDemoMode.disabled = true;
+            if (aiPostStatus) aiPostStatus.disabled = true;
+
+            if (btnSelectAllSites) {
                 btnSelectAllSites.disabled = true;
                 btnSelectAllSites.classList.add('opacity-50', 'cursor-not-allowed');
             }
@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Anti-cache param
             const res = await fetch(`/api/ai/status?t=${Date.now()}`);
             const data = await res.json();
-            
+
             // Cap nhat UI voi so lieu moi nhat
             if (data.stats) updateAiStats(data.stats);
 
@@ -299,7 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.logs && data.logs.length > 0) {
                 if (aiTerminalBody) aiTerminalBody.innerHTML = '';
                 data.logs.forEach(log => appendAiLog(log));
-                if(aiTerminalPanel) aiTerminalPanel.classList.remove('hidden');
+                if (aiTerminalPanel) aiTerminalPanel.classList.remove('hidden');
             }
 
             // Neu dang chay -> Khoa UI ngay lap tuc
@@ -310,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 setAiRunningState(false);
                 // Giu terminal hien thi neu co log
                 if (data.logs && data.logs.length > 0 && aiTerminalPanel) {
-                    aiTerminalPanel.classList.remove('hidden'); 
+                    aiTerminalPanel.classList.remove('hidden');
                 }
             }
         } catch (e) { console.error("Lỗi check AI status:", e); }
@@ -318,28 +318,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- SETTINGS STORAGE ---
     function loadSettings() {
-        if(aiOpenAiKey) {
+        if (aiOpenAiKey) {
             const savedKey = localStorage.getItem('ai_openai_key');
-            if(savedKey) aiOpenAiKey.value = savedKey;
+            if (savedKey) aiOpenAiKey.value = savedKey;
         }
-        if(aiConcurrency) aiConcurrency.value = localStorage.getItem('ai_concurrency') || 1;
-        if(aiDelay) aiDelay.value = localStorage.getItem('ai_delay') || 2000;
-        if(aiDemoMode) {
+        if (aiConcurrency) aiConcurrency.value = localStorage.getItem('ai_concurrency') || 1;
+        if (aiDelay) aiDelay.value = localStorage.getItem('ai_delay') || 2000;
+        if (aiDemoMode) {
             const savedDemo = localStorage.getItem('ai_demo_mode');
             aiDemoMode.checked = (savedDemo === 'true');
         }
-        if(aiPostStatus) {
+        if (aiPostStatus) {
             const savedStatus = localStorage.getItem('ai_post_status');
-            if(savedStatus) aiPostStatus.value = savedStatus;
+            if (savedStatus) aiPostStatus.value = savedStatus;
         }
     }
 
     function saveSettings() {
-        if(aiOpenAiKey) localStorage.setItem('ai_openai_key', aiOpenAiKey.value);
-        if(aiConcurrency) localStorage.setItem('ai_concurrency', aiConcurrency.value);
-        if(aiDelay) localStorage.setItem('ai_delay', aiDelay.value);
-        if(aiDemoMode) localStorage.setItem('ai_demo_mode', aiDemoMode.checked);
-        if(aiPostStatus) localStorage.setItem('ai_post_status', aiPostStatus.value);
+        if (aiOpenAiKey) localStorage.setItem('ai_openai_key', aiOpenAiKey.value);
+        if (aiConcurrency) localStorage.setItem('ai_concurrency', aiConcurrency.value);
+        if (aiDelay) localStorage.setItem('ai_delay', aiDelay.value);
+        if (aiDemoMode) localStorage.setItem('ai_demo_mode', aiDemoMode.checked);
+        if (aiPostStatus) localStorage.setItem('ai_post_status', aiPostStatus.value);
     }
 
     // ... (Cac ham Show Modal Demo, Posted Details... GIU NGUYEN) ...
@@ -356,13 +356,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (res.error) {
                 content = `<div class="p-4 bg-red-900/20 border border-red-500/30 rounded text-red-400 text-sm"><i class="ri-error-warning-line mr-2"></i>${res.error}</div>`;
             } else {
-                content = `<div class="flex flex-col h-full"><div class="flex border-b border-slate-700/50 mb-4 space-x-1"><button class="inner-tab-link px-4 py-2 text-sm font-bold text-white border-b-2 border-emerald-500 transition-colors" data-target="result-panel-${index}"><i class="ri-file-text-line mr-1 text-emerald-400"></i> Kết quả</button><button class="inner-tab-link px-4 py-2 text-sm font-bold text-slate-400 border-b-2 border-transparent hover:text-white transition-colors" data-target="prompt-panel-${index}"><i class="ri-terminal-box-line mr-1 text-purple-400"></i> Prompt</button></div><div id="result-panel-${index}" class="inner-tab-content space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar"><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Tiêu đề</label><div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-white font-bold text-lg">${res.title}</div></div><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Tóm tắt</label><div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-slate-300 text-sm italic">${res.excerpt}</div></div><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Nội dung chính</label><div class="bg-slate-900/50 p-4 rounded-lg border border-slate-800/80"><pre class="result-content text-emerald-100 font-mono text-sm whitespace-pre-wrap leading-relaxed select-text">${res.content}</pre></div></div></div><div id="prompt-panel-${index}" class="inner-tab-content hidden space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar"><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Prompt Tiêu đề</label><div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-purple-200 font-mono text-xs whitespace-pre-wrap select-text">${res.promptTitle || '<span class="text-slate-600 italic">(Mặc định)</span>'}</div></div><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Prompt Tóm tắt</label><div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-purple-200 font-mono text-xs whitespace-pre-wrap select-text">${res.promptExcerpt || '<span class="text-slate-600 italic">(Mặc định)</span>'}</div></div><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Prompt Nội dung</label><div class="bg-slate-900/50 p-4 rounded-lg border border-slate-800/80"><pre class="text-purple-200 font-mono text-xs whitespace-pre-wrap leading-relaxed select-text">${res.promptContent}</pre></div></div><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Prompt Footer</label><div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-purple-200 font-mono text-xs whitespace-pre-wrap select-text">${res.promptFooter || '<span class="text-slate-600 italic">(Không dùng)</span>'}</div></div></div></div>`;
+                content = `<div class="flex flex-col h-full"><div class="flex border-b border-slate-700/50 mb-4 space-x-1"><button class="inner-tab-link px-4 py-2 text-sm font-bold text-white border-b-2 border-emerald-500 transition-colors" data-target="result-panel-${index}"><i class="ri-file-text-line mr-1 text-emerald-400"></i> Kết quả</button><button class="inner-tab-link px-4 py-2 text-sm font-bold text-slate-400 border-b-2 border-transparent hover:text-white transition-colors" data-target="prompt-panel-${index}"><i class="ri-terminal-box-line mr-1 text-purple-400"></i> Prompt</button></div><div id="result-panel-${index}" class="inner-tab-content space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar"><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Tiêu đề</label><div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-white font-bold text-lg">${res.title}</div></div><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Tóm tắt</label><div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-slate-300 text-sm italic">${res.excerpt}</div></div><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Nội dung chính</label><div class="bg-slate-900/50 p-4 rounded-lg border border-slate-800/80"><pre class="result-content text-emerald-100 font-mono text-sm whitespace-pre-wrap leading-relaxed select-text">${res.content}</pre></div></div></div><div id="prompt-panel-${index}" class="inner-tab-content hidden space-y-6 flex-1 overflow-y-auto pr-2 custom-scrollbar"><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Prompt Tiêu đề</label><div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-purple-200 font-mono text-xs whitespace-pre-wrap select-text">${res.promptTitle || '<span class="text-slate-600 italic">(Mặc định)</span>'}</div></div><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Prompt Header</label><div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-purple-200 font-mono text-xs whitespace-pre-wrap select-text">${res.promptHeader || '<span class="text-slate-600 italic">(Không dùng)</span>'}</div></div><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Prompt Tóm tắt</label><div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-purple-200 font-mono text-xs whitespace-pre-wrap select-text">${res.promptExcerpt || '<span class="text-slate-600 italic">(Mặc định)</span>'}</div></div><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Prompt Nội dung</label><div class="bg-slate-900/50 p-4 rounded-lg border border-slate-800/80"><pre class="text-purple-200 font-mono text-xs whitespace-pre-wrap leading-relaxed select-text">${res.promptContent || ''}</pre></div></div><div><label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 block">Prompt Footer</label><div class="bg-slate-900/50 p-3 rounded border border-slate-700/50 text-purple-200 font-mono text-xs whitespace-pre-wrap select-text">${res.promptFooter || '<span class="text-slate-600 italic">(Không dùng)</span>'}</div></div></div></div>`;
             }
             tabContentsHtml += `<div id="${tabId}" class="tab-pane h-full ${isActive ? '' : 'hidden'} animate-fade-in">${content}</div>`;
         });
         aiResultTabs.innerHTML = tabButtonsHtml;
         aiResultTabContent.innerHTML = tabContentsHtml;
-        
+
         const tabs = aiResultTabs.querySelectorAll('.tab-btn');
         const panes = aiResultTabContent.querySelectorAll('.tab-pane');
         tabs.forEach(tab => {
@@ -394,12 +394,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function showPostedDetails(appId) {
         const app = itemsOnPage.find(a => a.appId === appId);
-        if(!app) return;
+        if (!app) return;
         const appData = getSafeAppData(app);
         const postedIds = new Set(appData.postedSiteIds);
         let postedHtml = '', unpostedHtml = '', pCount = 0, uCount = 0;
         globalWpSites.forEach(site => {
-            if (postedIds.has(site.id)) { pCount++; postedHtml += `<div class="flex items-center text-sm text-emerald-300 p-1.5 rounded bg-emerald-500/10 border border-emerald-500/20"><i class="ri-checkbox-circle-fill mr-2 text-emerald-500"></i> ${site.siteName}</div>`; } 
+            if (postedIds.has(site.id)) { pCount++; postedHtml += `<div class="flex items-center text-sm text-emerald-300 p-1.5 rounded bg-emerald-500/10 border border-emerald-500/20"><i class="ri-checkbox-circle-fill mr-2 text-emerald-500"></i> ${site.siteName}</div>`; }
             else { uCount++; unpostedHtml += `<div class="flex items-center text-sm text-slate-400 p-1.5 rounded bg-slate-700/30 border border-slate-700/50"><i class="ri-checkbox-blank-circle-line mr-2 text-slate-600"></i> ${site.siteName}</div>`; }
         });
         document.getElementById('list-posted').innerHTML = pCount ? postedHtml : '<p class="text-xs text-slate-500 italic pl-1">Chưa đăng bài nào.</p>';
@@ -414,15 +414,15 @@ document.addEventListener('DOMContentLoaded', () => {
     async function performAction(actionType, appIds) {
         let endpoint, method, confirmTitle;
         const count = isSelectingAllDb ? totalItemsInDb : appIds.length;
-        if(actionType === 'delete') { endpoint = '/api/apps'; method = 'DELETE'; confirmTitle = `Vứt ${count} app?`; }
-        else if(actionType === 'restore') { endpoint = '/api/apps/restore'; method = 'POST'; confirmTitle = `Khôi phục ${count} app?`; }
+        if (actionType === 'delete') { endpoint = '/api/apps'; method = 'DELETE'; confirmTitle = `Vứt ${count} app?`; }
+        else if (actionType === 'restore') { endpoint = '/api/apps/restore'; method = 'POST'; confirmTitle = `Khôi phục ${count} app?`; }
         else { endpoint = '/api/apps/permanent'; method = 'DELETE'; confirmTitle = `XOÁ VĨNH VIỄN ${count} app?`; }
         const res = await Swal.fire({ title: confirmTitle, icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc2626', background: '#1e293b', color: '#e2e8f0' });
         if (!res.isConfirmed) return;
         Swal.fire({ title: 'Processing...', didOpen: () => Swal.showLoading(), background: '#1e293b', color: '#e2e8f0' });
         try {
-            const payload = { appIds: isSelectingAllDb ? null : appIds, [actionType === 'restore'?'restoreAll':'deleteAll']: isSelectingAllDb, search: isSelectingAllDb ? document.querySelector('input[name="search"]').value : null };
-            await fetch(endpoint, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+            const payload = { appIds: isSelectingAllDb ? null : appIds, [actionType === 'restore' ? 'restoreAll' : 'deleteAll']: isSelectingAllDb, search: isSelectingAllDb ? document.querySelector('input[name="search"]').value : null };
+            await fetch(endpoint, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             Swal.fire({ title: 'Xong!', icon: 'success', timer: 1000, showConfirmButton: false, background: '#1e293b', color: '#e2e8f0' });
             setTimeout(() => window.location.reload(), 1000);
         } catch (err) { Swal.fire({ title: 'Lỗi', text: err.message, icon: 'error', background: '#1e293b', color: '#e2e8f0' }); }
@@ -432,14 +432,14 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
     checkAiStatus(); // <--- Load status va log khi F5
 
-    if(aiOpenAiKey) { aiOpenAiKey.addEventListener('input', updateAiButtonState); aiOpenAiKey.addEventListener('change', saveSettings); }
-    if(aiConcurrency) aiConcurrency.addEventListener('change', saveSettings);
-    if(aiDelay) aiDelay.addEventListener('change', saveSettings);
-    if(aiDemoMode) aiDemoMode.addEventListener('change', saveSettings);
-    if(aiPostStatus) aiPostStatus.addEventListener('change', saveSettings);
-    
+    if (aiOpenAiKey) { aiOpenAiKey.addEventListener('input', updateAiButtonState); aiOpenAiKey.addEventListener('change', saveSettings); }
+    if (aiConcurrency) aiConcurrency.addEventListener('change', saveSettings);
+    if (aiDelay) aiDelay.addEventListener('change', saveSettings);
+    if (aiDemoMode) aiDemoMode.addEventListener('change', saveSettings);
+    if (aiPostStatus) aiPostStatus.addEventListener('change', saveSettings);
+
     siteCheckboxes.forEach(cb => cb.addEventListener('change', updateAiButtonState));
-    if(btnSelectAllSites) btnSelectAllSites.addEventListener('click', () => {
+    if (btnSelectAllSites) btnSelectAllSites.addEventListener('click', () => {
         const allChecked = Array.from(siteCheckboxes).every(cb => cb.checked);
         siteCheckboxes.forEach(cb => cb.checked = !allChecked);
         btnSelectAllSites.textContent = !allChecked ? "Bỏ chọn hết" : "Chọn tất cả";
@@ -449,7 +449,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnStartAi) {
         btnStartAi.addEventListener('click', async () => {
             const isDemo = aiDemoMode.checked;
-            const postStatus = aiPostStatus ? aiPostStatus.value : 'publish'; 
+            const postStatus = aiPostStatus ? aiPostStatus.value : 'publish';
 
             if (!isDemo) {
                 setAiRunningState(true);
@@ -460,22 +460,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnStartAi.classList.remove('hidden'); btnStartAi.disabled = true;
                 btnStartAi.innerHTML = `<div class="w-full flex justify-center"><i class="ri-loader-4-line animate-spin text-xl"></i></div>`;
             }
-            
-            if(aiConcurrency) aiConcurrency.disabled = true;
-            if(aiDelay) aiDelay.disabled = true;
-            if(aiOpenAiKey) aiOpenAiKey.disabled = true;
-            if(aiDemoMode) aiDemoMode.disabled = true;
-            if(aiPostStatus) aiPostStatus.disabled = true;
-            
+
+            if (aiConcurrency) aiConcurrency.disabled = true;
+            if (aiDelay) aiDelay.disabled = true;
+            if (aiOpenAiKey) aiOpenAiKey.disabled = true;
+            if (aiDemoMode) aiDemoMode.disabled = true;
+            if (aiPostStatus) aiPostStatus.disabled = true;
+
             siteCheckboxes.forEach(cb => cb.disabled = true);
 
             const selectedSiteIds = Array.from(document.querySelectorAll('.site-checkbox:checked')).map(cb => cb.value);
-            const payload = { 
-                appIds: Array.from(selectedAppIds), 
-                siteIds: selectedSiteIds, 
-                openAiKey: aiOpenAiKey.value, 
-                concurrency: aiConcurrency.value, 
-                delay: aiDelay.value, 
+            const payload = {
+                appIds: Array.from(selectedAppIds),
+                siteIds: selectedSiteIds,
+                openAiKey: aiOpenAiKey.value,
+                concurrency: aiConcurrency.value,
+                delay: aiDelay.value,
                 isDemo: isDemo,
                 postStatus: postStatus
             };
@@ -483,7 +483,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const res = await fetch('/api/ai/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 const data = await res.json();
-                if(!res.ok) throw new Error(data.message);
+                if (!res.ok) throw new Error(data.message);
                 if (data.isDemo) { showAiResultModal(data.appName, data.results); resetAiUi(); }
             } catch (err) {
                 Swal.fire({ icon: 'error', title: 'Lỗi', text: err.message, background: '#1e293b', color: '#e2e8f0' });
@@ -494,18 +494,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnStopAi) {
         btnStopAi.addEventListener('click', async () => {
-            if(!confirm('Dừng tác vụ hiện tại?')) return;
-            try { await fetch('/api/ai/stop', { method: 'POST' }); } catch(e) {}
+            if (!confirm('Dừng tác vụ hiện tại?')) return;
+            try { await fetch('/api/ai/stop', { method: 'POST' }); } catch (e) { }
             // Khong can resetUi ngay, doi socket bao done
         });
     }
 
-    if(aiResultCloseBtn) aiResultCloseBtn.addEventListener('click', closeAiResultModal);
-    if(aiResultBackdrop) aiResultBackdrop.addEventListener('click', closeAiResultModal);
-    if(aiResultCopyBtn) {
+    if (aiResultCloseBtn) aiResultCloseBtn.addEventListener('click', closeAiResultModal);
+    if (aiResultBackdrop) aiResultBackdrop.addEventListener('click', closeAiResultModal);
+    if (aiResultCopyBtn) {
         aiResultCopyBtn.addEventListener('click', () => {
             const activePane = aiResultTabContent.querySelector('.tab-pane:not(.hidden)');
-            if(!activePane) return;
+            if (!activePane) return;
             const innerResult = activePane.querySelector('.inner-tab-content:not(.hidden) .result-content');
             const innerPrompt = activePane.querySelector('.inner-tab-content:not(.hidden) .result-content'); // Fix logic copy prompt
             // Actually, code goc copy ca prompt neu dang active tab prompt
@@ -515,7 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // ...
             // Simplified logic: Just copy whatever text is in the active view
             const targetEl = activePane.querySelector('.inner-tab-content:not(.hidden)');
-            if(!targetEl) return;
+            if (!targetEl) return;
             navigator.clipboard.writeText(targetEl.innerText).then(() => {
                 const orgHtml = aiResultCopyBtn.innerHTML;
                 aiResultCopyBtn.innerHTML = '<i class="ri-check-line text-lg"></i> <span>Đã Copy!</span>';
@@ -524,17 +524,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if(postedDetailsCloseBtn) postedDetailsCloseBtn.addEventListener('click', closePostedDetailsModal);
-    if(postedDetailsBackdrop) postedDetailsBackdrop.addEventListener('click', closePostedDetailsModal);
+    if (postedDetailsCloseBtn) postedDetailsCloseBtn.addEventListener('click', closePostedDetailsModal);
+    if (postedDetailsBackdrop) postedDetailsBackdrop.addEventListener('click', closePostedDetailsModal);
 
-    if(socket) {
+    if (socket) {
         socket.on('ai_job:done', (stats) => {
             setAiRunningState(false);
             updateAiStats(stats);
-            if(aiTerminalPanel) aiTerminalPanel.classList.remove('hidden'); 
+            if (aiTerminalPanel) aiTerminalPanel.classList.remove('hidden');
             Swal.fire({ title: 'Hoàn tất!', html: `Success: <b class="text-green-500">${stats.success}</b> | Fail: <b class="text-red-500">${stats.failed}</b>`, icon: 'success', background: '#1e293b', color: '#e2e8f0' });
         });
-        
+
         socket.on('ai_job:log', (log) => appendAiLog(log));
         socket.on('ai_job:update_stats', (stats) => updateAiStats(stats));
     }
@@ -557,14 +557,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (target.closest('.btn-force-delete-single')) performAction('force_delete', [row.dataset.appId]);
     });
 
-    if(selectAllPageCheckbox) selectAllPageCheckbox.addEventListener('change', () => {
+    if (selectAllPageCheckbox) selectAllPageCheckbox.addEventListener('change', () => {
         const checked = selectAllPageCheckbox.checked;
         isSelectingAllDb = false;
         itemsOnPage.forEach(app => checked ? selectedAppIds.add(app.appId) : selectedAppIds.delete(app.appId));
         updateSelectionControls();
     });
 
-    if(btnSelectAllDb) btnSelectAllDb.addEventListener('click', () => {
+    if (btnSelectAllDb) btnSelectAllDb.addEventListener('click', () => {
         isSelectingAllDb = true;
         itemsOnPage.forEach(app => selectedAppIds.add(app.appId));
         updateSelectionControls();
@@ -583,5 +583,5 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnForceDeleteSelected) btnForceDeleteSelected.onclick = () => performAction('force_delete', Array.from(selectedAppIds));
 
     buildTable();
-    updateAiButtonState(); 
+    updateAiButtonState();
 });
